@@ -6,7 +6,10 @@ Bottom nav is now **Home · Exams · AResources · Chat** (Progress is still rea
 - **AResources** has two sticky underline tabs: **ABooks** and **AVideos**. Each shows module cards (grid or list toggle, thumbnail optional — a module cover falls back to its first item's thumbnail, then to a coloured icon card).
 - **ABooks → module**: books with an optional **subject filter** (pills) and search. Tap a book for details and "Open book".
 - **AVideos → module**: sticky tabs **All | Lecturers**. *All* = every video (subject filter + search). *Lecturers* = lecturer cards → that lecturer's videos.
-- Videos play in-app for YouTube, Vimeo, Google Drive and direct/uploaded MP4/WebM; any other link opens in a new tab.
+- **Everything opens inside the app — nothing opens a new tab.**
+  - Books: PDFs (uploaded or direct links) are rendered page-by-page in the built-in reader with zoom and a page counter (pdf.js, loaded from cdnjs). Google Drive files and Word/PowerPoint/Excel files open in an embedded viewer. EPUB isn't supported yet.
+  - Videos: YouTube, Vimeo, Google Drive and direct/uploaded MP4/WebM play in the built-in player. Unknown sites are embedded in the player; a few refuse to be embedded.
+  - If a PDF host blocks in-app reading (CORS), the reader automatically falls back to the embedded viewer.
 - Locked modules use the existing lock system (lock badge + message).
 
 ## Admin

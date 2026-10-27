@@ -446,3 +446,20 @@ body:has(#resourcesScreen:not(.hidden)) .bottom-nav {
 
 /* desktop dock must stay reachable above the AResources screen */
 body:has(#resourcesScreen:not(.hidden)) .desktop-nav { z-index: 330; }
+
+/* ---------- in-app book reader ---------- */
+.res-overlay-reader { z-index: 440; align-items: stretch; background: var(--paper); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.res-reader-card { width: 100%; height: 100%; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 0px); background: var(--paper-2); }
+.res-reader-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--card); border-bottom: 1px solid var(--card-border); }
+.res-reader-name { flex: 1; min-width: 0; font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.res-reader-pg { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 700; color: var(--ink-soft); padding: 5px 10px; border-radius: 999px; background: var(--paper-2); white-space: nowrap; }
+.res-reader-body { flex: 1; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y pinch-zoom; padding: 12px 0 calc(24px + env(safe-area-inset-bottom, 0px)); }
+.res-reader-body.frame { padding: 0; overflow: hidden; }
+.res-reader-body iframe { width: 100%; height: 100%; border: 0; background: #fff; }
+.res-pages { width: 100%; max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; transition: width .2s; }
+.res-pg { position: relative; width: 100%; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.14); }
+.res-pg canvas { display: block; width: 100%; height: auto; }
+.res-reader-msg { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; min-height: 60%; color: var(--ink-faint); text-align: center; padding: 24px; }
+.res-reader-msg i { font-size: 30px; color: var(--artery); }
+.res-reader-msg p { margin: 0; font-size: 14px; }
+.res-reader-foot { padding: 8px 14px calc(8px + env(safe-area-inset-bottom, 0px)); font-size: 11.5px; color: var(--ink-faint); background: var(--card); text-align: center; }

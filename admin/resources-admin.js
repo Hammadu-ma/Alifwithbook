@@ -207,8 +207,8 @@ function openForm(item) {
     <div class="rs-sec">${books ? 'Book file' : 'Video'}</div>
     ${srcField('file', books ? 'Book (PDF, DOC, PPT, EPUB…)' : 'Video', {
       required: true, accept: books ? '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.epub,application/pdf' : 'video/mp4,video/webm,video/ogg,video/quicktime',
-      help: books ? 'Link: any public URL (Google Drive share link, website, PDF…). Upload: max 200 MB.'
-                  : 'Link: YouTube, Vimeo, Google Drive or a direct .mp4 URL plays inside the app. Upload: MP4/WebM, max 500 MB.' })}
+      help: books ? 'Everything opens inside the app. Best: a direct PDF link, a Google Drive share link, or an upload (max 200 MB). Word/PowerPoint/Excel files also work.'
+                  : 'Plays inside the app: YouTube, Vimeo, Google Drive, direct .mp4/.webm links, or an upload (max 500 MB). Other sites may refuse to play in-app.' })}
     <div class="rs-sec">Thumbnail</div>
     ${srcField('thumb', 'Cover / thumbnail', { noneOk: true, accept: 'image/*', help: books ? 'Without a thumbnail the app draws a coloured cover with the title.' : 'Optional — YouTube videos get their thumbnail automatically. Images up to 8 MB.' })}
     ${books ? '' : `<div class="rs-sec">Lecturer photo</div>${srcField('photo', 'Photo', { noneOk: true, accept: 'image/*', help: 'Optional. Shown on the Lecturers tab. Without it, initials are shown.' })}`}

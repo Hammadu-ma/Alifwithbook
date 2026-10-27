@@ -50,6 +50,7 @@ const elPills = $('resPills');
 const elMain = $('resMain');
 const elSheet = $('resSheet');
 const elPlayer = $('resPlayer');
+const elReader = $('resReader');
 
 /* ---------------------------------------------------------------- state */
 const LS_LAYOUT = 'alif_res_layout_v1';
@@ -211,6 +212,7 @@ export function openResources({ skipHistory = false } = {}) {
 }
 
 export function closeResources() {
+  closeReader();
   closeSheet();
   closePlayer();
   screen.classList.add('hidden');
@@ -609,13 +611,127 @@ function openBook(b) {
         ${b.author ? `<div class="res-sheet-by">by ${esc(b.author)}</div>` : ''}
         ${b.description ? `<p class="res-sheet-desc">${esc(b.description)}</p>` : ''}
         ${url
-          ? `<a class="res-btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-book-open"></i><span>Open book</span></a>`
+          ? `<button type="button" class="res-btn" data-read="${esc(b.id)}"><i class="fa-solid fa-book-open"></i><span>Read now</span></button>`
           : '<div class="res-sheet-note">This book’s link isn’t available yet.</div>'}
       </div>
     </div>`;
   showOverlay(elSheet, closeSheet);
 }
 function closeSheet() { hideOverlay(elSheet, closeSheet); }
+
+
+/* ------------------------------------------------------------ book reader */
+const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174';
+let pdfjsP = null, readerToken = 0, readerPdf = null, readerIO = null, readerIO2 = null;
+
+function loadPdfjs() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if (!pdfjsP) pdfjsP = new Promise((res, rej) => {
+    const sc = document.createElement('script');
+    sc.src = PDFJS + '/pdf.min.js';
+    sc.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + '/pdf.worker.min.js'; res(window.pdfjsLib); };
+    sc.onerror = () => { pdfjsP = null; rej(new Error('pdf.js failed to load')); };
+    document.head.appendChild(sc);
+  });
+  return pdfjsP;
+}
+
+function readerPlan(b) {
+  const url = safeUrl(b.fileUrl);
+  if (!url) return { kind: 'none' };
+  const d = driveId(url);
+  if (d) return { kind: 'iframe', src: `https://drive.google.com/file/d/${d}/preview`, url };
+  const ext = fileExt(b.fileName || url);
+  if (ext === 'pdf' || (b.sourceType === 'upload' && !ext)) return { kind: 'pdf', url };
+  if (/^(docx?|pptx?|xlsx?|rtf|odt|odp|ods)$/.test(ext)) return { kind: 'iframe', src: `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(url)}`, url };
+  if (ext === 'epub') return { kind: 'unsupported' };
+  return { kind: 'iframe', src: url, url, loose: true };
+}
+
+function openReader(b) {
+  const plan = readerPlan(b);
+  const token = ++readerToken;
+  const body = plan.kind === 'pdf'
+    ? '<div class="res-reader-body" id="rdBody"><div class="res-reader-msg"><i class="fa-solid fa-hourglass-half"></i><p>Opening book…</p></div></div>'
+    : plan.kind === 'iframe'
+      ? `<div class="res-reader-body frame"><iframe src="${esc(plan.src)}" title="${esc(b.title || 'Book')}" referrerpolicy="no-referrer"></iframe></div>${plan.loose ? '<div class="res-reader-foot">If the page stays blank, its host doesn’t allow reading inside the app.</div>' : ''}`
+      : `<div class="res-reader-body"><div class="res-reader-msg"><i class="fa-solid fa-book"></i><p>${plan.kind === 'unsupported' ? 'EPUB books can’t be read in the app yet.' : 'This book’s link isn’t available yet.'}</p></div></div>`;
+  elReader.innerHTML = `
+    <div class="res-reader-card" role="dialog" aria-modal="true" aria-label="${esc(b.title || 'Book')}">
+      <div class="res-reader-bar">
+        <div class="res-reader-name">${esc(b.title || 'Book')}</div>
+        ${plan.kind === 'pdf' ? '<span class="res-reader-pg" id="rdPg"></span><button type="button" class="res-sheet-x static" data-zoom="-1" aria-label="Zoom out"><i class="fa-solid fa-minus"></i></button><button type="button" class="res-sheet-x static" data-zoom="1" aria-label="Zoom in"><i class="fa-solid fa-plus"></i></button>' : ''}
+        <button type="button" class="res-sheet-x static" data-close aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      ${body}
+    </div>`;
+  showOverlay(elReader, closeReader);
+  if (plan.kind === 'pdf') renderPdf(plan, b, token);
+}
+
+function closeReader() {
+  readerToken++;
+  if (readerIO) readerIO.disconnect();
+  if (readerIO2) readerIO2.disconnect();
+  readerIO = readerIO2 = null;
+  if (readerPdf) { try { readerPdf.destroy(); } catch (_) {} readerPdf = null; }
+  hideOverlay(elReader, closeReader);
+}
+
+async function renderPdf(plan, b, token) {
+  const body = $('rdBody');
+  try {
+    const lib = await loadPdfjs();
+    const pdf = await lib.getDocument({ url: plan.url }).promise;
+    if (token !== readerToken) { pdf.destroy(); return; }
+    readerPdf = pdf;
+    const first = await pdf.getPage(1);
+    const vp = first.getViewport({ scale: 1 });
+    const ratio = vp.height / vp.width;
+    body.innerHTML = '<div class="res-pages" id="rdPages"></div>';
+    const wrap = $('rdPages');
+    let zoom = 1;
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const d = document.createElement('div');
+      d.className = 'res-pg'; d.dataset.n = i; d.style.aspectRatio = `1 / ${ratio}`;
+      wrap.appendChild(d);
+    }
+    const pg = $('rdPg'); if (pg) pg.textContent = `1 / ${pdf.numPages}`;
+    const draw = async d => {
+      if (d.dataset.busy || d.querySelector('canvas')) return;
+      d.dataset.busy = '1';
+      try {
+        const page = await pdf.getPage(+d.dataset.n);
+        if (token !== readerToken) return;
+        const base = page.getViewport({ scale: 1 });
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const v = page.getViewport({ scale: (d.clientWidth / base.width) * dpr });
+        const c = document.createElement('canvas');
+        c.width = v.width; c.height = v.height;
+        await page.render({ canvasContext: c.getContext('2d'), viewport: v }).promise;
+        if (token === readerToken) { d.appendChild(c); d.style.aspectRatio = `${c.width} / ${c.height}`; }
+      } catch (_) {} finally { delete d.dataset.busy; }
+    };
+    readerIO = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) draw(e.target); }), { root: body, rootMargin: '900px 0px' });
+    readerIO2 = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting && pg) pg.textContent = `${e.target.dataset.n} / ${pdf.numPages}`; }), { root: body, threshold: 0.5 });
+    wrap.querySelectorAll('.res-pg').forEach(d => { readerIO.observe(d); readerIO2.observe(d); });
+    elReader.onclick = e => {
+      const z = e.target.closest('[data-zoom]');
+      if (z) {
+        zoom = Math.min(3, Math.max(1, zoom + (+z.dataset.zoom) * 0.5));
+        wrap.style.width = zoom * 100 + '%';
+        wrap.querySelectorAll('.res-pg').forEach(d => { d.querySelector('canvas')?.remove(); readerIO.unobserve(d); readerIO.observe(d); });
+        return;
+      }
+      if (e.target === elReader || e.target.closest('[data-close]')) closeReader();
+    };
+  } catch (err) {
+    if (token !== readerToken) return;
+    // CORS-blocked or unreadable PDF: fall back to an embedded viewer, still inside the app
+    body.classList.add('frame');
+    body.innerHTML = `<iframe src="https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(plan.url)}" title="${esc(b.title || 'Book')}" referrerpolicy="no-referrer"></iframe>`;
+  }
+}
 
 /* ------------------------------------------------------------ video player */
 function parseVideo(u, b) {
@@ -629,7 +745,7 @@ function parseVideo(u, b) {
   if (d) return { kind: 'iframe', src: `https://drive.google.com/file/d/${d}/preview`, url };
   const ext = fileExt(url);
   if (b && b.sourceType === 'upload' || /^(mp4|webm|ogg|ogv|mov|m4v)$/.test(ext)) return { kind: 'file', src: url, url };
-  return { kind: 'link', url };
+  return { kind: 'iframe', src: url, url, loose: true };   // unknown host: try embedding it in the player
 }
 
 function openVideo(v) {
@@ -642,8 +758,7 @@ function openVideo(v) {
     stage = `<video src="${esc(info.src)}" controls autoplay playsinline controlsList="nodownload" ${t ? `poster="${esc(t)}"` : ''}></video>`;
   } else {
     stage = `<div class="res-player-fallback">${t ? `<img src="${esc(t)}" alt="" referrerpolicy="no-referrer">` : ''}
-      <div><i class="fa-solid fa-play"></i><p>${info.kind === 'none' ? 'This video’s link isn’t available yet.' : 'This video opens in a new tab.'}</p>
-      ${info.kind === 'link' ? `<a class="res-btn" href="${esc(info.url)}" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-play"></i><span>Watch video</span></a>` : ''}</div></div>`;
+      <div><i class="fa-solid fa-play"></i><p>This video’s link isn’t available yet.</p></div></div>`;
   }
   const sub = subjectName(v.subjectId);
   elPlayer.innerHTML = `
@@ -659,7 +774,7 @@ function openVideo(v) {
           ${v.duration ? `<span class="res-chip"><i class="fa-solid fa-clock"></i>${esc(v.duration)}</span>` : ''}
         </div>
         ${v.description ? `<p class="res-sheet-desc">${esc(v.description)}</p>` : ''}
-        ${info.kind !== 'none' && info.kind !== 'link' ? `<a class="res-link" href="${esc(info.url)}" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i> Open original link</a>` : ''}
+        ${info.loose ? '<p class="res-sheet-note">If the video stays blank, its host doesn’t allow playing inside the app — ask your admin to re-add it as a YouTube, Vimeo, Drive or uploaded video.</p>' : ''}
       </div>
     </div>`;
   showOverlay(elPlayer, closePlayer);
@@ -667,7 +782,7 @@ function openVideo(v) {
 function closePlayer() { hideOverlay(elPlayer, closePlayer); }
 
 /* if anything else takes over the screen, tear down the sheet / player (stops playback) */
-new MutationObserver(() => { if (!isOpen()) { closeSheet(); closePlayer(); } })
+new MutationObserver(() => { if (!isOpen()) { closeReader(); closeSheet(); closePlayer(); } })
   .observe(screen, { attributes: true, attributeFilter: ['class'] });
 
 /* shared overlay plumbing (back button / Esc / backdrop all close it) */
@@ -685,11 +800,16 @@ function hideOverlay(el, closer) {
   el.innerHTML = '';          // also stops any playing iframe / <video>
   popModalState(closer);
 }
-[[elSheet, closeSheet], [elPlayer, closePlayer]].forEach(([el, closer]) => {
+[[elSheet, closeSheet], [elPlayer, closePlayer], [elReader, closeReader]].forEach(([el, closer]) => {
   el.addEventListener('click', e => { if (e.target === el || e.target.closest('[data-close]')) closer(); });
+});
+elSheet.addEventListener('click', e => {
+  const r = e.target.closest('[data-read]');
+  if (r) { const b = BOOKS.find(x => x.id === r.dataset.read); if (b) openReader(b); }
 });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  if (elPlayer.classList.contains('show')) closePlayer();
+  if (elReader.classList.contains('show')) closeReader();
+  else if (elPlayer.classList.contains('show')) closePlayer();
   else if (elSheet.classList.contains('show')) closeSheet();
 });
