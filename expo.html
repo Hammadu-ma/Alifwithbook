@@ -1,0 +1,2333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Alif Med — Export Questions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
+  <!-- Other libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/16.3.0/lib/marked.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    /* ============================================================
+       Design tokens — "clinical monitor" dark theme
+       Gold = arterial, Blue = venous, Amber = portal (brand system)
+       ============================================================ */
+    :root {
+      --bg-0: #06080F;
+      --bg-1: #0A0E1C;
+      --bg-2: #111730;
+      --bg-3: #182046;
+      --ink: #F1F4FF;
+      --ink-soft: #9DA8CE;
+      --ink-faint: #5B6489;
+      --gold: #E7B155;
+      --gold-rgb: 231,177,85;
+      --gold-soft: rgba(231,177,85,.13);
+      --blue: #5C90EE;
+      --blue-rgb: 92,144,238;
+      --blue-soft: rgba(92,144,238,.13);
+      --amber: #F0C97A;
+      --amber-rgb: 240,201,122;
+      --amber-soft: rgba(240,201,122,.12);
+      --card: rgba(20,28,52,.46);
+      --card-2: rgba(24,32,60,.55);
+      --glass-hi: rgba(255,255,255,.14);
+      --glass-blur: 22px;
+      --line: rgba(210,220,255,.16);
+      --line-strong: rgba(220,230,255,.30);
+      --right: #45C98D;
+      --right-soft: rgba(69,201,141,.14);
+      --wrong: #EB6459;
+      --wrong-soft: rgba(235,100,89,.14);
+      --bg-image:
+        radial-gradient(1100px 620px at 100% -8%, rgba(231,177,85,.09), transparent 55%),
+        radial-gradient(900px 640px at -8% 8%, rgba(92,144,238,.10), transparent 55%),
+        linear-gradient(175deg, #050710 0%, #080C1A 40%, #0A0F20 100%);
+      --grad-accent: linear-gradient(135deg, var(--gold), var(--blue));
+      --r-xs: 8px; --r-sm: 12px; --r-md: 16px; --r-lg: 24px; --r-xl: 30px;
+      --sh-sm: 0 1px 2px rgba(0,0,0,.35), 0 1px 1px rgba(0,0,0,.2);
+      --sh-md: 0 2px 6px rgba(4,6,16,.3), 0 20px 46px -18px rgba(6,10,25,.7);
+      --sh-lg: 0 4px 14px rgba(4,6,16,.35), 0 40px 80px -28px rgba(6,10,25,.85);
+      --sh-glow: 0 0 0 1px rgba(var(--gold-rgb),.12), 0 18px 46px -20px rgba(var(--gold-rgb),.4);
+      --serif: 'Fraunces', Georgia, serif;
+      --sans: 'Source Sans 3', -apple-system, BlinkMacSystemFont, sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+      --gutter: clamp(16px, 3.4vw, 40px);
+      --ease: cubic-bezier(.16,1,.3,1);
+    }
+    body.theme-light {
+      --bg-0: #F6F7FB;
+      --bg-1: #EDF0F8;
+      --bg-2: #E2E7F4;
+      --bg-3: #D3DAEE;
+      --ink: #0C1630;
+      --ink-soft: #4B5578;
+      --ink-faint: #8590AF;
+      --gold: #C6862E;
+      --gold-rgb: 198,134,46;
+      --gold-soft: #FBEEDB;
+      --blue: #3161D6;
+      --blue-rgb: 49,97,214;
+      --blue-soft: #E6ECFC;
+      --amber: #D9A542;
+      --amber-rgb: 217,165,66;
+      --amber-soft: #F7ECD6;
+      --card: rgba(255,255,255,.52);
+      --card-2: rgba(255,255,255,.62);
+      --glass-hi: rgba(255,255,255,.55);
+      --line: rgba(12,22,48,.13);
+      --line-strong: rgba(12,22,48,.24);
+      --right: #227A50;
+      --right-soft: #DDF0E6;
+      --wrong: #B23A32;
+      --wrong-soft: #F7E0DC;
+      --bg-image:
+        radial-gradient(1100px 620px at 100% -8%, rgba(176,121,30,.09), transparent 55%),
+        radial-gradient(900px 640px at -8% 8%, rgba(46,95,196,.08), transparent 55%),
+        var(--bg-0);
+      --grad-accent: linear-gradient(135deg, var(--gold), var(--blue));
+      --sh-sm: 0 1px 2px rgba(12,22,48,.05), 0 1px 1px rgba(12,22,48,.04);
+      --sh-md: 0 2px 6px rgba(12,22,48,.06), 0 18px 40px -18px rgba(12,22,48,.22);
+      --sh-lg: 0 4px 12px rgba(12,22,48,.08), 0 36px 64px -26px rgba(12,22,48,.28);
+      --sh-glow: 0 0 0 1px rgba(var(--gold-rgb),.14), 0 16px 40px -20px rgba(var(--gold-rgb),.35);
+    }
+
+    * { box-sizing: border-box; }
+    html { width: 100%; }
+    body {
+      margin: 0; width: 100%; min-height: 100vh; overflow-x: hidden;
+      background: var(--bg-image); background-attachment: fixed;
+      color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased;
+      transition: background .2s, color .2s;
+    }
+
+    /* ---------- floating water-glass bubbles (ambient background) ---------- */
+    .bubble-field { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+    .bubble-field::after {
+      content: ""; position: absolute; inset: 0;
+      background: radial-gradient(1400px 900px at 50% -10%, transparent 55%, rgba(3,5,12,.35)),
+                  radial-gradient(1200px 800px at 50% 110%, transparent 55%, rgba(3,5,12,.3));
+      pointer-events: none;
+    }
+    body.theme-light .bubble-field::after {
+      background: radial-gradient(1400px 900px at 50% -10%, transparent 60%, rgba(180,190,220,.14)),
+                  radial-gradient(1200px 800px at 50% 110%, transparent 60%, rgba(180,190,220,.12));
+    }
+    .bubble-field .bubble {
+      position: absolute; border-radius: 50%; filter: blur(2.5px);
+      background:
+        radial-gradient(circle at 30% 24%, rgba(255,255,255,.85), rgba(255,255,255,0) 26%),
+        radial-gradient(circle at 68% 20%, rgba(255,255,255,.3), rgba(255,255,255,0) 16%),
+        radial-gradient(circle at 62% 72%, var(--bcol, var(--gold)) 0%, transparent 64%),
+        radial-gradient(circle at 40% 60%, var(--bcol, var(--gold)) 0%, transparent 72%);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), inset -8px -10px 26px rgba(0,0,0,.12), inset 6px 8px 18px rgba(255,255,255,.08);
+      opacity: .55; mix-blend-mode: screen; animation: bubbleFloat linear infinite;
+    }
+    body.theme-light .bubble-field .bubble { opacity: .38; mix-blend-mode: multiply; }
+    .bubble-field .b1 { --bcol: var(--gold); width: 340px; height: 340px; left: -80px; top: 8%; animation-duration: 30s; }
+    .bubble-field .b2 { --bcol: var(--blue); width: 260px; height: 260px; right: -60px; top: 2%; animation-duration: 36s; animation-delay: -6s; }
+    .bubble-field .b3 { --bcol: var(--amber); width: 200px; height: 200px; left: 18%; top: 58%; animation-duration: 25s; animation-delay: -3s; }
+    .bubble-field .b4 { --bcol: var(--blue); width: 420px; height: 420px; right: -140px; bottom: -120px; animation-duration: 40s; animation-delay: -12s; }
+    .bubble-field .b5 { --bcol: var(--gold); width: 160px; height: 160px; left: 46%; top: 14%; animation-duration: 21s; animation-delay: -8s; }
+    .bubble-field .b6 { --bcol: var(--amber); width: 120px; height: 120px; left: 8%; top: 78%; animation-duration: 24s; animation-delay: -15s; }
+    .bubble-field .b7 { --bcol: var(--blue); width: 90px; height: 90px; right: 12%; top: 40%; animation-duration: 18s; animation-delay: -5s; }
+    @keyframes bubbleFloat {
+      0%   { transform: translate(0,0) rotate(0deg) scale(1); }
+      25%  { transform: translate(18px,-30px) rotate(6deg) scale(1.06); }
+      50%  { transform: translate(-16px,-52px) rotate(-4deg) scale(.96); }
+      75%  { transform: translate(-28px,-16px) rotate(3deg) scale(1.04); }
+      100% { transform: translate(0,0) rotate(0deg) scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) { .bubble-field .bubble { animation: none; } }
+    @media (max-width: 760px) {
+      .bubble-field .b1 { width: 220px; height: 220px; }
+      .bubble-field .b2 { width: 180px; height: 180px; }
+      .bubble-field .b4 { width: 280px; height: 280px; }
+      .bubble-field .b5, .bubble-field .b6, .bubble-field .b7 { display: none; }
+    }
+
+    a { color: inherit; }
+    button { font-family: inherit; cursor: pointer; }
+    input, select, textarea { font-family: inherit; }
+    .hidden { display: none !important; }
+    ::selection { background: var(--gold); color: #14100A; }
+    *:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 4px; }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, var(--gold), var(--blue)); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; opacity: .55; }
+    ::-webkit-scrollbar-thumb:hover { opacity: 1; }
+
+    /* ---------- shell / header ---------- */
+    .page { max-width: 1320px; margin: 0 auto; padding: clamp(14px,2.4vw,22px) var(--gutter) 120px; }
+
+    .topbar {
+      position: sticky; top: clamp(10px,2vw,18px); z-index: 60;
+      display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap;
+      margin-bottom: clamp(20px, 3vw, 30px);
+      background: linear-gradient(150deg, rgba(var(--gold-rgb),.12), rgba(var(--blue-rgb),.06)), var(--card-2);
+      backdrop-filter: blur(var(--glass-blur)) saturate(160%); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+      border: 1px solid var(--line); border-radius: var(--r-xl);
+      padding: 14px clamp(16px, 2.6vw, 24px);
+      box-shadow: var(--sh-md), inset 0 1px 0 var(--glass-hi), inset 0 -1px 0 rgba(0,0,0,.15);
+      animation: riseIn .5s var(--ease) backwards;
+      overflow: hidden;
+    }
+    .topbar::after {
+      content: ""; position: absolute; top: 0; left: 6%; right: 6%; height: 46%; border-radius: 999px 999px 60% 60% / 100% 100% 30% 30%;
+      background: linear-gradient(180deg, rgba(255,255,255,.16), transparent); pointer-events: none;
+    }
+    .topbar .brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+    .brand-mark {
+      position: relative; width: 44px; height: 44px; flex: 0 0 44px; border-radius: 13px;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(150deg, var(--gold-soft), var(--blue-soft)); border: 1px solid var(--line-strong);
+      box-shadow: inset 0 1.5px 0 rgba(255,255,255,.25), inset 0 -1px 0 rgba(0,0,0,.1), 0 6px 16px -8px rgba(var(--gold-rgb),.5);
+    }
+    .brand-mark::after {
+      content: ""; position: absolute; inset: 0; border-radius: inherit;
+      background: radial-gradient(circle at 30% 22%, rgba(255,255,255,.5), transparent 46%);
+      pointer-events: none;
+    }
+    .brand-mark i { font-size: 19px; color: var(--gold); filter: drop-shadow(0 0 8px rgba(var(--gold-rgb),.55)); animation: heartbeat 2.6s ease-in-out infinite; position: relative; z-index: 1; }
+    @keyframes heartbeat { 0%,100% { transform: scale(1); } 12% { transform: scale(1.18); } 24% { transform: scale(1); } 34% { transform: scale(1.1); } 46% { transform: scale(1); } }
+    .topbar .brand h1 {
+      font-family: var(--serif); font-size: clamp(19px, 3.4vw, 24px); margin: 0; font-weight: 700; line-height: 1.15; letter-spacing: -.01em;
+      background: linear-gradient(120deg, var(--ink) 15%, var(--amber) 60%, var(--blue) 100%);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: var(--ink);
+    }
+    .topbar .brand .sub { font-size: 11.5px; color: var(--ink-faint); font-family: var(--mono); letter-spacing: .05em; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .topbar-actions { display: flex; gap: 8px; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; border-radius: 999px;
+      border: 1px solid var(--line); background: rgba(255,255,255,.06); font-size: 13px; font-weight: 700;
+      color: var(--ink); white-space: nowrap; transition: border-color .18s var(--ease), background .18s var(--ease), box-shadow .25s var(--ease), transform .18s var(--ease);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      box-shadow: inset 0 1px 0 var(--glass-hi), var(--sh-sm);
+    }
+    body.theme-light .btn { background: rgba(255,255,255,.4); }
+    .btn:hover { border-color: var(--line-strong); background: rgba(255,255,255,.12); transform: translateY(-1.5px); }
+    body.theme-light .btn:hover { background: rgba(255,255,255,.6); }
+    .btn:active { transform: translateY(0) scale(.98); }
+    .btn.primary {
+      background: var(--grad-accent); color: #171205; border-color: transparent; font-weight: 800;
+      box-shadow: var(--sh-glow), inset 0 1px 0 rgba(255,255,255,.4); position: relative; overflow: hidden;
+    }
+    .btn.primary::before {
+      content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+      background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,.55) 50%, transparent 60%);
+      background-size: 220% 100%; background-position: 120% 0; transition: background-position .55s var(--ease);
+    }
+    .btn.primary:hover::before { background-position: -20% 0; }
+    .btn.primary > i, .btn.primary > span { position: relative; z-index: 1; }
+    body.theme-light .btn.primary { color: #fff; }
+    .btn.primary:hover { filter: brightness(1.06); box-shadow: var(--sh-glow), inset 0 1px 0 rgba(255,255,255,.5); transform: translateY(-1.5px); }
+    .btn.danger { background: var(--wrong); color: #fff; border-color: var(--wrong); }
+    .btn.danger:hover { opacity: .9; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    .topbar-actions .btn { background: rgba(255,255,255,.06); color: var(--ink); border-color: var(--line); }
+    .topbar-actions .btn:hover { background: rgba(255,255,255,.11); }
+    body.theme-light .topbar-actions .btn { background: rgba(255,255,255,.4); }
+    body.theme-light .topbar-actions .btn:hover { background: rgba(255,255,255,.6); }
+
+    @keyframes riseIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ---------- layout ---------- */
+    .layout { display: block; max-width: 720px; margin: 0 auto; }
+    .col-main { min-width: 0; display: flex; flex-direction: column; gap: clamp(16px, 2.4vw, 22px); }
+
+    /* ---------- panels: frosted glass surfaces ---------- */
+    .panel {
+      background: linear-gradient(165deg, rgba(var(--gold-rgb),.10), rgba(var(--blue-rgb),.05)), var(--card);
+      backdrop-filter: blur(var(--glass-blur)) saturate(160%); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+      border: 1px solid var(--line); border-radius: var(--r-lg);
+      padding: clamp(20px, 2.6vw, 28px);
+      box-shadow: var(--sh-md), inset 0 1.5px 0 var(--glass-hi), inset 0 -1px 0 rgba(0,0,0,.12), inset 1px 0 0 rgba(255,255,255,.05), inset -1px 0 0 rgba(0,0,0,.06);
+      position: relative; overflow: hidden; transition: box-shadow .35s var(--ease), border-color .35s var(--ease), transform .35s var(--ease);
+      animation: riseIn .5s var(--ease) backwards;
+    }
+    .col-main .panel:nth-of-type(1) { animation-delay: .03s; }
+    .col-main .panel:nth-of-type(2) { animation-delay: .07s; }
+    .col-main .panel:nth-of-type(3) { animation-delay: .11s; }
+    .panel::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: var(--grad-accent); opacity: .6; box-shadow: 0 0 12px rgba(var(--gold-rgb),.5);
+    }
+    .panel::after {
+      content: ""; position: absolute; top: 0; left: 4%; right: 30%; height: 34%;
+      border-radius: 0 0 100% 40% / 0 0 100% 100%;
+      background: linear-gradient(180deg, rgba(255,255,255,.12), transparent); pointer-events: none;
+    }
+    .panel:hover { box-shadow: var(--sh-lg), inset 0 1.5px 0 var(--glass-hi), inset 0 -1px 0 rgba(0,0,0,.12); border-color: rgba(var(--gold-rgb),.3); transform: translateY(-2px); }
+    .panel h2 {
+      font-family: var(--serif); font-size: 17.5px; margin: 0 0 6px; font-weight: 600; display: flex; align-items: center; gap: 10px;
+      color: var(--ink); letter-spacing: .01em;
+    }
+    .panel h2 i { font-size: 15px; width: 30px; height: 30px; flex: 0 0 30px; display: inline-flex; align-items: center; justify-content: center; border-radius: 9px; background: var(--card-2); border: 1px solid var(--line); }
+    .panel .sub { font-size: 13px; color: var(--ink-soft); margin: 0 0 20px; line-height: 1.6; }
+
+    /* ---------- selects & fields ---------- */
+    .selection-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin: 12px 0; }
+    .selection-group, .option-group { display: flex; flex-direction: column; gap: 6px; }
+    .selection-group label, .option-group label {
+      font-size: 10.5px; font-weight: 700; color: var(--ink-soft); font-family: var(--mono);
+      text-transform: uppercase; letter-spacing: .06em; display: flex; align-items: center; gap: 6px;
+    }
+    select, input[type="text"], input[type="number"], textarea {
+      padding: 11px 14px; border-radius: var(--r-sm); border: 1px solid var(--line); background: rgba(255,255,255,.05);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      color-scheme: dark; font-size: 13.5px; color: var(--ink); outline: none; width: 100%;
+      transition: border-color .15s, box-shadow .15s, background .15s;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+    }
+    body.theme-light select, body.theme-light input[type="text"], body.theme-light input[type="number"], body.theme-light textarea { background: rgba(255,255,255,.5); }
+    body.theme-light select, body.theme-light input, body.theme-light textarea { color-scheme: light; }
+    select { appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239DA8CE' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 14px center; padding-right: 34px;
+    }
+    select:hover, input:hover, textarea:hover { border-color: var(--line-strong); }
+    select:focus, input:focus, textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
+    select:disabled { opacity: .45; cursor: not-allowed; }
+    .selection-group .count { font-size: 11px; color: var(--ink-faint); margin-top: 1px; font-family: var(--mono); }
+    .option-group .hint { font-size: 11.5px; color: var(--ink-faint); margin-top: 2px; line-height: 1.5; }
+
+    .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 4px 0 12px; }
+
+    /* ---------- app-style step wizard (module → subject → quiz) ---------- */
+    .visually-hidden {
+      position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+    .wizard-crumbs { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 2px 0 18px; }
+    .wizard-crumbs button {
+      display: inline-flex; align-items: center; gap: 6px; border: none; background: none; padding: 4px 2px;
+      font-family: var(--mono); font-size: 11.5px; font-weight: 700; letter-spacing: .03em; color: var(--ink-faint);
+      cursor: pointer; transition: color .15s;
+    }
+    .wizard-crumbs button:hover { color: var(--gold); }
+    .wizard-crumbs button.current { color: var(--ink); cursor: default; }
+    .wizard-crumbs i.crumb-sep { font-size: 8px; color: var(--ink-faint); opacity: .6; }
+
+    .wizard-step { animation: stepIn .35s var(--ease) backwards; }
+    @keyframes stepIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+
+    .wizard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+    .wizard-card {
+      display: flex; align-items: center; gap: 13px; text-align: left; cursor: pointer;
+      padding: 15px 16px; border-radius: var(--r-md); border: 1px solid var(--line);
+      background: rgba(255,255,255,.05); backdrop-filter: blur(14px) saturate(150%); -webkit-backdrop-filter: blur(14px) saturate(150%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.07), inset 0 -1px 0 rgba(0,0,0,.08), var(--sh-sm);
+      transition: border-color .25s var(--ease), background .25s var(--ease), box-shadow .3s var(--ease), transform .25s var(--ease);
+      font-family: var(--sans); color: var(--ink); width: 100%; position: relative; overflow: hidden;
+      animation: cardIn .45s var(--ease) backwards;
+    }
+    .wizard-card::after {
+      content: ""; position: absolute; top: 0; left: 8%; right: 40%; height: 42%;
+      border-radius: 0 0 100% 50% / 0 0 100% 100%;
+      background: linear-gradient(180deg, rgba(255,255,255,.10), transparent); pointer-events: none;
+    }
+    body.theme-light .wizard-card { background: rgba(255,255,255,.4); }
+    .wizard-grid .wizard-card:nth-child(1) { animation-delay: .02s; }
+    .wizard-grid .wizard-card:nth-child(2) { animation-delay: .05s; }
+    .wizard-grid .wizard-card:nth-child(3) { animation-delay: .08s; }
+    .wizard-grid .wizard-card:nth-child(4) { animation-delay: .11s; }
+    .wizard-grid .wizard-card:nth-child(5) { animation-delay: .14s; }
+    .wizard-grid .wizard-card:nth-child(6) { animation-delay: .17s; }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .wizard-card:hover {
+      border-color: var(--gold); background: var(--gold-soft); transform: translateY(-3px) scale(1.015);
+      box-shadow: var(--sh-glow), inset 0 1px 0 rgba(255,255,255,.12);
+    }
+    .wizard-card:active { transform: translateY(-1px) scale(1); }
+    .wizard-card .wc-icon {
+      flex: 0 0 auto; width: 42px; height: 42px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; font-size: 17px;
+      background: linear-gradient(150deg, var(--gold-soft), var(--blue-soft)); color: var(--gold); border: 1px solid var(--line);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.2); transition: transform .3s var(--ease);
+    }
+    .wizard-card:hover .wc-icon { transform: scale(1.08) rotate(-4deg); }
+    .wizard-card .wc-body { min-width: 0; flex: 1; }
+    .wizard-card .wc-name { font-weight: 700; font-size: 14px; color: var(--ink); line-height: 1.35; overflow-wrap: break-word; }
+    .wizard-card .wc-meta { font-size: 11px; color: var(--ink-faint); font-family: var(--mono); margin-top: 2px; }
+    .wizard-card .wc-chev { flex: 0 0 auto; color: var(--ink-faint); font-size: 13px; transition: transform .25s var(--ease), color .25s var(--ease); }
+    .wizard-card:hover .wc-chev { color: var(--gold); transform: translateX(4px); }
+
+    .wizard-skeleton, .wizard-empty {
+      grid-column: 1 / -1; padding: 30px 10px; text-align: center; color: var(--ink-faint); font-size: 13px;
+    }
+    .wizard-skeleton i, .wizard-empty i { font-size: 22px; display: block; margin-bottom: 10px; }
+    .wizard-skeleton i { background: var(--grad-accent); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+
+    /* ---------- premium liquid-glass loading spinner ---------- */
+    .loader-ring {
+      --ring-size: 46px; width: var(--ring-size); height: var(--ring-size); border-radius: 50%; position: relative;
+      animation: loaderSpin 1.1s cubic-bezier(.5,0,.5,1) infinite;
+    }
+    .loader-ring::before {
+      content: ""; position: absolute; inset: 0; border-radius: 50%;
+      background: conic-gradient(from 0deg, transparent 0%, rgba(var(--gold-rgb),.15) 30%, var(--blue) 65%, var(--gold) 100%);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));
+      mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));
+      filter: drop-shadow(0 0 10px rgba(var(--gold-rgb),.45)) drop-shadow(0 0 16px rgba(var(--blue-rgb),.25));
+    }
+    .loader-ring::after {
+      content: ""; position: absolute; top: 0; left: 50%; width: 7px; height: 7px; margin-left: -3.5px;
+      border-radius: 50%; background: var(--gold); box-shadow: 0 0 10px 2px rgba(var(--gold-rgb),.7);
+    }
+    @keyframes loaderSpin { to { transform: rotate(360deg); } }
+    .loader-label {
+      margin-top: 16px; font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase;
+      color: var(--ink-faint); animation: loaderPulseText 1.6s ease-in-out infinite;
+    }
+    @keyframes loaderPulseText { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+    .wizard-loading {
+      grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 54px 10px; animation: riseIn .35s var(--ease);
+    }
+
+    /* ---------- full-screen page loader (navigation between steps / opening preview) ---------- */
+    .page-loader {
+      position: fixed; inset: 0; z-index: 1200; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: linear-gradient(150deg, rgba(var(--gold-rgb),.06), rgba(var(--blue-rgb),.05)), rgba(4,6,14,.55);
+      backdrop-filter: blur(18px) saturate(150%); -webkit-backdrop-filter: blur(18px) saturate(150%);
+      animation: pageLoaderIn .25s var(--ease);
+    }
+    body.theme-light .page-loader { background: linear-gradient(150deg, rgba(var(--gold-rgb),.05), rgba(var(--blue-rgb),.04)), rgba(240,242,250,.6); }
+    .page-loader[hidden] { display: none !important; }
+    .page-loader.fade-out { animation: pageLoaderOut .25s var(--ease) forwards; }
+    @keyframes pageLoaderIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes pageLoaderOut { from { opacity: 1; } to { opacity: 0; } }
+    .page-loader .loader-ring { --ring-size: 58px; }
+    .page-loader .loader-label { font-size: 12.5px; margin-top: 20px; }
+
+    @media (max-width: 460px) {
+      .wizard-grid { grid-template-columns: 1fr; }
+    }
+
+    .field-row-2 { margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    /* ---------- include chips ---------- */
+    .include-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin: 8px 0 4px; }
+    .include-item {
+      display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 999px;
+      background: rgba(255,255,255,.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      border: 1px solid var(--line); cursor: pointer; transition: border-color .2s var(--ease), background .2s var(--ease), transform .2s var(--ease);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    body.theme-light .include-item { background: rgba(255,255,255,.35); }
+    .include-item:hover { border-color: var(--line-strong); transform: translateY(-1px); }
+    .include-item.active { border-color: var(--blue); background: var(--blue-soft); box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 4px 14px -8px rgba(var(--blue-rgb),.5); }
+    .include-item input[type="checkbox"] { accent-color: var(--blue); width: 15px; height: 15px; cursor: pointer; margin: 0; }
+    .include-item label { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); cursor: pointer; flex: 1; text-transform: none; letter-spacing: 0; font-family: var(--sans); }
+    .include-item.active label { color: var(--ink); }
+
+    /* ---------- format picker ---------- */
+    .format-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(94px, 1fr)); gap: 8px; margin: 8px 0 4px; }
+    .format-btn {
+      padding: 14px 8px; border-radius: var(--r-md); border: 1px solid var(--line);
+      background: rgba(255,255,255,.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      font-size: 12px; font-weight: 700; color: var(--ink-soft); cursor: pointer;
+      transition: border-color .2s var(--ease), background .2s var(--ease), transform .2s var(--ease), box-shadow .2s var(--ease), color .2s var(--ease);
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    body.theme-light .format-btn { background: rgba(255,255,255,.35); }
+    .format-btn:hover { border-color: var(--line-strong); color: var(--ink); transform: translateY(-2px); }
+    .format-btn.active { border-color: var(--gold); background: var(--gold-soft); color: var(--gold); transform: translateY(-1px); box-shadow: var(--sh-glow); }
+    .format-btn i { font-size: 19px; }
+    .format-btn .label { font-size: 11px; letter-spacing: .01em; }
+
+    /* ---------- cover panel: collapsible ---------- */
+    details.panel { padding: 0; }
+    details.panel > summary { list-style: none; cursor: pointer; padding: clamp(20px,2.6vw,28px) clamp(20px,2.6vw,28px) 0; }
+    details.panel > summary::-webkit-details-marker { display: none; }
+    details.panel > summary h2 { margin-bottom: 4px; }
+    details.panel .summary-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    details.panel .chev { color: var(--ink-faint); transition: transform .25s var(--ease); font-size: 13px; }
+    details.panel[open] .chev { transform: rotate(180deg); }
+    details.panel .panel-body { padding: 14px clamp(20px,2.6vw,28px) clamp(20px,2.6vw,28px); }
+    details.panel .sub { padding: 0 clamp(20px,2.6vw,28px); margin-top: 6px; }
+
+    .icon-field { display: flex; gap: 10px; align-items: center; }
+    .icon-preview {
+      width: 44px; height: 44px; flex: 0 0 44px; border-radius: var(--r-sm); border: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: center; background: var(--card-2);
+    }
+    .icon-preview i { font-size: 18px; color: var(--gold); }
+    textarea { resize: vertical; }
+
+    .toggle-row { display: inline-flex; width: auto; padding: 10px 16px; align-items: center; margin-top: 6px; }
+
+    /* ---------- preview / vitals ---------- */
+    .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin: 14px 0 16px; padding: 14px 16px; border-radius: var(--r-md); background: linear-gradient(135deg, rgba(var(--gold-rgb),.09), rgba(var(--blue-rgb),.05)); backdrop-filter: blur(14px) saturate(150%); -webkit-backdrop-filter: blur(14px) saturate(150%); border: 1px solid var(--line); box-shadow: inset 0 1.5px 0 rgba(255,255,255,.08), inset 0 -1px 0 rgba(0,0,0,.06); position: relative; overflow: hidden; }
+    .stats::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1.5px; background: var(--grad-accent); opacity: .5; }
+    .stats .stat { display: flex; flex-direction: column; gap: 2px; }
+    .stats .stat .num { font-family: var(--serif); font-size: 22px; font-weight: 700; color: var(--amber); line-height: 1.1; }
+    .stats .stat .lbl { font-size: 9.5px; color: var(--ink-faint); font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+
+    .preview-section { margin-top: 0; }
+    .preview-wrap { max-height: 360px; overflow: auto; border: 1px solid var(--line); border-radius: var(--r-md); margin: 0 0 16px; background: var(--card-2); box-shadow: inset 0 1px 0 rgba(255,255,255,.02); }
+    .preview-wrap table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .preview-wrap th { background: linear-gradient(180deg, var(--bg-3), var(--card-2)); padding: 10px 12px; text-align: left; font-family: var(--mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--amber); position: sticky; top: 0; z-index: 2; border-bottom: 1px solid var(--line); }
+    .preview-wrap td { padding: 9px 12px; border-top: 1px solid var(--line); max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-soft); }
+    .preview-wrap tr:hover td { background: var(--gold-soft); color: var(--ink); }
+    .preview-wrap .loading-placeholder { padding: 34px 16px; text-align: center; color: var(--ink-faint); font-size: 13px; }
+    .preview-wrap .loading-placeholder i { font-size: 26px; display: block; margin-bottom: 10px; color: var(--ink-faint); }
+
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .actions .btn { flex: 1 1 auto; min-width: 120px; }
+    .actions .btn.primary { flex: 1 1 100%; }
+
+    /* ---------- pdf preview modal ---------- */
+    .pdf-preview-modal {
+      display: none; position: fixed; inset: 0; z-index: 999;
+      background: radial-gradient(1400px 900px at 85% -10%, rgba(231,177,85,.08), transparent 55%),
+                  radial-gradient(1100px 800px at -10% 10%, rgba(92,144,238,.10), transparent 55%),
+                  #05070F;
+    }
+    #settingsModal { z-index: 1100; }
+    .pdf-preview-modal.show { display: flex; animation: pdfFadeIn .35s var(--ease); }
+    @keyframes pdfFadeIn { from { opacity: 0; backdrop-filter: blur(0px); } to { opacity: 1; } }
+    .pdf-preview-dialog { width: 100vw; height: 100vh; background: transparent; border-radius: 0; overflow: hidden; display: flex; flex-direction: column; box-shadow: none; animation: dialogPop .4s var(--ease) backwards .05s; }
+    @keyframes dialogPop { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .pdf-preview-topbar {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+      padding: 16px clamp(18px, 3vw, 34px); border-bottom: 1px solid rgba(231,177,85,.2);
+      background: linear-gradient(135deg, rgba(231,177,85,.14), rgba(92,144,238,.09)), rgba(6,8,15,.92);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      color: #fff; flex: 0 0 auto; box-shadow: 0 8px 30px -12px rgba(0,0,0,.6); position: relative; z-index: 2;
+    }
+    .pdf-preview-title { font-family: var(--serif); font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 12px; letter-spacing: .01em; min-width: 0; }
+    .pdf-preview-title i { color: var(--amber); font-size: 17px; filter: drop-shadow(0 0 8px rgba(240,201,122,.5)); flex: 0 0 auto; }
+    .pdf-preview-title .title-word-pdf { }
+    .pdf-preview-meta { font-weight: 500; font-size: 12px; color: #A9BEEA; margin-left: 2px; font-family: var(--mono); letter-spacing: .01em; }
+    .pdf-preview-actions { display: flex; gap: 10px; align-items: center; }
+    .pdf-preview-actions .btn { padding: 10px 18px; font-size: 13px; border-radius: 999px; }
+    .pdf-preview-actions .btn.primary { background: linear-gradient(135deg, var(--amber), var(--gold)); border-color: transparent; color: #14100A; font-weight: 800; box-shadow: 0 8px 22px -10px rgba(231,177,85,.5); }
+    .pdf-preview-actions .btn.primary:hover { filter: brightness(1.06); }
+    .pdf-preview-actions .btn:not(.primary) { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.16); color: #fff; }
+    .pdf-preview-actions .btn:not(.primary):hover { background: rgba(255,255,255,.12); }
+    .pdf-preview-scroll { flex: 1; overflow-y: auto; padding: 36px clamp(16px, 4vw, 60px) 80px; position: relative; }
+    .pdf-preview-sheets { display: flex; flex-direction: column; align-items: center; gap: 36px; max-width: 760px; margin: 0 auto; }
+    .pdf-sheet { width: 720px; max-width: 100%; min-height: 1059px; box-shadow: 0 30px 70px -20px rgba(0,0,0,.6), 0 4px 14px rgba(0,0,0,.3); padding: 10px; box-sizing: border-box; flex: 0 0 auto; border-radius: 3px; transition: transform .2s; }
+    .pdf-sheet.cover-sheet { padding: 0; background: #0B1F4B; }
+    .pdf-sheet:not(.cover-sheet) { background: #ffffff; }
+
+    /* ---------- fullscreen edge-to-edge PDF preview on mobile ---------- */
+    @media (max-width: 760px) {
+      .pdf-preview-topbar { padding: 10px 12px; gap: 8px; border-bottom-width: 1px; }
+      .pdf-preview-title { font-size: 14px; gap: 8px; }
+      .pdf-preview-title i { font-size: 14px; }
+      .pdf-preview-title .title-word-pdf { display: none; }
+      .pdf-preview-meta { display: none; }
+      .pdf-preview-actions { gap: 6px; }
+      .pdf-preview-actions .btn { padding: 8px 10px; font-size: 0; border-radius: 10px; gap: 0; }
+      .pdf-preview-actions .btn i { font-size: 15px; }
+      .pdf-preview-actions #pdfPreviewExportBtn { padding: 8px 12px; }
+      .pdf-preview-scroll { padding: 14px 0 40px; }
+      .pdf-preview-sheets { gap: 14px; max-width: 100%; }
+      .pdf-sheet, .pdf-sheet.cover-sheet, .pdf-sheet:not(.cover-sheet) {
+        width: 100%; max-width: 100%; padding: 18px 16px; border-radius: 0;
+        padding-left: max(16px, env(safe-area-inset-left));
+        padding-right: max(16px, env(safe-area-inset-right));
+        box-shadow: 0 1px 0 rgba(0,0,0,.4);
+      }
+      .pdf-sheet.cover-sheet { padding: 0; }
+    }
+
+    /* ---------- settings / pdf-preview modal action-label collapse (mobile) ---------- */
+    .qp-label { }
+    @media (max-width: 760px) {
+      .qp-label { display: none; }
+      #pdfPreviewSettingsBtn, #pdfPreviewExportBtn { padding: 8px 10px; }
+      #pdfPreviewSettingsBtn i, #pdfPreviewExportBtn i { font-size: 15px; }
+    }
+
+    .settings-section-title { font-family: var(--serif); font-size: 15px; font-weight: 700; color: var(--ink); margin: 28px 0 4px; padding-top: 20px; border-top: 1px solid var(--line); }
+    .settings-section-title:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+
+
+    #toastContainer { position: fixed; right: 18px; bottom: 18px; z-index: 400; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
+    .toast { background: var(--ink); color: var(--bg-0); padding: 12px 16px; border-radius: 14px; font-size: 13px; font-weight: 600; box-shadow: var(--sh-lg), inset 0 1px 0 rgba(255,255,255,.3); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; align-items: center; gap: 10px; max-width: 340px; transition: opacity .25s, transform .25s; }
+    .toast.error { background: var(--wrong); color: #fff; }
+    .toast.success { background: var(--right); color: #06170F; }
+
+    /* ---------- full mobile responsiveness pass ---------- */
+    @media (max-width: 760px) {
+      .page { padding: 10px 10px 30px; }
+      .topbar { top: calc(8px + env(safe-area-inset-top)); border-radius: var(--r-lg); padding: 12px 14px; gap: 10px; }
+      .topbar .brand h1 { font-size: 16.5px; }
+      .topbar .brand .sub { font-size: 10.5px; }
+      .brand-mark { width: 38px; height: 38px; flex-basis: 38px; border-radius: 11px; }
+      .brand-mark i { font-size: 16px; }
+      .topbar-actions .btn { font-size: 11.5px; padding: 8px 11px; }
+      .topbar-actions .btn span { display: none; }
+      .layout { gap: 14px; }
+      .col-main { gap: 14px; }
+      .panel { padding: 16px; border-radius: var(--r-md); }
+      .panel h2 { font-size: 15.5px; }
+      .panel h2 i { width: 26px; height: 26px; flex-basis: 26px; font-size: 13px; }
+      .panel .sub { font-size: 12.5px; margin-bottom: 14px; }
+      .selection-grid { grid-template-columns: 1fr; gap: 10px; }
+      .options-grid { grid-template-columns: 1fr; gap: 12px; }
+      .field-row-2 { grid-template-columns: 1fr; gap: 12px; }
+      .format-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
+      .format-btn { padding: 12px 6px; }
+      .include-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
+      .stats { grid-template-columns: repeat(2,1fr); gap: 8px; padding: 12px; }
+      .stats .stat .num { font-size: 19px; }
+      .icon-field { flex-wrap: wrap; }
+      .actions .btn { min-width: 100%; }
+      /* Prevent iOS auto-zoom on focus: inputs need >=16px font-size */
+      select, input[type="text"], input[type="number"], textarea { font-size: 16px; }
+    }
+    @media (max-width: 460px) {
+      .stats { grid-template-columns: repeat(2,1fr); }
+    }
+    @media (max-width: 360px) {
+      .format-grid { grid-template-columns: repeat(3, 1fr); }
+      .include-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bubble-field" aria-hidden="true">
+  <span class="bubble b1"></span>
+  <span class="bubble b2"></span>
+  <span class="bubble b3"></span>
+  <span class="bubble b4"></span>
+  <span class="bubble b5"></span>
+  <span class="bubble b6"></span>
+  <span class="bubble b7"></span>
+</div>
+
+<div class="page">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark"><i class="fa-solid fa-heart-pulse"></i></div>
+      <div>
+        <h1>Alif Med</h1>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn" id="themeToggleBtn"><i class="fa-solid fa-sun" id="themeToggleIcon"></i> <span id="themeToggleLabel">Light mode</span></button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <div class="col-main">
+
+      <div class="panel" id="sourcePanel">
+        <div id="wizardHead">
+          <h2 id="wizardTitle"><i class="fa-solid fa-layer-group" style="color:var(--amber);"></i> <span id="wizardTitleText">Choose a module</span></h2>
+          <div class="sub" id="wizardSub">Pick a module to get started — you'll choose a subject and quiz next.</div>
+        </div>
+
+        <div class="wizard-crumbs" id="wizardCrumbs" hidden></div>
+
+        <div class="wizard-step" id="stepModules" data-step="modules">
+          <div class="wizard-grid" id="moduleCardGrid">
+            <div class="wizard-skeleton"><i class="fa-solid fa-spinner fa-spin"></i> Loading modules…</div>
+          </div>
+        </div>
+
+        <div class="wizard-step" id="stepSubjects" data-step="subjects" hidden>
+          <div class="wizard-grid" id="subjectCardGrid"></div>
+        </div>
+
+        <div class="wizard-step" id="stepQuizzes" data-step="quizzes" hidden>
+          <div class="wizard-grid" id="quizCardGrid"></div>
+        </div>
+
+        <!-- Functional selects driving the existing data logic — kept off-screen so the
+             step-by-step cards above can reuse loadSubjects/loadQuizzes/loadQuestions unchanged. -->
+        <div class="visually-hidden">
+          <select id="moduleSelect"><option value="">— Select a module —</option></select>
+          <select id="subjectSelect" disabled><option value="">— Select a module first —</option></select>
+          <select id="quizSelect" disabled><option value="">— Select a subject first —</option></select>
+          <span id="moduleCount">0 modules loaded</span>
+          <span id="subjectCount">0 subjects available</span>
+          <span id="quizCount">0 quizzes available</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="pdf-preview-modal" id="settingsModal">
+  <div class="pdf-preview-dialog">
+    <div class="pdf-preview-topbar">
+      <div class="pdf-preview-title">
+        <button class="btn" id="settingsBackBtn" style="padding:8px 12px;margin-right:2px;"><i class="fa-solid fa-arrow-left"></i> <span class="qp-label">Back</span></button>
+        <i class="fa-solid fa-sliders"></i> Settings <span id="settingsModalMeta" class="pdf-preview-meta"></span>
+      </div>
+      <div class="pdf-preview-actions">
+        <button class="btn" id="settingsCloseBtn"><i class="fa-solid fa-xmark"></i> <span class="qp-label">Close</span></button>
+      </div>
+    </div>
+    <div class="pdf-preview-scroll">
+      <div style="max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:22px;">
+
+      <div class="panel">
+        <h2><i class="fa-solid fa-file-export" style="color:var(--blue);"></i> Export options</h2>
+        <div class="sub">Choose your export format and customize what gets included.</div>
+
+        <div class="option-group">
+          <label>Export format</label>
+
+          <div class="format-grid" id="formatGrid">
+            <button class="format-btn active" data-format="csv"><i class="fa-solid fa-file-csv"></i><span class="label">CSV</span></button>
+            <button class="format-btn" data-format="excel"><i class="fa-solid fa-file-excel"></i><span class="label">Excel</span></button>
+            <button class="format-btn" data-format="json"><i class="fa-solid fa-file-code"></i><span class="label">JSON</span></button>
+            <button class="format-btn" data-format="word"><i class="fa-solid fa-file-word"></i><span class="label">Word</span></button>
+            <button class="format-btn" data-format="pdf"><i class="fa-solid fa-file-pdf"></i><span class="label">PDF</span></button>
+          </div>
+        </div>
+
+        <div class="options-grid" style="margin-top:16px;">
+          <div class="option-group">
+            <label>Number of questions</label>
+            <select id="limitSelect">
+              <option value="0">All questions</option>
+              <option value="5">First 5</option><option value="10">First 10</option>
+              <option value="20">First 20</option><option value="50">First 50</option><option value="100">First 100</option>
+            </select>
+            <div class="hint">Export only the first N questions</div>
+          </div>
+          <div class="option-group">
+            <label>Text size <span style="text-transform:none;font-weight:400;">(Word / PDF)</span></label>
+            <select id="textSizeSelect">
+              <option value="small">Small</option>
+              <option value="medium" selected>Medium</option>
+              <option value="large">Large</option>
+            </select>
+            <div class="hint">Scales question text, options, explanations, and cover text.</div>
+          </div>
+        </div>
+
+        <div class="option-group" style="margin-top:16px;">
+          <label>Include / Exclude fields</label>
+          <div class="include-grid" id="includeGrid">
+            <div class="include-item active"><input type="checkbox" id="includeNumber" checked><label for="includeNumber">Number</label></div>
+            <div class="include-item active"><input type="checkbox" id="includeCategory" checked><label for="includeCategory">Category</label></div>
+            <div class="include-item active"><input type="checkbox" id="includeQuestion" checked><label for="includeQuestion">Question</label></div>
+            <div class="include-item active"><input type="checkbox" id="includeOptions" checked><label for="includeOptions">Options</label></div>
+            <div class="include-item active"><input type="checkbox" id="includeAnswer" checked><label for="includeAnswer">Answer</label></div>
+            <div class="include-item active"><input type="checkbox" id="includeExplanation" checked><label for="includeExplanation">Explanation</label></div>
+            <div class="include-item active"><input type="checkbox" id="includeWhyNot" checked><label for="includeWhyNot">Why not others</label></div>
+            <div class="include-item active"><input type="checkbox" id="includeRelated" checked><label for="includeRelated">Related</label></div>
+          </div>
+        </div>
+
+        <div class="field-row-2">
+          <div class="option-group">
+            <label>Questions per page <span style="text-transform:none;font-weight:400;">(Word / PDF)</span></label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="number" id="questionsPerPageInput" min="1" max="50" step="1" value="4" style="max-width:100px;">
+              <button type="button" class="btn" id="resetQppBtn" style="padding:9px 14px;font-size:12px;white-space:nowrap;"><i class="fa-solid fa-rotate-left"></i> Auto</button>
+            </div>
+            <div class="hint" id="qppHint">Auto: 4/page normally, 2/page when Explanation or Why-not is included.</div>
+          </div>
+          <div class="option-group">
+            <label>PDF image quality <span style="text-transform:none;font-weight:400;">(size vs clarity)</span></label>
+            <select id="pdfQualitySelect">
+              <option value="high">High (larger file)</option>
+              <option value="medium" selected>Medium (balanced)</option>
+              <option value="low">Low (smaller file)</option>
+            </select>
+            <div class="hint">Lower quality reduces file size, especially with many questions.</div>
+          </div>
+        </div>
+      </div>
+
+      <details class="panel" open>
+        <summary>
+          <div class="summary-row">
+            <h2><i class="fa-solid fa-image" style="color:var(--gold);"></i> Cover page &amp; header</h2>
+            <i class="fa-solid fa-chevron-down chev"></i>
+          </div>
+        </summary>
+        <div class="sub">Customize the cover page and the optional running header used in Word and PDF exports.</div>
+        <div class="panel-body">
+          <div class="options-grid">
+            <div class="option-group">
+              <label>Cover icon <span style="text-transform:none;font-weight:400;">(Font Awesome class)</span></label>
+              <div class="icon-field">
+                <div class="icon-preview"><i id="coverIconPreview" class="fa-solid fa-heart-pulse"></i></div>
+                <input type="text" id="coverIconInput" placeholder="fa-solid fa-heart-pulse">
+              </div>
+              <div class="hint">Any Font Awesome class, e.g. <code>fa-solid fa-book-medical</code>.</div>
+            </div>
+            <div class="option-group">
+              <label>Cover title</label>
+              <input type="text" id="coverTitleInput" placeholder="Alif Med">
+            </div>
+            <div class="option-group">
+              <label>Cover subtitle</label>
+              <input type="text" id="coverSubtitleInput" placeholder="Question Bank Export">
+            </div>
+            <div class="option-group">
+              <label>Cover body text <span style="text-transform:none;font-weight:400;">(optional)</span></label>
+              <textarea id="coverBodyInput" rows="3" placeholder="Add an optional note, instructions, or description..."></textarea>
+            </div>
+            <div class="option-group">
+              <label>Cover kicker <span style="text-transform:none;font-weight:400;">(small label above the title)</span></label>
+              <input type="text" id="coverKickerInput" placeholder="Physiology &bull; Question Bank">
+            </div>
+          </div>
+
+          <div class="options-grid" style="margin-top:8px;">
+            <div class="option-group">
+              <label>Brand name <span style="text-transform:none;font-weight:400;">(shown in footer / cover credit)</span></label>
+              <input type="text" id="brandNameInput" placeholder="alifmed">
+            </div>
+            <div class="option-group">
+              <label>Brand URL <span style="text-transform:none;font-weight:400;">(shown in footer / cover credit)</span></label>
+              <input type="text" id="brandUrlInput" placeholder="alifmed.vercel.app">
+            </div>
+          </div>
+
+          <div class="option-group" style="margin-top:8px;">
+            <div class="include-item active toggle-row" id="headerEnabledWrap">
+              <input type="checkbox" id="headerEnabledCheckbox">
+              <label for="headerEnabledCheckbox">Show running header on Word / PDF pages</label>
+            </div>
+          </div>
+          <div class="options-grid" style="margin-top:10px;">
+            <div class="option-group">
+              <label>Running header — left text</label>
+              <input type="text" id="headerTextInput" placeholder="Alif Med">
+              <div class="hint">Shown on the left of the header line on every content page.</div>
+            </div>
+            <div class="option-group">
+              <label>Running header — right text</label>
+              <input type="text" id="headerRightTextInput" placeholder="Question Bank">
+              <div class="hint">Shown on the right of the header line. Leave blank to reuse the cover title.</div>
+            </div>
+          </div>
+          <div class="option-group" style="margin-top:10px;max-width:520px;">
+            <label>Footer text</label>
+            <input type="text" id="footerTextInput" placeholder="© Alif Med">
+            <div class="hint">Left side of the footer on every page. The site URL and page number are added automatically. Leave blank to use "© Brand name".</div>
+          </div>
+
+          <div class="actions" style="margin-top:18px;">
+            <button class="btn primary" id="saveCoverSettingsBtn" style="flex:0 1 auto;"><i class="fa-solid fa-floppy-disk"></i> Save settings</button>
+            <button class="btn" id="resetCoverSettingsBtn" style="flex:0 1 auto;"><i class="fa-solid fa-rotate-left"></i> Reset to defaults</button>
+          </div>
+        </div>
+      </details>
+
+      
+
+      <div class="panel">
+        <h2 id="previewHeading"><i class="fa-solid fa-eye" style="color:var(--amber);"></i> <span id="previewHeadingText">Preview</span></h2>
+          <div class="sub" id="previewSub">Select a module, subject, and quiz to see questions.</div>
+          <div class="stats" id="statsArea">
+            <div class="stat"><span class="num" id="statTotal">0</span><span class="lbl">Questions</span></div>
+            <div class="stat"><span class="num" id="statModule">0</span><span class="lbl">Modules</span></div>
+            <div class="stat"><span class="num" id="statSubject">0</span><span class="lbl">Subjects</span></div>
+            <div class="stat"><span class="num" id="statQuiz">0</span><span class="lbl">Quizzes</span></div>
+          </div>
+          <div class="preview-wrap" id="previewWrap">
+            <div class="loading-placeholder">
+              <i class="fa-solid fa-table"></i>
+              Select a module, subject, and quiz to preview questions
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn primary" id="exportBtn"><i class="fa-solid fa-download"></i> Export</button>
+            <button class="btn" id="previewPdfBtn"><i class="fa-solid fa-eye"></i> Preview PDF</button>
+            <button class="btn" id="refreshPreviewBtn"><i class="fa-solid fa-rotate"></i> Refresh preview</button>
+          </div>
+      </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pdf-preview-modal" id="pdfPreviewModal">
+  <div class="pdf-preview-dialog">
+    <div class="pdf-preview-topbar">
+      <div class="pdf-preview-title"><i class="fa-solid fa-file-pdf"></i> <span id="pdfPreviewTitle">Preview</span> <span id="pdfPreviewMeta" class="pdf-preview-meta"></span></div>
+      <div class="pdf-preview-actions">
+        <button class="btn" id="pdfPreviewSettingsBtn"><i class="fa-solid fa-sliders"></i> <span class="qp-label">Settings</span></button>
+        <button class="btn primary" id="pdfPreviewExportBtn"><i class="fa-solid fa-download"></i> <span class="qp-label">Export this PDF</span></button>
+        <button class="btn" id="pdfPreviewCloseBtn"><i class="fa-solid fa-xmark"></i> <span class="qp-label">Close</span></button>
+      </div>
+    </div>
+    <div class="pdf-preview-scroll">
+      <div class="pdf-preview-sheets" id="pdfPreviewSheets"></div>
+    </div>
+  </div>
+</div>
+
+<div class="page-loader" id="pageLoader" hidden>
+  <div class="loader-ring"></div>
+  <div class="loader-label" id="pageLoaderLabel">Loading…</div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script>
+  // =========================================================================
+  // 0. Markdown rendering (fallback + marked)
+  // =========================================================================
+  function basicMarkdown(text) {
+    if (!text) return '';
+    let html = String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    html = html.replace(/(^|\n)((?:[ \t]*-[ \t]+.*(?:\n|$))+)/g, (m, lead, block) => {
+      const items = block.trim().split('\n').map(l => l.replace(/^[ \t]*-[ \t]+/, '').trim());
+      return lead + '<ul>' + items.map(i => `<li>${i}</li>`).join('') + '</ul>';
+    });
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+               .replace(/\*(.+?)\*/g, '<em>$1</em>')
+               .replace(/`(.+?)`/g, '<code>$1</code>')
+               .replace(/\n{2,}/g, '</p><p>')
+               .replace(/\n/g, '<br>');
+    if (!/^<ul>/.test(html.trim())) html = `<p>${html}</p>`;
+    return html;
+  }
+  function isMarkedReady() { return typeof marked !== 'undefined' && marked && typeof marked.parse === 'function'; }
+  function renderMarkdown(text) {
+    if (!text) return '';
+    if (isMarkedReady()) try { return marked.parse(text); } catch(e) { return basicMarkdown(text); }
+    return basicMarkdown(text);
+  }
+  function renderInlineMarkdown(text) {
+    if (!text) return '';
+    if (isMarkedReady()) try { return marked.parseInline ? marked.parseInline(text) : marked.parse(text).replace(/^<p>([\s\S]*)<\/p>\s*$/,'$1'); } catch(e) { return basicMarkdown(text).replace(/^<p>([\s\S]*)<\/p>\s*$/,'$1'); }
+    return basicMarkdown(text).replace(/^<p>([\s\S]*)<\/p>\s*$/,'$1');
+  }
+
+  // =========================================================================
+  // 1. Firebase
+  // =========================================================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyBXFcbQlTB1mXBsHd_bxnHdgS7dmHK_x3k",
+    authDomain: "exam-d9415.firebaseapp.com",
+    projectId: "exam-d9415",
+    storageBucket: "exam-d9415.firebasestorage.app",
+    messagingSenderId: "258742955197",
+    appId: "1:258742955197:web:a8e6a179f9e7c23c5b5bd4"
+  };
+  const app = firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore(app);
+
+  // =========================================================================
+  // 2. Toast
+  // =========================================================================
+  const toastContainer = document.getElementById('toastContainer');
+  function showToast(message, type='info') {
+    const el = document.createElement('div');
+    el.className = 'toast' + (type==='error'?' error':type==='success'?' success':'');
+    const icon = type==='error'?'fa-circle-exclamation':type==='success'?'fa-circle-check':'fa-circle-info';
+    el.innerHTML = `<i class="fa-solid ${icon}"></i><span>${message}</span>`;
+    toastContainer.appendChild(el);
+    setTimeout(() => { el.style.opacity='0'; el.style.transform='translateY(6px)'; setTimeout(()=>el.remove(),250); }, 3500);
+  }
+
+  // =========================================================================
+  // 3. DOM refs
+  // =========================================================================
+  const moduleSelect = document.getElementById('moduleSelect');
+  const subjectSelect = document.getElementById('subjectSelect');
+  const quizSelect = document.getElementById('quizSelect');
+  const moduleCount = document.getElementById('moduleCount');
+  const subjectCount = document.getElementById('subjectCount');
+  const quizCount = document.getElementById('quizCount');
+  const wizardTitleText = document.getElementById('wizardTitleText');
+  const wizardSub = document.getElementById('wizardSub');
+  const wizardCrumbs = document.getElementById('wizardCrumbs');
+  const stepModules = document.getElementById('stepModules');
+  const stepSubjects = document.getElementById('stepSubjects');
+  const stepQuizzes = document.getElementById('stepQuizzes');
+  const moduleCardGrid = document.getElementById('moduleCardGrid');
+  const subjectCardGrid = document.getElementById('subjectCardGrid');
+  const quizCardGrid = document.getElementById('quizCardGrid');
+  const settingsModal = document.getElementById('settingsModal');
+  const settingsModalMeta = document.getElementById('settingsModalMeta');
+  const settingsBackBtn = document.getElementById('settingsBackBtn');
+  const settingsCloseBtn = document.getElementById('settingsCloseBtn');
+  const previewHeadingText = document.getElementById('previewHeadingText');
+  const formatBtns = document.querySelectorAll('.format-btn');
+  const includeItems = document.querySelectorAll('.include-item');
+  const limitSelect = document.getElementById('limitSelect');
+  const previewWrap = document.getElementById('previewWrap');
+  const previewSub = document.getElementById('previewSub');
+  const statTotal = document.getElementById('statTotal');
+  const statModule = document.getElementById('statModule');
+  const statSubject = document.getElementById('statSubject');
+  const statQuiz = document.getElementById('statQuiz');
+  const exportBtn = document.getElementById('exportBtn');
+  const previewPdfBtn = document.getElementById('previewPdfBtn');
+  const refreshPreviewBtn = document.getElementById('refreshPreviewBtn');
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  const themeToggleIcon = document.getElementById('themeToggleIcon');
+  const themeToggleLabel = document.getElementById('themeToggleLabel');
+  function applyTheme(theme) {
+    document.body.classList.toggle('theme-light', theme === 'light');
+    themeToggleIcon.className = theme === 'light' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+    themeToggleLabel.textContent = theme === 'light' ? 'Dark mode' : 'Light mode';
+  }
+  let currentTheme = localStorage.getItem('alifTheme') || 'dark';
+  applyTheme(currentTheme);
+  themeToggleBtn.addEventListener('click', () => {
+    currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+    localStorage.setItem('alifTheme', currentTheme);
+    applyTheme(currentTheme);
+  });
+  const questionsPerPageInput = document.getElementById('questionsPerPageInput');
+  const resetQppBtn = document.getElementById('resetQppBtn');
+  const qppHint = document.getElementById('qppHint');
+  const textSizeSelect = document.getElementById('textSizeSelect');
+  const pdfQualitySelect = document.getElementById('pdfQualitySelect');
+  const coverIconInput = document.getElementById('coverIconInput');
+  const coverIconPreview = document.getElementById('coverIconPreview');
+  const coverTitleInput = document.getElementById('coverTitleInput');
+  const coverSubtitleInput = document.getElementById('coverSubtitleInput');
+  const coverBodyInput = document.getElementById('coverBodyInput');
+  const coverKickerInput = document.getElementById('coverKickerInput');
+  const brandNameInput = document.getElementById('brandNameInput');
+  const brandUrlInput = document.getElementById('brandUrlInput');
+  const headerEnabledCheckbox = document.getElementById('headerEnabledCheckbox');
+  const headerEnabledWrap = document.getElementById('headerEnabledWrap');
+  const headerTextInput = document.getElementById('headerTextInput');
+  const headerRightTextInput = document.getElementById('headerRightTextInput');
+  const footerTextInput = document.getElementById('footerTextInput');
+  const saveCoverSettingsBtn = document.getElementById('saveCoverSettingsBtn');
+  const resetCoverSettingsBtn = document.getElementById('resetCoverSettingsBtn');
+
+  // =========================================================================
+  // 3b. Cover settings + text size persistence
+  // =========================================================================
+  const COVER_SETTINGS_KEY = 'vaExportCoverSettings';
+  const DEFAULT_COVER_SETTINGS = {
+    icon: 'fa-solid fa-heart-pulse',
+    title: 'Alif Med',
+    subtitle: 'Question Bank Export',
+    bodyText: '',
+    kickerText: 'Question Bank',
+    brandName: 'Alif Med',
+    brandUrl: '',
+    headerEnabled: false,
+    headerText: 'Alif Med',
+    headerRightText: '',
+    footerText: '',
+    textSize: 'medium',
+    pdfQuality: 'medium'
+  };
+
+  function loadCoverSettings() {
+    try { const raw = localStorage.getItem(COVER_SETTINGS_KEY); if (raw) return { ...DEFAULT_COVER_SETTINGS, ...JSON.parse(raw) }; } catch(e) {}
+    return { ...DEFAULT_COVER_SETTINGS };
+  }
+  let coverSettings = loadCoverSettings();
+
+  function applyCoverSettingsToForm() {
+    coverIconInput.value = coverSettings.icon;
+    coverTitleInput.value = coverSettings.title;
+    coverSubtitleInput.value = coverSettings.subtitle;
+    coverBodyInput.value = coverSettings.bodyText;
+    coverKickerInput.value = coverSettings.kickerText;
+    brandNameInput.value = coverSettings.brandName;
+    brandUrlInput.value = coverSettings.brandUrl;
+    headerEnabledCheckbox.checked = coverSettings.headerEnabled;
+    headerEnabledWrap.classList.toggle('active', coverSettings.headerEnabled);
+    headerTextInput.value = coverSettings.headerText;
+    headerRightTextInput.value = coverSettings.headerRightText || '';
+    footerTextInput.value = coverSettings.footerText || '';
+    textSizeSelect.value = coverSettings.textSize || 'medium';
+    pdfQualitySelect.value = coverSettings.pdfQuality || 'medium';
+    updateCoverIconPreview();
+  }
+  function updateCoverIconPreview() { const cls = (coverIconInput.value||'').trim() || DEFAULT_COVER_SETTINGS.icon; coverIconPreview.className = cls; }
+  function saveCoverSettings() {
+    coverSettings = {
+      icon: coverIconInput.value.trim() || DEFAULT_COVER_SETTINGS.icon,
+      title: coverTitleInput.value.trim() || DEFAULT_COVER_SETTINGS.title,
+      subtitle: coverSubtitleInput.value.trim() || DEFAULT_COVER_SETTINGS.subtitle,
+      bodyText: coverBodyInput.value,
+      kickerText: coverKickerInput.value.trim() || DEFAULT_COVER_SETTINGS.kickerText,
+      brandName: brandNameInput.value.trim() || DEFAULT_COVER_SETTINGS.brandName,
+      brandUrl: brandUrlInput.value.trim(),
+      headerEnabled: headerEnabledCheckbox.checked,
+      headerText: headerTextInput.value.trim() || DEFAULT_COVER_SETTINGS.headerText,
+      headerRightText: headerRightTextInput.value.trim(),
+      footerText: footerTextInput.value.trim(),
+      textSize: textSizeSelect.value,
+      pdfQuality: pdfQualitySelect.value
+    };
+    try { localStorage.setItem(COVER_SETTINGS_KEY, JSON.stringify(coverSettings)); showToast('Cover & header settings saved', 'success'); } catch(e) { showToast('Could not save settings: ' + e.message, 'error'); }
+    applyCoverSettingsToForm();
+  }
+  function resetCoverSettings() {
+    coverSettings = { ...DEFAULT_COVER_SETTINGS };
+    try { localStorage.removeItem(COVER_SETTINGS_KEY); } catch(e) {}
+    applyCoverSettingsToForm();
+    showToast('Reset to default cover & header settings', 'success');
+  }
+
+  coverIconInput.addEventListener('input', updateCoverIconPreview);
+  headerEnabledCheckbox.addEventListener('change', () => headerEnabledWrap.classList.toggle('active', headerEnabledCheckbox.checked));
+  saveCoverSettingsBtn.addEventListener('click', saveCoverSettings);
+  resetCoverSettingsBtn.addEventListener('click', resetCoverSettings);
+  textSizeSelect.addEventListener('change', () => { coverSettings.textSize = textSizeSelect.value; saveCoverSettings(); });
+  pdfQualitySelect.addEventListener('change', () => { coverSettings.pdfQuality = pdfQualitySelect.value; saveCoverSettings(); });
+  applyCoverSettingsToForm();
+
+  // =========================================================================
+  // 4. Data loading (on-demand, with cascading filters)
+  // =========================================================================
+  let allModules = [];
+  let currentSubjects = [];
+  let currentQuizzes = [];
+  let currentQuestions = [];
+  let currentFormat = 'csv';
+  let manualQuestionsPerPage = false;
+
+  // ---------- Load modules (only once) ----------
+  async function loadModules() {
+    try {
+      const modulesSnap = await db.collection('modules').orderBy('order').get();
+      allModules = modulesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      populateModules();
+      moduleCount.textContent = `${allModules.length} modules loaded`;
+      if (allModules.length > 0) {
+        moduleSelect.disabled = false;
+      }
+      renderModuleCards();
+    } catch(e) {
+      showToast('Error loading modules: ' + e.message, 'error');
+      console.error(e);
+      moduleCardGrid.innerHTML = `<div class="wizard-empty"><i class="fa-solid fa-triangle-exclamation"></i>Could not load modules</div>`;
+    }
+  }
+
+  function populateModules() {
+    moduleSelect.innerHTML = '<option value="">— Select a module —</option>' +
+      allModules.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+  }
+
+  // ---------- Load subjects for selected module ----------
+  async function loadSubjects(moduleId) {
+    if (!moduleId) {
+      currentSubjects = [];
+      populateSubjects();
+      subjectSelect.disabled = true;
+      subjectCount.textContent = '0 subjects available';
+      currentQuizzes = [];
+      populateQuizzes();
+      quizSelect.disabled = true;
+      quizCount.textContent = '0 quizzes available';
+      currentQuestions = [];
+      updateStatsAndPreview();
+      return;
+    }
+
+    try {
+      subjectSelect.disabled = true;
+      subjectSelect.innerHTML = '<option value="">Loading subjects...</option>';
+      subjectCount.textContent = 'Loading...';
+
+      const subjectsSnap = await db.collection('subjects')
+        .where('moduleId', '==', moduleId)
+        .orderBy('order')
+        .get();
+
+      currentSubjects = subjectsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      populateSubjects();
+      subjectSelect.disabled = false;
+      subjectCount.textContent = `${currentSubjects.length} subjects available`;
+
+      if (currentSubjects.length === 1) {
+        subjectSelect.value = currentSubjects[0].id;
+        await loadQuizzes(currentSubjects[0].id);
+      } else {
+        currentQuizzes = [];
+        populateQuizzes();
+        quizSelect.disabled = true;
+        quizCount.textContent = '0 quizzes available';
+        currentQuestions = [];
+        updateStatsAndPreview();
+      }
+    } catch(e) {
+      showToast('Error loading subjects: ' + e.message, 'error');
+      console.error(e);
+      subjectSelect.disabled = false;
+    }
+  }
+
+  function populateSubjects() {
+    subjectSelect.innerHTML = '<option value="">— Select a subject —</option>' +
+      currentSubjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  }
+
+  // ---------- Load quizzes for selected subject ----------
+  async function loadQuizzes(subjectId) {
+    if (!subjectId) {
+      currentQuizzes = [];
+      populateQuizzes();
+      quizSelect.disabled = true;
+      quizCount.textContent = '0 quizzes available';
+      currentQuestions = [];
+      updateStatsAndPreview();
+      return;
+    }
+
+    try {
+      quizSelect.disabled = true;
+      quizSelect.innerHTML = '<option value="">Loading quizzes...</option>';
+      quizCount.textContent = 'Loading...';
+
+      const quizzesSnap = await db.collection('subjects')
+        .doc(subjectId)
+        .collection('quizzes')
+        .orderBy('order')
+        .get();
+
+      currentQuizzes = quizzesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      populateQuizzes();
+      quizSelect.disabled = false;
+      quizCount.textContent = `${currentQuizzes.length} quizzes available`;
+
+      if (currentQuizzes.length === 1) {
+        quizSelect.value = currentQuizzes[0].id;
+        await loadQuestions(subjectId, currentQuizzes[0].id);
+      } else {
+        currentQuestions = [];
+        updateStatsAndPreview();
+      }
+    } catch(e) {
+      showToast('Error loading quizzes: ' + e.message, 'error');
+      console.error(e);
+      quizSelect.disabled = false;
+    }
+  }
+
+  function populateQuizzes() {
+    quizSelect.innerHTML = '<option value="">— Select a quiz —</option>' +
+      currentQuizzes.map(q => `<option value="${q.id}">${q.name}</option>`).join('');
+  }
+
+  // =========================================================================
+  // 4b. Step-by-step wizard UI (modules → subjects → quizzes → export)
+  // =========================================================================
+  const WIZARD_ICONS = ['fa-layer-group','fa-stethoscope','fa-clipboard-question'];
+
+  function escapeHtml(str) {
+    return String(str == null ? '' : str).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  }
+
+  function renderModuleCards() {
+    if (!allModules.length) {
+      moduleCardGrid.innerHTML = `<div class="wizard-empty"><i class="fa-solid fa-inbox"></i>No modules found</div>`;
+      return;
+    }
+    moduleCardGrid.innerHTML = allModules.map(m => `
+      <button type="button" class="wizard-card" data-module-id="${m.id}">
+        <span class="wc-icon"><i class="fa-solid fa-layer-group"></i></span>
+        <span class="wc-body"><span class="wc-name">${escapeHtml(m.name)}</span></span>
+        <i class="fa-solid fa-chevron-right wc-chev"></i>
+      </button>
+    `).join('');
+    moduleCardGrid.querySelectorAll('.wizard-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const m = allModules.find(x => x.id === card.dataset.moduleId);
+        if (m) selectModule(m);
+      });
+    });
+  }
+
+  function renderSubjectCards() {
+    if (!currentSubjects.length) {
+      subjectCardGrid.innerHTML = `<div class="wizard-empty"><i class="fa-solid fa-inbox"></i>No subjects in this module</div>`;
+      return;
+    }
+    subjectCardGrid.innerHTML = currentSubjects.map(s => `
+      <button type="button" class="wizard-card" data-subject-id="${s.id}">
+        <span class="wc-icon"><i class="fa-solid fa-stethoscope"></i></span>
+        <span class="wc-body"><span class="wc-name">${escapeHtml(s.name)}</span></span>
+        <i class="fa-solid fa-chevron-right wc-chev"></i>
+      </button>
+    `).join('');
+    subjectCardGrid.querySelectorAll('.wizard-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const s = currentSubjects.find(x => x.id === card.dataset.subjectId);
+        if (s) selectSubject(s);
+      });
+    });
+  }
+
+  function renderQuizCards() {
+    if (!currentQuizzes.length) {
+      quizCardGrid.innerHTML = `<div class="wizard-empty"><i class="fa-solid fa-inbox"></i>No quizzes in this subject</div>`;
+      return;
+    }
+    quizCardGrid.innerHTML = currentQuizzes.map(q => `
+      <button type="button" class="wizard-card" data-quiz-id="${q.id}">
+        <span class="wc-icon"><i class="fa-solid fa-clipboard-question"></i></span>
+        <span class="wc-body"><span class="wc-name">${escapeHtml(q.name)}</span></span>
+        <i class="fa-solid fa-chevron-right wc-chev"></i>
+      </button>
+    `).join('');
+    quizCardGrid.querySelectorAll('.wizard-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const q = currentQuizzes.find(x => x.id === card.dataset.quizId);
+        if (q) selectQuiz(q);
+      });
+    });
+  }
+
+  function renderCrumbs(step) {
+    const m = allModules.find(x => x.id === moduleSelect.value);
+    const s = currentSubjects.find(x => x.id === subjectSelect.value);
+    const parts = [];
+    parts.push(`<button type="button" data-goto="modules" class="${step==='modules'?'current':''}">Modules</button>`);
+    if (m) {
+      parts.push(`<i class="fa-solid fa-chevron-right crumb-sep"></i>`);
+      parts.push(`<button type="button" data-goto="subjects" class="${step==='subjects'?'current':''}">${escapeHtml(m.name)}</button>`);
+    }
+    if (m && s && step === 'quizzes') {
+      parts.push(`<i class="fa-solid fa-chevron-right crumb-sep"></i>`);
+      parts.push(`<button type="button" data-goto="quizzes" class="current">${escapeHtml(s.name)}</button>`);
+    }
+    wizardCrumbs.innerHTML = parts.join('');
+    wizardCrumbs.hidden = step === 'modules';
+    wizardCrumbs.querySelectorAll('button[data-goto]').forEach(btn => {
+      btn.addEventListener('click', () => goToStep(btn.dataset.goto));
+    });
+  }
+
+  function goToStep(step) {
+    stepModules.hidden = step !== 'modules';
+    stepSubjects.hidden = step !== 'subjects';
+    stepQuizzes.hidden = step !== 'quizzes';
+    document.getElementById('wizardHead').hidden = false;
+
+    if (step === 'modules') {
+      wizardTitleText.textContent = 'Choose a module';
+      wizardSub.textContent = "Pick a module to get started — you'll choose a subject and quiz next.";
+      renderModuleCards();
+    } else if (step === 'subjects') {
+      const m = allModules.find(x => x.id === moduleSelect.value);
+      wizardTitleText.textContent = m ? m.name : 'Choose a subject';
+      wizardSub.textContent = 'Now pick a subject from this module.';
+      renderSubjectCards();
+    } else if (step === 'quizzes') {
+      const s = currentSubjects.find(x => x.id === subjectSelect.value);
+      wizardTitleText.textContent = s ? s.name : 'Choose a quiz';
+      wizardSub.textContent = 'Pick a quiz to export questions from.';
+      renderQuizCards();
+    }
+    renderCrumbs(step);
+  }
+
+  // Shows the target step immediately with a premium loading spinner in place of
+  // its card grid, while the underlying Firestore query for that step resolves.
+  function showStepLoading(step, label) {
+    stepModules.hidden = step !== 'modules';
+    stepSubjects.hidden = step !== 'subjects';
+    stepQuizzes.hidden = step !== 'quizzes';
+    document.getElementById('wizardHead').hidden = false;
+    wizardTitleText.textContent = label || 'Loading…';
+    wizardSub.textContent = '\u00A0';
+    const grid = step === 'subjects' ? subjectCardGrid : step === 'quizzes' ? quizCardGrid : moduleCardGrid;
+    grid.innerHTML = `<div class="wizard-loading"><div class="loader-ring"></div><div class="loader-label">Loading ${step}…</div></div>`;
+    renderCrumbs(step);
+  }
+
+  const pageLoader = document.getElementById('pageLoader');
+  const pageLoaderLabel = document.getElementById('pageLoaderLabel');
+  function showPageLoader(label) {
+    pageLoaderLabel.textContent = label || 'Loading…';
+    pageLoader.hidden = false;
+    pageLoader.classList.remove('fade-out');
+  }
+  function hidePageLoader() {
+    pageLoader.classList.add('fade-out');
+    setTimeout(() => { pageLoader.hidden = true; pageLoader.classList.remove('fade-out'); }, 220);
+  }
+
+  // Decide which UI step to show based on the current select values (handles
+  // both manual picks and the existing auto-select-when-only-one-option cascade).
+  async function syncStepFromState() {
+    if (quizSelect.value) {
+      showPageLoader('Preparing preview…');
+      await new Promise(r => setTimeout(r, 30)); // let the spinner paint before the (synchronous) PDF build
+      openPdfPreview(getFilteredQuestions());
+      hidePageLoader();
+    } else if (subjectSelect.value) {
+      goToStep('quizzes');
+    } else if (moduleSelect.value) {
+      goToStep('subjects');
+    } else {
+      goToStep('modules');
+    }
+  }
+
+  async function selectModule(m) {
+    moduleSelect.value = m.id;
+    subjectSelect.value = '';
+    quizSelect.value = '';
+    currentQuestions = [];
+    showStepLoading('subjects', m.name);
+    await loadSubjects(m.id);
+    syncStepFromState();
+  }
+
+  async function selectSubject(s) {
+    subjectSelect.value = s.id;
+    quizSelect.value = '';
+    currentQuestions = [];
+    showStepLoading('quizzes', s.name);
+    await loadQuizzes(s.id);
+    syncStepFromState();
+  }
+
+  async function selectQuiz(q) {
+    quizSelect.value = q.id;
+    showPageLoader('Preparing preview…');
+    await loadQuestions(subjectSelect.value, q.id);
+    openPdfPreview(getFilteredQuestions());
+    hidePageLoader();
+  }
+
+  // =========================================================================
+  // 4c. Settings drawer (export format, fields, cover/header, data table)
+  // =========================================================================
+  let suppressHistoryNav = false;
+
+  function openSettingsModal() {
+    const m = allModules.find(x => x.id === moduleSelect.value);
+    const s = currentSubjects.find(x => x.id === subjectSelect.value);
+    const q = currentQuizzes.find(x => x.id === quizSelect.value);
+    settingsModalMeta.textContent = [m?.name, s?.name, q?.name].filter(Boolean).join(' · ');
+    settingsModal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    if (!suppressHistoryNav) history.pushState({ modal: 'settings' }, '');
+  }
+  function closeSettingsModal() {
+    settingsModal.classList.remove('show');
+    if (!pdfPreviewModal.classList.contains('show')) {
+      document.body.style.overflow = '';
+    }
+    if (!suppressHistoryNav && history.state && history.state.modal === 'settings') history.back();
+  }
+
+  settingsCloseBtn.addEventListener('click', closeSettingsModal);
+  settingsBackBtn.addEventListener('click', closeSettingsModal);
+  settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeSettingsModal(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && settingsModal.classList.contains('show')) closeSettingsModal();
+  });
+
+  // ---------- Load questions for selected subject + quiz ----------
+  async function loadQuestions(subjectId, quizId) {
+    if (!subjectId || !quizId) {
+      currentQuestions = [];
+      updateStatsAndPreview();
+      return;
+    }
+
+    try {
+      previewWrap.innerHTML = `<div class="loading-placeholder"><i class="fa-solid fa-spinner fa-spin"></i> Loading questions...</div>`;
+
+      const questionsSnap = await db.collection('subjects')
+        .doc(subjectId)
+        .collection('quizzes')
+        .doc(quizId)
+        .collection('questions')
+        .orderBy('number')
+        .get();
+
+      const subject = currentSubjects.find(s => s.id === subjectId);
+      const quiz = currentQuizzes.find(q => q.id === quizId);
+
+      currentQuestions = questionsSnap.docs.map(d => ({
+        id: d.id,
+        ...d.data(),
+        subjectId: subjectId,
+        subjectName: subject ? subject.name : '',
+        quizId: quizId,
+        quizName: quiz ? quiz.name : '',
+        moduleId: subject ? subject.moduleId : ''
+      }));
+
+      updateStatsAndPreview();
+      showToast(`Loaded ${currentQuestions.length} questions`, 'success');
+    } catch(e) {
+      showToast('Error loading questions: ' + e.message, 'error');
+      console.error(e);
+      currentQuestions = [];
+      updateStatsAndPreview();
+    }
+  }
+
+  // =========================================================================
+  // 5. Filter & preview
+  // =========================================================================
+  function getFilteredQuestions() {
+    const limit = parseInt(limitSelect.value) || 0;
+    let questions = [...currentQuestions];
+    questions.sort((a,b) => (a.number||0) - (b.number||0));
+    if (limit > 0) questions = questions.slice(0, limit);
+    return questions;
+  }
+
+  function updateStatsAndPreview() {
+    const questions = getFilteredQuestions();
+    const modules = new Set(questions.map(q => q.moduleId).filter(Boolean));
+    const subjects = new Set(questions.map(q => q.subjectId).filter(Boolean));
+    const quizzes = new Set(questions.map(q => q.quizId).filter(Boolean));
+
+    statTotal.textContent = questions.length;
+    statModule.textContent = modules.size;
+    statSubject.textContent = subjects.size;
+    statQuiz.textContent = quizzes.size;
+
+    const quizNow = currentQuizzes.find(q => q.id === quizSelect.value);
+    previewHeadingText.textContent = quizNow ? quizNow.name : 'Preview';
+
+    if (pdfPreviewModal.classList.contains('show') && questions.length) openPdfPreview(questions);
+
+    if (!currentQuestions.length) {
+      previewSub.textContent = quizNow ? 'This quiz has no questions yet.' : 'Select a module, subject, and quiz to see questions.';
+      previewWrap.innerHTML = `<div class="loading-placeholder">
+        <i class="fa-solid fa-table"></i>
+        ${quizNow ? 'No questions found in this quiz' : 'Select a module, subject, and quiz to preview questions'}
+      </div>`;
+      return;
+    }
+
+    const subjNow = currentSubjects.find(s => s.id === subjectSelect.value);
+    const modNow = allModules.find(m => m.id === moduleSelect.value);
+    previewSub.textContent = `${questions.length} questions · ${[subjNow?.name, modNow?.name].filter(Boolean).join(' · ')}`;
+    showPreview(questions);
+  }
+
+  function showPreview(questions) {
+    const preview = questions.slice(0, 15);
+    if (!preview.length) {
+      previewWrap.innerHTML = `<div class="loading-placeholder"><i class="fa-solid fa-inbox"></i>No questions match your selection</div>`;
+      return;
+    }
+
+    const includeNumber = document.getElementById('includeNumber').checked;
+    const includeCategory = document.getElementById('includeCategory').checked;
+    const includeQuestion = document.getElementById('includeQuestion').checked;
+    const includeOptions = document.getElementById('includeOptions').checked;
+    const includeAnswer = document.getElementById('includeAnswer').checked;
+    const includeExplanation = document.getElementById('includeExplanation').checked;
+    const includeWhyNot = document.getElementById('includeWhyNot').checked;
+    const includeRelated = document.getElementById('includeRelated').checked;
+
+    const cols = [];
+    if (includeNumber) cols.push('#');
+    if (includeCategory) cols.push('Category');
+    if (includeQuestion) cols.push('Question');
+    if (includeOptions) cols.push('Options');
+    if (includeAnswer) cols.push('Answer');
+    if (includeExplanation) cols.push('Explanation');
+    if (includeWhyNot) cols.push('Why Not');
+    if (includeRelated) cols.push('Related');
+
+    let html = `<table><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>`;
+    preview.forEach((q,i) => {
+      html += `<tr>`;
+      if (includeNumber) html += `<td>${q.number || i+1}</td>`;
+      if (includeCategory) html += `<td>${q.categoryLabel || q.category || '—'}</td>`;
+      if (includeQuestion) html += `<td>${String(q.question||'').substring(0,80)}${String(q.question||'').length>80?'...':''}</td>`;
+      if (includeOptions) html += `<td>${(q.options||[]).length} options</td>`;
+      if (includeAnswer) html += `<td>${q.answerIndex!==undefined?String.fromCharCode(65+q.answerIndex):'—'}</td>`;
+      if (includeExplanation) html += `<td>${String(q.explanation||'').substring(0,60)}${String(q.explanation||'').length>60?'...':''}</td>`;
+      if (includeWhyNot) html += `<td>${q.whyNot?Object.keys(q.whyNot).length+' explanations':'—'}</td>`;
+      if (includeRelated) html += `<td>${(q.related||[]).length>0?q.related.join(', '):'—'}</td>`;
+      html += `</tr>`;
+    });
+    if (questions.length > 15) {
+      html += `<tr><td colspan="${cols.length}" style="text-align:center;color:var(--ink-faint);font-style:italic;">... and ${questions.length - 15} more</td></tr>`;
+    }
+    html += `</tbody></table>`;
+    previewWrap.innerHTML = html;
+  }
+
+  // =========================================================================
+  // 6. Event listeners
+  // =========================================================================
+  moduleSelect.addEventListener('change', async () => {
+    await loadSubjects(moduleSelect.value);
+  });
+
+  subjectSelect.addEventListener('change', async () => {
+    await loadQuizzes(subjectSelect.value);
+  });
+
+  quizSelect.addEventListener('change', async () => {
+    await loadQuestions(subjectSelect.value, quizSelect.value);
+  });
+
+  limitSelect.addEventListener('change', () => { updateStatsAndPreview(); });
+
+  includeItems.forEach(item => {
+    const cb = item.querySelector('input[type="checkbox"]');
+    cb.addEventListener('change', () => {
+      item.classList.toggle('active', cb.checked);
+      if (currentQuestions.length) updateStatsAndPreview();
+      syncQuestionsPerPageInput();
+    });
+  });
+
+  formatBtns.forEach(btn => btn.addEventListener('click', () => {
+    formatBtns.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFormat = btn.dataset.format;
+  }));
+
+  refreshPreviewBtn.addEventListener('click', () => {
+    if (currentQuestions.length) { updateStatsAndPreview(); showToast('Preview refreshed','success'); }
+    else showToast('Select a module, subject, and quiz first','info');
+  });
+
+
+  // =========================================================================
+  // 7. Questions per page logic
+  // =========================================================================
+  function getIncludeOptions() {
+    return {
+      number: document.getElementById('includeNumber').checked,
+      category: document.getElementById('includeCategory').checked,
+      question: document.getElementById('includeQuestion').checked,
+      options: document.getElementById('includeOptions').checked,
+      answer: document.getElementById('includeAnswer').checked,
+      explanation: document.getElementById('includeExplanation').checked,
+      whyNot: document.getElementById('includeWhyNot').checked,
+      related: document.getElementById('includeRelated').checked
+    };
+  }
+  function getQuestionsPerPage(include) { return (include.explanation || include.whyNot) ? 2 : 4; }
+  function getEffectiveQuestionsPerPage(include) {
+    if (manualQuestionsPerPage) { const val = parseInt(questionsPerPageInput.value,10); if (Number.isFinite(val) && val>0) return val; }
+    return getQuestionsPerPage(include);
+  }
+  function syncQuestionsPerPageInput() {
+    if (manualQuestionsPerPage) return;
+    const include = getIncludeOptions();
+    questionsPerPageInput.value = getQuestionsPerPage(include);
+  }
+  questionsPerPageInput.addEventListener('input', () => { manualQuestionsPerPage = true; qppHint.textContent = 'Custom: this many questions per page.'; });
+  resetQppBtn.addEventListener('click', () => { manualQuestionsPerPage = false; syncQuestionsPerPageInput(); qppHint.textContent = 'Auto: 4/page normally, 2/page when Explanation or Why-not is included.'; showToast('Reset to automatic questions-per-page','success'); });
+  syncQuestionsPerPageInput();
+
+  // =========================================================================
+  // 8. Export with dynamic filename
+  // =========================================================================
+  function generateFilename(extension) {
+    // Get selected module name
+    const moduleId = moduleSelect.value;
+    const moduleName = moduleId ? (allModules.find(m => m.id === moduleId)?.name || 'unknown') : 'allmodules';
+    
+    // Get selected quiz name
+    const quizId = quizSelect.value;
+    const quizName = quizId ? (currentQuizzes.find(q => q.id === quizId)?.name || 'unknown') : 'allquizzes';
+    
+    // Clean names: lowercase, replace spaces with underscores, remove special chars
+    const clean = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+    
+    const mod = clean(moduleName) || 'module';
+    const quiz = clean(quizName) || 'quiz';
+    
+    return `${mod}_${quiz}_ju_@alifomedju.${extension}`;
+  }
+
+  exportBtn.addEventListener('click', async () => {
+    const questions = getFilteredQuestions();
+    if (!questions.length) {
+      showToast('No questions to export. Please select a module, subject, and quiz.', 'error');
+      return;
+    }
+    const format = currentFormat;
+    const extMap = { csv: 'csv', excel: 'xlsx', json: 'json', word: 'doc', pdf: 'pdf' };
+    const ext = extMap[format] || format;
+    const filename = generateFilename(ext);
+    
+    try {
+      let blob;
+      switch(format) {
+        case 'csv': blob = exportCSV(questions); break;
+        case 'excel': blob = exportExcel(questions); break;
+        case 'json': blob = exportJSON(questions); break;
+        case 'word': blob = exportWord(questions); break;
+        case 'pdf': blob = await exportPDF(questions); break;
+      }
+      downloadBlob(blob, filename, blob.type || 'application/octet-stream');
+      showToast(`Exported ${questions.length} questions as ${format.toUpperCase()}`, 'success');
+    } catch(e) { showToast('Export failed: ' + e.message, 'error'); console.error(e); }
+  });
+
+  function downloadBlob(blob, filename, mimeType) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  }
+
+  // =========================================================================
+  // 9. Format-specific exporters
+  // =========================================================================
+  function getTextSizeScale() {
+    const size = coverSettings.textSize || 'medium';
+    if (size === 'small') return 0.85;
+    if (size === 'large') return 1.15;
+    return 1.0;
+  }
+
+  function getPdfQualitySettings() {
+    const quality = coverSettings.pdfQuality || 'medium';
+    switch(quality) {
+      case 'high': return { scale: 2.5, jpegQuality: 0.95, pxWidth: 800 };
+      case 'low': return { scale: 1.2, jpegQuality: 0.65, pxWidth: 560 };
+      default: return { scale: 1.8, jpegQuality: 0.82, pxWidth: 700 };
+    }
+  }
+
+  function getCoverInfoBar(questions) {
+    const moduleIds = new Set(questions.map(q => q.moduleId).filter(Boolean));
+    const subjectIds = new Set(questions.map(q => q.subjectId).filter(Boolean));
+    const quizIds = new Set(questions.map(q => q.quizId).filter(Boolean));
+    const moduleNames = allModules.filter(m => moduleIds.has(m.id)).map(m => m.name).join(', ') || 'All modules';
+    const subjectNames = currentSubjects.filter(s => subjectIds.has(s.id)).map(s => s.name).join(', ') || 'All subjects';
+    const quizNames = currentQuizzes.filter(q => quizIds.has(q.id)).map(q => q.name).join(', ') || 'All quizzes';
+    return { moduleNames, subjectNames, quizNames };
+  }
+
+  // CSV
+  function exportCSV(questions) {
+    const headers = ['Subject','Quiz','Number','Question','Options','AnswerIndex','Category','Explanation','WhyNot','Related'];
+    const esc = v => `"${String(v==null?'':v).replace(/"/g,'""')}"`;
+    const rows = questions.map((q,i) => {
+      const subject = q.subjectName||'', quiz = q.quizName||'', number = q.number||i+1, question = q.question||'';
+      const options = (q.options||[]).join('|');
+      const answerIndex = q.answerIndex!==undefined && q.answerIndex!==null ? q.answerIndex : '';
+      const category = q.categoryLabel||q.category||'', explanation = q.explanation||'';
+      const whyNot = JSON.stringify(q.whyNot||{}), related = JSON.stringify(q.related||[]);
+      return [esc(subject), esc(quiz), esc(number), esc(question), esc(options), answerIndex, esc(category), esc(explanation), esc(whyNot), esc(related)].join(',');
+    });
+    const csv = [headers.join(','), ...rows].join('\n');
+    return new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  }
+
+  // Excel
+  function exportExcel(questions) {
+    const include = getIncludeOptions();
+    const data = questions.map((q,i) => {
+      const row = {};
+      if (include.number) row['Number'] = q.number || i+1;
+      if (include.category) row['Category'] = q.categoryLabel || q.category || '';
+      if (include.question) row['Question'] = q.question || '';
+      if (include.options) row['Options'] = (q.options||[]).join('\n');
+      if (include.answer) row['Answer'] = q.answerIndex!==undefined ? String.fromCharCode(65+q.answerIndex) : '';
+      if (include.explanation) row['Explanation'] = q.explanation || '';
+      if (include.whyNot) row['WhyNot'] = q.whyNot ? JSON.stringify(q.whyNot) : '';
+      if (include.related) row['Related'] = (q.related||[]).join(', ');
+      return row;
+    });
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+    const colWidths = []; Object.keys(data[0]||{}).forEach(key => { let maxLen = key.length; data.forEach(row => { const val = String(row[key]||''); if (val.length > maxLen) maxLen = val.length; }); colWidths.push({ wch: Math.min(maxLen+2, 50) }); });
+    ws['!cols'] = colWidths;
+    XLSX.utils.book_append_sheet(wb, ws, 'Questions');
+    return new Blob([XLSX.write(wb, { bookType: 'xlsx', type: 'array' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  }
+
+  // JSON
+  function exportJSON(questions) {
+    const include = getIncludeOptions();
+    const data = questions.map((q,i) => {
+      const result = {};
+      if (include.number) result.number = q.number || i+1;
+      if (include.category) result.category = q.categoryLabel || q.category || '';
+      if (include.question) result.question = q.question || '';
+      if (include.options) result.options = q.options || [];
+      if (include.answer) result.answer = q.answerIndex!==undefined ? String.fromCharCode(65+q.answerIndex) : '';
+      if (include.explanation) result.explanation = q.explanation || '';
+      if (include.whyNot) result.whyNot = q.whyNot || {};
+      if (include.related) result.related = q.related || [];
+      return result;
+    });
+    const exportData = { metadata: { exportedAt: new Date().toISOString(), totalQuestions: questions.length, format: 'Alif Med Question Export', fields: Object.keys(data[0]||{}) }, questions: data };
+    return new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  }
+
+  // Word
+  function exportWord(questions) {
+    const include = getIncludeOptions();
+    const scale = getTextSizeScale();
+    const questionsPerPage = getEffectiveQuestionsPerPage(include);
+    const info = getCoverInfoBar(questions);
+
+    let html = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head><meta charset="UTF-8"><title>${coverSettings.title} - Question Export</title>
+      <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
+      <style>
+        @page { margin: 0.7in; size: A4; mso-page-orientation: portrait; }
+        body { font-family: 'Calibri','Arial',sans-serif; font-size: ${11*scale}pt; color: ${PDF_BRAND.textDark}; line-height: 1.6; }
+        .cover { text-align: center; padding: 40px 20px 24px; page-break-after: always; mso-page-break-after: always; display:flex; flex-direction:column; justify-content:center; min-height:85vh; }
+        .cover .cover-icon { font-size: ${40*scale}pt; color: ${PDF_BRAND.navy}; margin-bottom: 12px; }
+        .cover h1 { color: ${PDF_BRAND.navy}; font-family: 'Georgia',serif; font-size: ${30*scale}pt; margin: 0; font-weight: 700; }
+        .cover .cover-sub { color: ${PDF_BRAND.grey}; font-size: ${14*scale}pt; margin-top: 6px; font-weight: 400; }
+        .cover .cover-body { color: ${PDF_BRAND.textDark}; font-size: ${11*scale}pt; margin: 18px auto 0; max-width: 5.5in; text-align: left; line-height: 1.7; }
+        .cover .cover-body p { margin: 0 0 6px; }
+        .cover-info-bar {
+          margin: 24px auto 0; max-width: 5.5in; width:100%;
+          background: #F0F2F5; border-radius: 12px; padding: 14px 20px;
+          display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 28px;
+          border: 1px solid #E2E6EA; box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+          font-family: 'Calibri','Arial',sans-serif;
+        }
+        .cover-info-bar .info-item { display: flex; align-items: center; gap: 8px; font-size: ${10.5*scale}pt; color: #2C3E50; }
+        .cover-info-bar .info-item i { color: ${PDF_BRAND.navy}; font-size: ${13*scale}pt; width: 18px; text-align: center; }
+        .cover-info-bar .info-item .label { font-weight: 600; color: ${PDF_BRAND.grey}; }
+        .cover-info-bar .info-item .value { font-weight: 500; }
+        .running-header { background: linear-gradient(135deg,${PDF_BRAND.navy},${PDF_BRAND.navyDark}); color: white; padding: 12px 18px; margin-bottom: 18px; border-bottom: 4px solid ${PDF_BRAND.green}; font-family: 'Georgia',serif; font-size: ${13*scale}pt; font-weight: 700; }
+        .question-block { margin-bottom: 20px; padding: 14px 18px; border-left: 5px solid ${PDF_BRAND.green}; background: #EFF5F2; border-radius: 0 6px 6px 0; page-break-inside: avoid; }
+        .question-block:nth-child(${questionsPerPage}n) { page-break-after: always !important; }
+        .question-block:last-child { page-break-after: auto !important; }
+        .q-number { font-weight: 700; color: ${PDF_BRAND.navy}; font-size: ${12*scale}pt; font-family: 'Georgia',serif; }
+        .q-category { display: inline-block; background: #DEEFE4; color: ${PDF_BRAND.green}; padding: 2px 10px; border-radius: 12px; font-size: ${9*scale}pt; font-weight: 600; }
+        .q-text { font-weight: 600; font-size: ${12*scale}pt; margin: 4px 0 8px; font-family: 'Georgia',serif; color: ${PDF_BRAND.textDark}; }
+        .q-text p { margin: 0 0 6px; }
+        .q-text ul, .q-text ol { margin: 4px 0 6px 18px; }
+        table { border-collapse: collapse; width: 100%; table-layout: fixed; margin: 8px 0; font-size: ${10*scale}pt; }
+        th, td { border: 1px solid #C9D3D6; padding: 5px 8px; text-align: left; vertical-align: top; word-wrap: break-word; }
+        th { background: #E7EEEA; color: ${PDF_BRAND.textDark}; font-weight: 700; }
+        tr:nth-child(even) td { background: #F7FAF8; }
+        .q-options { margin: 4px 0 6px 18px; }
+        .q-option { padding: 2px 0; display: flex; align-items: flex-start; gap: 4px; }
+        .q-option .letter { font-weight: 700; color: ${PDF_BRAND.grey}; min-width: 20px; }
+        .q-option .option-text { flex: 1; }
+        .q-option.correct { background: #DEEFE4; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+        .q-option .check { color: ${PDF_BRAND.green}; font-weight: 700; margin-left: 4px; }
+        .q-explanation { background: #E7EEEA; padding: 8px 14px; border-radius: 6px; margin: 6px 0 4px; font-size: ${10.5*scale}pt; border-left: 3px solid ${PDF_BRAND.gold}; }
+        .q-explanation b { color: ${PDF_BRAND.gold}; }
+        .q-explanation p { margin: 0 0 4px; }
+        .q-explanation ul, .q-explanation ol { margin: 4px 0 4px 18px; }
+        .q-whynot { margin: 2px 0 2px 18px; font-size: ${10*scale}pt; color: ${PDF_BRAND.grey}; }
+        .q-whynot .opt { font-weight: 600; color: #AE3B33; }
+        .q-related { margin-top: 4px; font-size: ${10*scale}pt; color: #8A979C; }
+        .q-related b { color: ${PDF_BRAND.grey}; }
+        .footer { text-align: center; font-size: ${9*scale}pt; color: #93A0A2; margin-top: 30px; border-top: 1px solid #E7EEEA; padding-top: 10px; font-family: 'Calibri',sans-serif; }
+        .footer .brand { color: ${PDF_BRAND.navy}; font-weight: 600; }
+        .cover, .question-block { page-break-inside: avoid; }
+      </style>
+      </head><body>
+      <div class="cover">
+        <div class="cover-icon"><i class="${coverSettings.icon}"></i></div>
+        <h1>${coverSettings.title}</h1>
+        <div class="cover-sub">${coverSettings.subtitle}</div>
+        ${coverSettings.bodyText ? `<div class="cover-body">${renderMarkdown(coverSettings.bodyText)}</div>` : ''}
+        <div class="cover-info-bar">
+          <div class="info-item"><i class="fa-solid fa-layer-group"></i><span class="label">Module</span><span class="value">${info.moduleNames}</span></div>
+          <div class="info-item"><i class="fa-solid fa-stethoscope"></i><span class="label">Subject</span><span class="value">${info.subjectNames}</span></div>
+          <div class="info-item"><i class="fa-solid fa-clipboard-question"></i><span class="label">Quiz</span><span class="value">${info.quizNames}</span></div>
+        </div>
+      </div>
+    `;
+
+    if (coverSettings.headerEnabled) html += `<div class="running-header">${coverSettings.headerText}</div>`;
+
+    questions.forEach((q,i) => {
+      const qId = `q${q.number || i+1}`;
+      html += `<div class="question-block" id="${qId}"><div class="header-row">`;
+      if (include.number) html += `<span class="q-number">Q${q.number || i+1}</span>`;
+      if (include.category) html += `<span class="q-category">${q.categoryLabel || q.category || 'General'}</span>`;
+      html += `</div>`;
+      if (include.question) html += `<div class="q-text">${renderMarkdown(q.question)}</div>`;
+      if (include.options && q.options && q.options.length) {
+        html += `<div class="q-options">`;
+        q.options.forEach((opt, idx) => {
+          const isCorrect = idx === q.answerIndex;
+          const showCheck = include.answer && isCorrect;
+          html += `<div class="q-option${isCorrect && include.answer ? ' correct' : ''}">
+            <span class="letter">${String.fromCharCode(65+idx)}.</span>
+            <span class="option-text">${renderInlineMarkdown(opt)}</span>
+            ${showCheck ? ' <span class="check">✓</span>' : ''}
+          </div>`;
+        });
+        html += `</div>`;
+      }
+      if (include.explanation && q.explanation) html += `<div class="q-explanation"><b>Explanation:</b> ${renderMarkdown(q.explanation)}</div>`;
+      if (include.whyNot && q.whyNot && Object.keys(q.whyNot).length) {
+        Object.entries(q.whyNot).forEach(([idx, text]) => { if (text) html += `<div class="q-whynot"><span class="opt">${String.fromCharCode(65+parseInt(idx))} —</span> ${renderInlineMarkdown(text)}</div>`; });
+      }
+      if (include.related && q.related && q.related.length) html += `<div class="q-related"><b>Related:</b> Q${q.related.join(', Q')}</div>`;
+      html += `</div>`;
+    });
+
+    html += `<div class="footer"><span class="brand">${coverSettings.title}</span> · ${questions.length} questions</div></body></html>`;
+    return new Blob([html], { type: 'application/msword' });
+  }
+
+  // PDF/Word — single shared brand palette (used by both the PDF/preview stylesheet
+  // and the Word export template, so header/footer/cover/running-header colors stay
+  // in sync instead of being duplicated as separate hardcoded hex values).
+  const PDF_BRAND = {
+    navy: '#0B1F4B',
+    navyDark: '#071534',
+    gold: '#C9A24B',
+    green: '#2F7A52',
+    lightBlue: '#EAF0FB',
+    textDark: '#14213D',
+    grey: '#6B7280'
+  };
+
+  // PDF — category tab colors (chart-tab style coding, hashed per label for consistency)
+  const PDF_TAB_COLORS = [
+    { text: '#1F4E5E', bg: '#E1EBEE' }, // teal
+    { text: '#2F6B4A', bg: '#E1EFE6' }, // sage
+    { text: '#8A6A2E', bg: '#F1E6C9' }, // gold
+    { text: '#6A4A66', bg: '#EEE3EC' }, // plum
+    { text: '#3E5566', bg: '#E6ECEF' }, // slate
+  ];
+  function pdfTabColor(label) {
+    const str = String(label || 'General');
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+    return PDF_TAB_COLORS[hash % PDF_TAB_COLORS.length];
+  }
+
+  // PDF
+  // ---- Shared: inject the PDF/preview stylesheet (single source of truth) ----
+  function buildWatermarkTileDataUri(text, rgb, opacity) {
+    // Tile is sized to snugly fit the rotated text with a safe margin on every
+    // side — big enough that glyphs never reach the tile edge (which caused
+    // the watermark to look "broken" where tiles repeated), but tight enough
+    // that the pattern still repeats frequently across the page.
+    let safeText = String(text || '').slice(0, 15);
+    safeText = safeText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+    const fontSize = 20;
+    const w = 200, h = 150;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">` +
+      `<text x="20" y="130" transform="rotate(-32 20 130)" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="${fontSize}" fill="rgb(${rgb})" fill-opacity="${opacity}">${safeText}</text>` +
+      `</svg>`;
+    return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  }
+
+  function applyPdfPageStyles(scale, watermarkText) {
+    const styleId = 'pdf-export-style-block';
+    let styleTag = document.getElementById(styleId);
+    if (!styleTag) { styleTag = document.createElement('style'); styleTag.id = styleId; document.head.appendChild(styleTag); }
+    // ---- Alif App brand palette (shared with Word export — see PDF_BRAND) ----
+    const NAVY = PDF_BRAND.navy;
+    const NAVY_DARK = PDF_BRAND.navyDark;
+    const GOLD = PDF_BRAND.gold;
+    const LIGHT_BLUE = PDF_BRAND.lightBlue;
+    const TEXT_DARK = PDF_BRAND.textDark;
+    const GREY = PDF_BRAND.grey;
+    const wmDarkBg = buildWatermarkTileDataUri(watermarkText, '201,162,75', 0.16);
+    const wmLightBg = buildWatermarkTileDataUri(watermarkText, '255,255,255', 0.1);
+
+    styleTag.textContent = `
+      .pdfpage { position: relative; isolation: isolate; font-family: 'Source Sans 3', Arial, sans-serif; font-size: ${13*scale}px; color: ${TEXT_DARK}; line-height: 1.65; background: #ffffff; overflow: hidden; display: flex; flex-direction: column; }
+
+      /* ---- Watermark (CSS background tile, repeats edge-to-edge regardless of page height) ---- */
+      .pdfpage .wm-layer { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: -1; pointer-events: none; background-repeat: repeat; }
+      .pdfpage.wm-dark .wm-layer { background-image: ${wmDarkBg}; }
+      .pdfpage.wm-light .wm-layer { background-image: ${wmLightBg}; }
+
+      /* ---- Cover (navy, full-bleed) ---- */
+      .pdfpage .cover {
+        position: relative; z-index: 1; text-align: center; padding: 70px 44px 40px;
+        display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+        flex: 1; min-height: 0; width: 100%; color: #ffffff;
+      }
+      .pdfpage .cover-kicker {
+        font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: .28em;
+        font-size: ${10.5*scale}px; color: ${GOLD}; font-weight: 700; margin-bottom: 26px;
+      }
+      .pdfpage .cover-rule-top, .pdfpage .cover-rule-bottom { width: 72%; max-width: 460px; height: 1.4px; background: ${GOLD}; opacity: .85; }
+      .pdfpage .cover-rule-top { margin-bottom: 30px; }
+      .pdfpage .cover-rule-bottom { margin-top: 30px; }
+      .pdfpage .cover-emblem {
+        width: ${58*scale}px; height: ${58*scale}px; border-radius: 50%;
+        border: 1.5px solid ${GOLD}; background: rgba(255,255,255,.04);
+        display: flex; align-items: center; justify-content: center;
+        color: ${GOLD}; font-size: ${22*scale}px; margin-bottom: 22px;
+      }
+      .pdfpage .cover h1 {
+        font-family: 'Fraunces', Georgia, serif; font-weight: 700; letter-spacing: -0.01em;
+        color: #ffffff; font-size: ${40*scale}px; margin: 0;
+      }
+      .pdfpage .cover .sub {
+        font-family: 'Fraunces', Georgia, serif; font-weight: 600;
+        font-size: ${18*scale}px; color: ${LIGHT_BLUE}; margin-top: 14px;
+      }
+      .pdfpage .cover .cover-body { color: #C9D4EE; font-size: ${12.5*scale}px; margin: 20px auto 0; max-width: 520px; text-align: left; line-height: 1.75; }
+      .pdfpage .cover .cover-body p { margin: 0 0 6px; }
+      .pdfpage .cover-info-bar {
+        margin: 30px auto 0; max-width: 540px; width: 100%;
+        display: flex; border: 1px solid rgba(255,255,255,.18); border-radius: 10px; overflow: hidden; background: rgba(255,255,255,.04);
+      }
+      .pdfpage .cover-info-bar .info-item {
+        flex: 1; padding: 14px 14px 12px; text-align: left; border-left: 1px solid rgba(255,255,255,.14); border-top: 3px solid ${GOLD};
+      }
+      .pdfpage .cover-info-bar .info-item:first-child { border-left: none; }
+      .pdfpage .cover-info-bar .info-item .label {
+        display: block; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: .1em;
+        font-size: ${8*scale}px; color: #9FB0D6; margin-bottom: 5px; font-weight: 700;
+      }
+      .pdfpage .cover-info-bar .info-item .value {
+        display: block; font-family: 'Fraunces', Georgia, serif; font-size: ${12*scale}px; color: #ffffff; font-weight: 500; line-height: 1.4;
+      }
+      .pdfpage .cover-meta-line {
+        margin-top: 16px; font-family: 'JetBrains Mono', monospace; font-size: ${8.5*scale}px;
+        letter-spacing: .06em; color: #8FA0CC;
+      }
+      .pdfpage .cover-brand { margin-top: auto; padding-top: 30px; }
+      .pdfpage .cover-brand .brand-name { font-family: 'Fraunces', Georgia, serif; font-weight: 700; font-size: ${14*scale}px; color: ${GOLD}; }
+      .pdfpage .cover-brand .brand-url { font-family: 'JetBrains Mono', monospace; font-size: ${9.5*scale}px; color: #C9D4EE; margin-top: 4px; }
+
+      /* ---- Page header (every content page) ---- */
+      .pdfpage .page-header {
+        position: relative; z-index: 1; flex: 0 0 auto;
+        display: flex; align-items: baseline; justify-content: space-between;
+        padding: 0 2px 10px; margin-bottom: 20px; border-bottom: 1.2px solid ${NAVY};
+      }
+      .pdfpage .page-header .ph-left { font-family: 'Fraunces', Georgia, serif; font-weight: 700; color: ${NAVY}; font-size: ${13*scale}px; }
+      .pdfpage .page-header .ph-right { font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: .1em; font-size: ${8.5*scale}px; color: ${GREY}; font-weight: 600; }
+
+      /* ---- Page footer (every content page) — pinned to the bottom of the page via
+             flexbox so it stays anchored even when a page has very few questions ---- */
+      .pdfpage .page-footer {
+        position: relative; z-index: 1; flex: 0 0 auto;
+        display: flex; align-items: center; justify-content: space-between;
+        margin-top: auto; padding-top: 10px; border-top: 1.2px solid ${NAVY};
+        font-family: 'JetBrains Mono', monospace; font-size: ${8.5*scale}px; letter-spacing: .05em; color: ${GREY};
+      }
+      .pdfpage .page-footer .pf-brand { color: ${NAVY}; font-weight: 700; }
+      .pdfpage .page-footer .pf-url { color: ${GREY}; }
+      .pdfpage .page-footer .pf-page { color: ${GREY}; }
+
+      /* ---- Question (plain numbered list, matches standalone PDF) ---- */
+      .pdfpage .question {
+        position: relative; z-index: 1; margin-bottom: 16px; padding: 0;
+        background: transparent; border: none;
+      }
+      .pdfpage .q-text {
+        font-family: 'Fraunces', Georgia, serif; font-weight: 700; margin: 0 0 8px; font-size: ${13.5*scale}px; color: ${NAVY};
+        line-height: 1.5;
+      }
+      .pdfpage .q-text p { margin: 0 0 6px; display: inline; }
+      .pdfpage .q-text ul, .pdfpage .q-text ol { margin: 4px 0 6px 18px; }
+      .pdfpage table { border-collapse: collapse; width: 100%; table-layout: fixed; margin: 8px 0; font-size: ${11*scale}px; }
+      .pdfpage th, .pdfpage td { border: 1px solid #D8DFDC; padding: 5px 8px; text-align: left; vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; }
+      .pdfpage th { background: ${LIGHT_BLUE}; color: ${TEXT_DARK}; font-weight: 700; }
+      .pdfpage tr:nth-child(even) td { background: #F7F9FD; }
+
+      .pdfpage .q-options { margin: 0 0 4px; padding-left: 14px; }
+      .pdfpage .q-option {
+        display: flex; align-items: baseline; gap: 6px; padding: 1px 0;
+        font-size: ${10.5*scale}px; color: ${TEXT_DARK}; font-family: 'Source Sans 3', Arial, sans-serif;
+      }
+      .pdfpage .q-option .letter { flex: 0 0 auto; font-weight: 700; color: ${TEXT_DARK}; }
+      .pdfpage .q-option .option-text { flex: 1; }
+
+      .pdfpage .q-explanation { margin: 14px 0 0; padding: 11px 15px; border-radius: 8px; background: #ffffff; border: 1px solid ${GOLD}; font-size: ${11.5*scale}px; }
+      .pdfpage .q-explanation .eyebrow {
+        display: block; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: .1em;
+        font-size: ${8*scale}px; font-weight: 700; color: ${GOLD}; margin-bottom: 5px;
+      }
+      .pdfpage .q-explanation p { margin: 0 0 4px; }
+      .pdfpage .q-explanation ul, .pdfpage .q-explanation ol { margin: 4px 0 4px 18px; }
+
+      .pdfpage .q-whynot-block { margin-top: 10px; padding-left: 2px; }
+      .pdfpage .q-whynot-title {
+        display: block; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: .1em;
+        font-size: ${7.5*scale}px; font-weight: 700; color: #AE3B33; margin-bottom: 4px;
+      }
+      .pdfpage .q-whynot { display: flex; gap: 6px; font-size: ${11*scale}px; color: ${GREY}; margin: 2px 0; }
+      .pdfpage .q-whynot .opt { flex: 0 0 auto; font-weight: 700; color: #AE3B33; }
+
+      .pdfpage .q-related { margin-top: 10px; padding-left: 2px; font-family: 'JetBrains Mono', monospace; font-size: ${9*scale}px; color: #8A979C; letter-spacing: .02em; }
+      .pdfpage .q-related b { color: ${GREY}; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; margin-right: 6px; }
+
+      /* ---- Answer Key (summary page) ---- */
+      .pdfpage .answer-key-title { position: relative; z-index: 1; text-align: center; font-family: 'Fraunces', Georgia, serif; font-weight: 700; color: ${NAVY}; font-size: ${24*scale}px; margin: 10px 0 4px; }
+      .pdfpage .answer-key-sub { position: relative; z-index: 1; text-align: center; font-family: 'JetBrains Mono', monospace; letter-spacing: .08em; color: ${GREY}; font-size: ${9.5*scale}px; margin-bottom: 26px; text-transform: uppercase; }
+      .pdfpage .answer-key-table { position: relative; z-index: 1; width: 100%; border-collapse: collapse; margin: 0 auto; }
+      .pdfpage .answer-key-table th { background: ${NAVY}; color: #ffffff; font-family: 'JetBrains Mono', monospace; font-size: ${9*scale}px; text-transform: uppercase; letter-spacing: .08em; padding: 8px 6px; border: 1px solid ${NAVY}; }
+      .pdfpage .answer-key-table td { text-align: center; padding: 7px 6px; border: 1px solid ${LIGHT_BLUE}; font-family: 'JetBrains Mono', monospace; font-size: ${10.5*scale}px; color: ${TEXT_DARK}; font-weight: 700; }
+      .pdfpage .answer-key-table tr:nth-child(even) td { background: ${LIGHT_BLUE}; }
+    `;
+  }
+
+  function chunkArr(arr, size) { const out=[]; for(let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size)); return out; }
+
+  // ---- Shared: build the exact array of page HTML blocks used by BOTH the PDF export and the live preview ----
+  function buildPdfPagesData(questions) {
+    const include = getIncludeOptions();
+    const scale = getTextSizeScale();
+    const questionsPerPage = getEffectiveQuestionsPerPage(include);
+    const info = getCoverInfoBar(questions);
+
+    const BRAND_NAME = (coverSettings.brandName || 'Question Bank').trim();
+    const BRAND_URL = (coverSettings.brandUrl || (typeof window !== 'undefined' && window.location && window.location.host) || '').trim();
+    const WATERMARK_TEXT = BRAND_NAME.toLowerCase();
+    const KICKER_TEXT = coverSettings.kickerText || 'Question Bank';
+
+    applyPdfPageStyles(scale, WATERMARK_TEXT);
+
+    // ---- Tiled brand watermark layer (pure CSS background tile, repeats edge-to-edge) ----
+    function watermarkHtml() {
+      return `<div class="wm-layer"></div>`;
+    }
+
+    const coverHtml = `
+      <div class="cover">
+        ${watermarkHtml()}
+        <div class="cover-kicker">${KICKER_TEXT}</div>
+        <div class="cover-rule-top"></div>
+        <div class="cover-emblem"><i class="${coverSettings.icon}"></i></div>
+        <h1>${coverSettings.title}</h1>
+        <div class="sub">${coverSettings.subtitle}</div>
+        ${coverSettings.bodyText ? `<div class="cover-body">${renderMarkdown(coverSettings.bodyText)}</div>` : ''}
+        <div class="cover-info-bar">
+          <div class="info-item"><span class="label">Module</span><span class="value">${info.moduleNames}</span></div>
+          <div class="info-item"><span class="label">Subject</span><span class="value">${info.subjectNames}</span></div>
+          <div class="info-item"><span class="label">Quiz</span><span class="value">${info.quizNames}</span></div>
+          <div class="info-item"><span class="label">Questions</span><span class="value">${questions.length}</span></div>
+        </div>
+        <div class="cover-meta-line">Generated ${new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'})}</div>
+        <div class="cover-rule-bottom"></div>
+        <div class="cover-brand">
+          <div class="brand-name">${BRAND_NAME}</div>
+          ${BRAND_URL ? `<div class="brand-url">${BRAND_URL}</div>` : ''}
+        </div>
+      </div>`;
+
+    function pageHeaderHtml() {
+      const leftText = coverSettings.headerText || BRAND_NAME;
+      const rightText = coverSettings.headerRightText || coverSettings.title || KICKER_TEXT;
+      return `<div class="page-header"><span class="ph-left">${leftText}</span><span class="ph-right">${rightText}</span></div>`;
+    }
+    function pageFooterHtml(pageNum, totalPages) {
+      const footerLeft = coverSettings.footerText || `&copy; ${BRAND_NAME}`;
+      return `<div class="page-footer"><span class="pf-brand">${footerLeft}</span><span class="pf-url">${BRAND_URL}</span><span class="pf-page">Page ${pageNum} of ${totalPages}</span></div>`;
+    }
+
+    const groups = chunkArr(questions, questionsPerPage);
+    const showAnswerKey = !!include.answer && questions.some(q => q.answerIndex !== undefined && q.answerIndex !== null);
+
+    // total pages = cover + question pages + (optional) answer key page
+    const totalPages = 1 + groups.length + (showAnswerKey ? 1 : 0);
+    const pagesHtml = [{ html: coverHtml, isCover: true }];
+
+    groups.forEach((group, gi) => {
+      let html = watermarkHtml() + pageHeaderHtml();
+      group.forEach(q => { const globalIndex = questions.indexOf(q); html += pdfQuestionBlockHtml(q, globalIndex, include, scale); });
+      html += pageFooterHtml(gi + 2, totalPages);
+      pagesHtml.push({ html, isCover: false });
+    });
+
+    if (showAnswerKey) {
+      let html = watermarkHtml() + pageHeaderHtml();
+      html += `<div class="answer-key-title">Answer Key</div><div class="answer-key-sub">${coverSettings.title || 'Question Bank'} &bull; ${questions.length} Questions</div>`;
+      const ncols = 3;
+      const nrows = Math.ceil(questions.length / ncols);
+      let headRow = '<tr>'; for (let c=0;c<ncols;c++) headRow += '<th>Q#</th><th>Ans</th>'; headRow += '</tr>';
+      let bodyRows = '';
+      for (let r=0; r<nrows; r++) {
+        bodyRows += '<tr>';
+        for (let c=0; c<ncols; c++) {
+          const idx = c*nrows + r;
+          if (idx < questions.length) {
+            const q = questions[idx];
+            const ansLetter = (q.answerIndex !== undefined && q.answerIndex !== null) ? String.fromCharCode(65+q.answerIndex) : '-';
+            bodyRows += `<td>${q.number || idx+1}</td><td>${ansLetter}</td>`;
+          } else {
+            bodyRows += '<td></td><td></td>';
+          }
+        }
+        bodyRows += '</tr>';
+      }
+      html += `<table class="answer-key-table">${headRow}${bodyRows}</table>`;
+      html += pageFooterHtml(totalPages, totalPages);
+      pagesHtml.push({ html, isCover: false });
+    }
+
+    return { pagesHtml, totalPages };
+  }
+
+  async function exportPDF(questions) {
+    const qualitySettings = getPdfQualitySettings();
+    const { pagesHtml } = buildPdfPagesData(questions);
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'in', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth(), pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 0.5, maxContentWidth = pageWidth - margin*2, maxContentHeight = pageHeight - margin*2;
+    const pxWidth = qualitySettings.pxWidth;
+    // Match the offscreen capture's aspect ratio to the actual printable area so a page
+    // with few questions still fills the full physical page height — this keeps the
+    // footer anchored to the bottom of the page instead of riding up with short content.
+    const pageAspect = maxContentHeight / maxContentWidth;
+    const containerMinHeight = Math.round(pxWidth * pageAspect);
+
+    for (let i=0; i<pagesHtml.length; i++) {
+      const page = pagesHtml[i];
+      const bg = page.isCover ? '#0B1F4B' : '#ffffff';
+      const wmClass = page.isCover ? 'wm-light' : 'wm-dark';
+      const container = document.createElement('div');
+      container.className = `pdfpage ${wmClass}`;
+      container.style.cssText = `position:fixed;left:-99999px;top:0;width:${pxWidth}px;min-height:${containerMinHeight}px;padding:${page.isCover ? '0' : '10px'};box-sizing:border-box;background:${bg};`;
+      container.innerHTML = page.html;
+      document.body.appendChild(container);
+      await new Promise(r => setTimeout(r, 60));
+      let canvas;
+      try {
+        canvas = await html2canvas(container, {
+          scale: qualitySettings.scale,
+          useCORS: true,
+          logging: false,
+          backgroundColor: bg,
+          width: pxWidth,
+          height: container.scrollHeight
+        });
+      } finally { document.body.removeChild(container); }
+
+      const imgData = canvas.toDataURL('image/jpeg', qualitySettings.jpegQuality);
+      let imgWidthIn = maxContentWidth, imgHeightIn = (canvas.height/canvas.width)*imgWidthIn;
+      if (imgHeightIn > maxContentHeight) { imgHeightIn = maxContentHeight; imgWidthIn = (canvas.width/canvas.height)*imgHeightIn; }
+      const xOffset = margin + (maxContentWidth - imgWidthIn)/2, yOffset = margin;
+      if (i > 0) pdf.addPage();
+      if (page.isCover) {
+        pdf.setFillColor('#0B1F4B');
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+      }
+      pdf.addImage(imgData, 'JPEG', xOffset, yOffset, imgWidthIn, imgHeightIn);
+    }
+    return pdf.output('blob');
+  }
+
+  // =========================================================================
+  // 8b. Live PDF preview (same HTML/CSS as export, rendered live — no canvas)
+  // =========================================================================
+  const pdfPreviewModal = document.getElementById('pdfPreviewModal');
+  const pdfPreviewTitle = document.getElementById('pdfPreviewTitle');
+  const pdfPreviewSheets = document.getElementById('pdfPreviewSheets');
+  const pdfPreviewMeta = document.getElementById('pdfPreviewMeta');
+  const pdfPreviewSettingsBtn = document.getElementById('pdfPreviewSettingsBtn');
+  const pdfPreviewCloseBtn = document.getElementById('pdfPreviewCloseBtn');
+  const pdfPreviewExportBtn = document.getElementById('pdfPreviewExportBtn');
+
+  function openPdfPreview(questions) {
+    if (!questions || !questions.length) { showToast('No questions to preview. Please select a module, subject, and quiz.', 'error'); return; }
+    const q = currentQuizzes.find(x => x.id === quizSelect.value);
+    pdfPreviewTitle.textContent = q ? q.name : 'Preview';
+    const { pagesHtml, totalPages } = buildPdfPagesData(questions);
+    pdfPreviewSheets.innerHTML = '';
+    pagesHtml.forEach(page => {
+      const sheet = document.createElement('div');
+      sheet.className = `pdf-sheet pdfpage ${page.isCover ? 'wm-light cover-sheet' : 'wm-dark'}`;
+      sheet.innerHTML = page.html;
+      pdfPreviewSheets.appendChild(sheet);
+    });
+    const alreadyOpen = pdfPreviewModal.classList.contains('show');
+    pdfPreviewModal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    if (!suppressHistoryNav && !alreadyOpen) history.pushState({ modal: 'pdf' }, '');
+  }
+  function closePdfPreview() {
+    pdfPreviewModal.classList.remove('show');
+    if (!settingsModal.classList.contains('show')) document.body.style.overflow = '';
+    goToStep('quizzes');
+    if (!suppressHistoryNav && history.state && history.state.modal === 'pdf') history.back();
+  }
+  pdfPreviewCloseBtn.addEventListener('click', closePdfPreview);
+  pdfPreviewModal.addEventListener('click', (e) => { if (e.target === pdfPreviewModal) closePdfPreview(); });
+  pdfPreviewSettingsBtn.addEventListener('click', openSettingsModal);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && pdfPreviewModal.classList.contains('show') && !settingsModal.classList.contains('show')) closePdfPreview(); });
+  pdfPreviewExportBtn.addEventListener('click', async () => {
+    const questions = getFilteredQuestions();
+    if (!questions.length) return;
+    try {
+      pdfPreviewExportBtn.disabled = true;
+      pdfPreviewExportBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span class="qp-label">Exporting…</span>';
+      const blob = await exportPDF(questions);
+      const filename = generateFilename('pdf');
+      downloadBlob(blob, filename, blob.type || 'application/pdf');
+      showToast(`Exported ${questions.length} questions as PDF`, 'success');
+      closePdfPreview();
+    } catch(e) { showToast('Export failed: ' + e.message, 'error'); console.error(e); }
+    finally { pdfPreviewExportBtn.disabled = false; pdfPreviewExportBtn.innerHTML = '<i class="fa-solid fa-download"></i> <span class="qp-label">Export this PDF</span>'; }
+  });
+  previewPdfBtn.addEventListener('click', () => {
+    const questions = getFilteredQuestions();
+    openPdfPreview(questions);
+  });
+
+  function pdfQuestionBlockHtml(q, i, include, scale) {
+    const qId = `q${q.number || i+1}`;
+    let html = `<div class="question" id="${qId}">`;
+    if (include.question) {
+      const qNum = include.number ? `${q.number || i+1}. ` : '';
+      html += `<div class="q-text">${qNum}${renderMarkdown(q.question)}</div>`;
+    }
+    if (include.options && q.options && q.options.length) {
+      html += `<div class="q-options">`;
+      q.options.forEach((opt, idx) => {
+        html += `<div class="q-option">
+          <span class="letter">${String.fromCharCode(65+idx)}.</span>
+          <span class="option-text">${renderInlineMarkdown(opt)}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    if (include.explanation && q.explanation) html += `<div class="q-explanation"><span class="eyebrow">Rationale</span>${renderMarkdown(q.explanation)}</div>`;
+    if (include.whyNot && q.whyNot && Object.keys(q.whyNot).length) {
+      html += `<div class="q-whynot-block"><span class="q-whynot-title">Ruled out</span>`;
+      Object.entries(q.whyNot).forEach(([idx, text]) => { if (text) html += `<div class="q-whynot"><span class="opt">${String.fromCharCode(65+parseInt(idx))} —</span> ${renderInlineMarkdown(text)}</div>`; });
+      html += `</div>`;
+    }
+    if (include.related && q.related && q.related.length) html += `<div class="q-related"><b>See also</b>Q${q.related.join(', Q')}</div>`;
+    html += `</div>`;
+    return html;
+  }
+
+  // =========================================================================
+  // 10. Init
+  // =========================================================================
+
+  // Make the browser/device back button (and gesture) close whichever overlay
+  // is currently on top — Settings first, then the PDF preview — instead of
+  // navigating away from the app.
+  window.addEventListener('popstate', (e) => {
+    suppressHistoryNav = true;
+    const wantModal = e.state && e.state.modal;
+    if (wantModal !== 'settings' && settingsModal.classList.contains('show')) closeSettingsModal();
+    if (wantModal !== 'pdf' && pdfPreviewModal.classList.contains('show')) closePdfPreview();
+    suppressHistoryNav = false;
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadModules();
+  });
+</script>
+</body>
+</html>

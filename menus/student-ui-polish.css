@@ -1,0 +1,135 @@
+/* ALIF Student UI System v1
+   Goal: one surface hierarchy, fewer layers, less paint-heavy effects,
+   predictable mobile sheets, and consistent interaction density. */
+:root{
+  --ui-max:1120px;
+  --ui-gutter:clamp(16px,3vw,28px);
+  --ui-border:color-mix(in srgb,var(--ink) 9%,transparent);
+  --ui-shadow:0 6px 24px rgba(11,32,27,.06);
+  --ui-shadow-strong:0 16px 40px rgba(11,32,27,.10);
+  --ui-fast:150ms cubic-bezier(.2,.8,.2,1);
+  --ui-smooth:220ms cubic-bezier(.16,1,.3,1);
+}
+body.dark{
+  --ui-border:rgba(237,242,239,.10);
+  --ui-shadow:0 8px 28px rgba(0,0,0,.22);
+  --ui-shadow-strong:0 18px 44px rgba(0,0,0,.34);
+}
+html{scroll-behavior:auto;}
+body{background:var(--paper);}
+
+/* Kill expensive decorative motion and repeated blur layers. */
+.picker-screen::before,.picker-screen::after,.atlas-topbar::before,
+.home-hero-visual{animation:none!important;filter:none!important;}
+.picker-topbar,.topbar{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:var(--card)!important;border-bottom:1px solid var(--ui-border)!important;}
+
+/* One consistent page width. */
+.picker-hero,.home-hero-card,.home-section,.modules-section,.subjects-section,
+.progress-main,.app-main,.learn-main,.chat-main,.related-sidebar,
+.search-overlay-results{width:min(var(--ui-max),100%);margin-left:auto;margin-right:auto;}
+
+/* Surface hierarchy */
+.screen-card,.card-inner,.quiz-card,.module-card,.subject-card,
+.overlay-panel,.action-modal-panel,.package-overlay-card{
+  border-color:var(--ui-border)!important;
+  box-shadow:var(--ui-shadow)!important;
+}
+.screen-card{box-shadow:var(--ui-shadow-strong)!important;}
+.quiz-card,.module-card,.subject-card{transition:transform var(--ui-fast),border-color var(--ui-fast),box-shadow var(--ui-fast),background-color var(--ui-fast)!important;}
+.quiz-card:hover,.module-card:hover,.subject-card:hover{transform:translateY(-2px)!important;box-shadow:var(--ui-shadow-strong)!important;}
+
+/* Cards: quieter corners and predictable density. */
+.home-hero-inner{border-radius:22px!important;box-shadow:var(--ui-shadow)!important;}
+.module-card,.subject-card,.quiz-card{border-radius:18px!important;}
+.module-card::before,.subject-card::before,.subject-card::after,.quiz-card::before{transition:none!important;}
+
+/* Large collections render only when near the viewport. */
+/* No content-visibility / paint containment on lists: they clip card shadows and the
+   progress-ring glow, and make scrolling inside overlays and the quiz page jump. */
+.quiz-card,.module-card,.subject-card{contain:none;}
+
+/* Cleaner section headers. */
+.home-section-head{margin-bottom:12px!important;}
+.home-section-head h2{font-size:20px!important;letter-spacing:-.02em!important;}
+.home-section-head .hs-sub{font-size:12px!important;}
+
+/* Horizontal lists should scroll; never compress action text. */
+.home-modules-rail,.subjects-scroll-wrapper{overflow-x:auto!important;overscroll-behavior-x:contain;scrollbar-width:none;}
+.home-modules-rail::-webkit-scrollbar,.subjects-scroll-wrapper::-webkit-scrollbar{display:none;}
+.home-modules-rail .module-card,.subjects-scroll.wrap .subject-card{flex:0 0 auto!important;}
+
+/* Fixed chrome gets a small, explicit layer. */
+/* Layer scale (must match the base stylesheet so nothing slips behind chat/progress screens):
+   picker 200 < desktop-nav 250 < progress 300 < chat 310 < bottom-nav 320 < search 700
+   < overlay 1000 < toast 1200 < account-sheet 1600 < package 3000 < lock 3100. */
+.picker-screen{z-index:200;isolation:isolate;}
+.progress-screen{z-index:300;isolation:isolate;}
+.desktop-nav{z-index:250;}
+.bottom-nav{z-index:320;}
+.search-overlay{z-index:700;}
+.overlay{z-index:1000;}
+.overlay.account-sheet{z-index:1600;}
+.package-overlay{z-index:3000;}
+.lock-overlay{z-index:3100;}
+
+/* Overlay system: no stacked blur, no oversized mystery layers. */
+.overlay{background:rgba(8,14,12,.48)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;overscroll-behavior:contain;}
+.overlay:not(.account-sheet){padding:20px;}
+.overlay.account-sheet{padding:0;}
+.overlay-panel,.action-modal-panel,.package-overlay-card{
+  max-height:min(92dvh,820px)!important;border-radius:22px!important;overflow-y:auto!important;overflow-x:hidden!important;
+  overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+}
+.overlay-panel,.package-overlay-card{width:min(680px,100%);}
+.overlay.account-sheet .action-modal-panel{max-height:94dvh!important;}
+.package-overlay{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:rgba(8,14,12,.48)!important;}
+.package-overlay-card{box-shadow:var(--ui-shadow-strong)!important;}
+.search-overlay{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:var(--paper)!important;}
+.search-overlay-bar{background:var(--card)!important;border-bottom:1px solid var(--ui-border)!important;}
+
+/* Mobile turns secondary dialogs into sheets instead of stacking tiny cards. */
+@media(max-width:640px){
+  :root{--ui-gutter:16px;}
+  .home-hero-card{padding:0 16px!important;margin-top:14px!important;}
+  .home-hero-inner{padding:24px 20px!important;border-radius:20px!important;}
+  .home-hero-inner h1{font-size:clamp(28px,9vw,38px)!important;}
+  .picker-topbar,.topbar{padding-left:16px!important;padding-right:16px!important;}
+  .overlay{align-items:flex-end!important;padding:0!important;}
+  .overlay-panel,.action-modal-panel,.package-overlay-card{
+    width:100%!important;max-width:none!important;max-height:92dvh!important;
+    border-radius:22px 22px 0 0!important;padding-bottom:calc(18px + env(safe-area-inset-bottom))!important;
+  }
+  .result-panel{max-height:94dvh!important;}
+  .overlay-head{position:sticky;top:0;background:var(--card);z-index:2;padding-bottom:12px;}
+  .overlay-actions{padding-bottom:2px;}
+  .bottom-nav{padding-bottom:calc(8px + env(safe-area-inset-bottom))!important;}
+  .desktop-nav{display:none!important;}
+  .quiz-grid{grid-template-columns:1fr!important;gap:10px!important;}
+  .quiz-card{min-height:0!important;padding:14px!important;}
+  .module-card{min-height:0!important;}
+}
+
+/* Small screens: prefer instant feedback over large motion. */
+@media(max-width:900px){
+  .quiz-card:hover,.module-card:hover,.subject-card:hover{transform:none!important;}
+}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}
+  /* Loading indicators must keep turning, otherwise buttons look frozen while busy. */
+  .auth-spinner,.lm-spin,.spin,.fa-spin,.fa-spinner{animation-duration:.8s!important;animation-iteration-count:infinite!important;}
+}
+
+/* The jump-to-unanswered button is fixed to the viewport and lives outside #appScreen,
+   so it must be hidden whenever the quiz screen is hidden. */
+#appScreen.hidden ~ #jumpFab,.jump-fab.hide{display:none!important;}
+
+/* Desktop: translucent header and floating nav dock (content shows through softly). */
+@media(min-width:881px){
+  .picker-topbar{background:color-mix(in srgb,var(--card) 42%,transparent)!important;
+    backdrop-filter:blur(16px) saturate(140%)!important;-webkit-backdrop-filter:blur(16px) saturate(140%)!important;
+    border-bottom:1px solid color-mix(in srgb,var(--ink) 7%,transparent)!important;}
+  .desktop-nav{background:color-mix(in srgb,var(--card) 45%,transparent)!important;
+    backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);
+    border-color:color-mix(in srgb,var(--ink) 10%,transparent)!important;}
+}

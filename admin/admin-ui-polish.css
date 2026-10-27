@@ -1,0 +1,84 @@
+/* ALIF Admin UI System v1
+   One hierarchy, compact workspace, low-paint surfaces, and predictable sheets. */
+:root{
+  --ui-accent:var(--artery,#4f46e5);
+  --ui-accent-soft:color-mix(in srgb,var(--ui-accent) 9%,var(--card));
+  --ui-border:color-mix(in srgb,var(--ink) 9%,transparent);
+  --ui-shadow:0 6px 24px rgba(16,24,40,.06);
+  --ui-shadow-strong:0 18px 44px rgba(16,24,40,.10);
+  --ui-fast:150ms cubic-bezier(.2,.8,.2,1);
+}
+body.dark{--ui-border:rgba(237,242,239,.10);--ui-shadow:0 8px 28px rgba(0,0,0,.20);--ui-shadow-strong:0 20px 48px rgba(0,0,0,.30);}
+
+html{scroll-behavior:auto;}
+body{background:var(--paper)!important;}
+
+/* Header/sidebar: crisp instead of translucent. */
+.admin-header{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:var(--card)!important;border-bottom:1px solid var(--ui-border)!important;box-shadow:0 1px 0 rgba(16,24,40,.03)!important;}
+.admin-tabs{background:var(--card)!important;border-right:1px solid var(--ui-border)!important;box-shadow:none!important;}
+.admin-tabs button,.admin-tabs a{transition:background var(--ui-fast),color var(--ui-fast),transform var(--ui-fast)!important;}
+.admin-tabs button.active{background:var(--ui-accent-soft)!important;color:var(--ui-accent)!important;box-shadow:none!important;}
+.admin-tabs button.active i{color:var(--ui-accent)!important;}
+
+/* Remove per-tab entrance animation; navigation feels immediate. */
+.tab-panel{animation:none!important;}
+
+/* Workspace surfaces */
+.kpi-card,.dash-card,.card-panel,.table-wrap,.pa-row,.resource-picker-modern,
+.override-section,.bulk-bar,.at-bulkbar,.pr-sec,.bn-card,.ch-card,.sp-section{
+  border-color:var(--ui-border)!important;
+  box-shadow:var(--ui-shadow)!important;
+}
+.kpi-card,.dash-card,.card-panel{border-radius:16px!important;}
+.kpi-card:hover{transform:translateY(-1px)!important;box-shadow:var(--ui-shadow-strong)!important;}
+
+.kpi-grid{gap:12px!important;}
+.dash-grid{gap:12px!important;}
+.dash-card{padding:16px 18px 18px!important;}
+.kpi-card{padding:16px!important;}
+
+/* Dense admin content stays readable without oversized whitespace. */
+.table-wrap{border-radius:14px!important;}
+.table-wrap thead{z-index:3!important;background:var(--paper-2)!important;}
+.table-wrap th{padding:10px 12px!important;}
+.table-wrap td{padding:10px 12px!important;}
+.action-bar{border:1px solid var(--ui-border);background:var(--paper-2)!important;border-radius:13px!important;padding:10px 12px!important;}
+.btn{transition:background var(--ui-fast),border-color var(--ui-fast),color var(--ui-fast),transform var(--ui-fast)!important;}
+.btn:hover{transform:translateY(-1px);}
+
+/* Fullscreen / modal layers: only one visual language. */
+.modal-overlay{background:rgba(8,14,12,.48)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;overscroll-behavior:contain;}
+.modal-panel{border-radius:20px!important;box-shadow:var(--ui-shadow-strong)!important;border:1px solid var(--ui-border)!important;}
+.modal-head{position:sticky;top:0;z-index:4;background:var(--card);padding-bottom:12px;}
+
+/* Long lists only paint near the viewport. */
+.pa-list,.access-tree,.adm-perms,.dash-grid,.kpi-grid,.table-wrap{contain:layout style;}
+
+/* Prevent accidental horizontal overflow from wide tables/cards. */
+.admin-content,.tab-panel{min-width:0;}
+.table-wrap{max-width:100%;overflow:auto;overscroll-behavior:contain;}
+
+/* Mobile: keep the existing sidebar, but make the content quieter and sheets cleaner. */
+@media(max-width:760px){
+  .admin-header{box-shadow:0 1px 0 rgba(16,24,40,.04)!important;}
+  .admin-content{padding:14px 12px calc(32px + env(safe-area-inset-bottom))!important;}
+  .dash-hero{margin-bottom:14px!important;}
+  .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important;}
+  .kpi-card{border-radius:14px!important;padding:13px!important;}
+  .kpi-card .kpi-value{font-size:26px!important;}
+  .dash-card{border-radius:14px!important;padding:14px!important;}
+  .action-bar{position:sticky;top:calc(var(--topbar-height) + 8px);z-index:10;}
+  .modal-overlay{padding:0!important;align-items:flex-end!important;}
+  .modal-panel,.modal-panel.wide,.modal-panel.fullscreen-modal{
+    width:100%!important;max-width:none!important;
+    border-radius:20px 20px 0 0!important;
+    max-height:92dvh!important;
+    padding-bottom:calc(18px + env(safe-area-inset-bottom))!important;
+  }
+  .modal-panel.fullscreen-modal{height:100dvh!important;max-height:100dvh!important;border-radius:0!important;}
+  .modal-head{margin-bottom:14px!important;}
+}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important;}
+}

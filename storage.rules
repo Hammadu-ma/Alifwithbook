@@ -1,0 +1,23 @@
+rules_version = '2';
+// Uploads for AResources (books, videos, thumbnails, lecturer photos).
+// Files are readable by anyone with the link (the app shows them to students);
+// only admins holding the "resources" permission (or the owner) can write.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function adminDoc() {
+      return firestore.get(/databases/(default)/documents/admin/$(request.auth.uid)).data;
+    }
+    function canManageResources() {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/admin/$(request.auth.uid))
+        && (adminDoc().role == 'owner'
+            || ('permissions' in adminDoc() && adminDoc().permissions.get('resources', false) == true));
+    }
+
+    match /resources/{allPaths=**} {
+      allow read: if true;
+      allow create, update: if canManageResources() && request.resource.size < 500 * 1024 * 1024;
+      allow delete: if canManageResources();
+    }
+  }
+}

@@ -1,0 +1,605 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================================================
+    // Identity / roles
+    // =====================================================================
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userPath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    function adminPath(uid) {
+      return /databases/$(database)/documents/admin/$(uid);
+    }
+
+    function isAdmin() {
+      return signedIn() && exists(adminPath(request.auth.uid));
+    }
+
+    function isOwner() {
+      return isAdmin() && get(adminPath(request.auth.uid)).data.role == 'owner';
+    }
+
+    // UI permissions are not a security boundary by themselves. These helpers
+    // make the same admin permissions enforceable inside Firestore Rules.
+    function adminCan(permission) {
+      return isOwner()
+        || (isAdmin() && get(adminPath(request.auth.uid)).data.permissions[permission] == true);
+    }
+
+    function isActiveStudent() {
+      return signedIn()
+        && exists(userPath(request.auth.uid))
+        && get(userPath(request.auth.uid)).data.role == 'student'
+        && get(userPath(request.auth.uid)).data.status == 'active';
+    }
+
+    function currentStudentId() {
+      return isActiveStudent() && 'studentId' in get(userPath(request.auth.uid)).data
+        ? get(userPath(request.auth.uid)).data.studentId
+        : null;
+    }
+
+    function ownsStudent(studentId) {
+      return isActiveStudent() && currentStudentId() == studentId;
+    }
+
+    function accessPath(uid, type, id) {
+      return /databases/$(database)/documents/access/$(uid)/resources/$(type + '_' + id);
+    }
+
+    function activeAllow(uid, type, id) {
+      return exists(accessPath(uid, type, id))
+        && get(accessPath(uid, type, id)).data.status == 'active'
+        && get(accessPath(uid, type, id)).data.mode == 'allow'
+        && (!('expiresAt' in get(accessPath(uid, type, id)).data)
+            || get(accessPath(uid, type, id)).data.expiresAt == null
+            || get(accessPath(uid, type, id)).data.expiresAt > request.time);
+    }
+
+    function activeDeny(uid, type, id) {
+      return exists(accessPath(uid, type, id))
+        && get(accessPath(uid, type, id)).data.status == 'active'
+        && get(accessPath(uid, type, id)).data.mode == 'deny'
+        && (!('expiresAt' in get(accessPath(uid, type, id)).data)
+            || get(accessPath(uid, type, id)).data.expiresAt == null
+            || get(accessPath(uid, type, id)).data.expiresAt > request.time);
+    }
+
+    function quizAccess(uid, subjectId, quizId) {
+      return !activeDeny(uid, 'quiz', quizId)
+        && !activeDeny(uid, 'subject', subjectId)
+        && !activeDeny(uid, 'module', get(/databases/$(database)/documents/subjects/$(subjectId)).data.moduleId)
+        && (activeAllow(uid, 'quiz', quizId)
+            || activeAllow(uid, 'subject', subjectId)
+            || activeAllow(uid, 'module', get(/databases/$(database)/documents/subjects/$(subjectId)).data.moduleId));
+    }
+
+    function ownerOrAdmin() {
+      return isAdmin();
+    }
+
+    // =====================================================================
+    // Account profile
+    // =====================================================================
+    match /users/{uid} {
+      allow read: if (adminCan('students') || adminCan('programaccess') || adminCan('enroll') || adminCan('payments') || adminCan('results') || adminCan('devices') || adminCan('chat')) || (signedIn() && request.auth.uid == uid);
+
+      // A student creates only their own profile, and the paired legacy
+      // student document is created in the same batch. getAfter() makes the
+      // pairing atomic and prevents a client from inventing an arbitrary
+      // studentId without creating the matching record.
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.role == 'student'
+        && request.resource.data.status == 'active'
+        && request.resource.data.studentId is string
+        && request.resource.data.name is string
+        && request.resource.data.email is string
+        && request.resource.data.migrationState in ['in_progress', 'complete']
+        // exists()/get() only see the database BEFORE the batch commits, so a
+        // brand-new signup (users + secretkeys written in one batch) would
+        // always fail. existsAfter()/getAfter() read the state after the batch,
+        // which also covers backfilling an already-existing linked student.
+        && existsAfter(/databases/$(database)/documents/secretkeys/$(request.resource.data.studentId))
+        && getAfter(/databases/$(database)/documents/secretkeys/$(request.resource.data.studentId)).data.authUid == uid;
+
+      // Students may update profile-facing fields only. Role/status/studentId
+      // are privileged account bindings and cannot be changed by the browser.
+      allow update: if adminCan('students') || adminCan('programaccess') || adminCan('enroll') || (
+        signedIn() && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'email', 'batch', 'updatedAt'
+        ])
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.status == resource.data.status
+        && request.resource.data.studentId == resource.data.studentId
+      ) || (
+        signedIn() && request.auth.uid == uid
+        && request.resource.data.role == 'student'
+        && request.resource.data.status == 'active'
+        && request.resource.data.studentId is string
+        && request.resource.data.migrationState == 'in_progress'
+        && (!('studentId' in resource.data) || resource.data.studentId == request.resource.data.studentId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'role', 'status', 'name', 'email', 'batch', 'studentId', 'source', 'migrationState', 'migrationVersion', 'updatedAt'
+        ])
+        && get(/databases/$(database)/documents/secretkeys/$(request.resource.data.studentId)).data.authUid == uid
+        && get(/databases/$(database)/documents/secretkeys/$(request.resource.data.studentId)).data.email == request.auth.token.email
+      ) || (
+        signedIn() && request.auth.uid == uid
+        && resource.data.migrationState == 'in_progress'
+        && request.resource.data.migrationState == 'complete'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['migrationState', 'migrationVersion', 'updatedAt'])
+      );
+
+      allow delete: if adminCan('students') || isOwner();
+    }
+
+    // =====================================================================
+    // Admin accounts
+    // =====================================================================
+    match /admin/{uid} {
+      // Admin roster is sensitive. Only admins can see it.
+      allow read: if isAdmin();
+
+      // Only the owner can add/change/remove admin metadata. The browser
+      // cannot promote an account to owner.
+      allow create: if isOwner()
+        && request.resource.data.role == 'admin';
+      allow update: if isOwner()
+        && resource.data.role != 'owner'
+        && request.resource.data.role == 'admin';
+      allow delete: if isOwner() && resource.data.role != 'owner';
+    }
+
+    // =====================================================================
+    // Public catalog metadata
+    // =====================================================================
+    match /universities/{id} {
+      allow read: if true;
+      allow write: if adminCan('modules');
+    }
+
+    match /modules/{id} {
+      allow read: if true;
+      allow write: if (adminCan('modules') || adminCan('programaccess'));
+    }
+
+    match /subjects/{id} {
+      allow read: if true;
+      allow write: if (adminCan('subjects') || adminCan('programaccess'));
+
+      // -------------------------------------------------------------------
+      // Quiz access. Metadata may be public; questions are the protected
+      // content. The lock cascade mirrors the existing client entitlement
+      // model so the Firestore rule remains the actual enforcement point.
+      // -------------------------------------------------------------------
+      match /quizzes/{quizId} {
+        // Quiz metadata is intentionally readable; the actual question bank
+        // is protected below. This also keeps collectionGroup/live queries
+        // efficient because rules do not need to prove entitlement for every
+        // metadata document returned.
+        allow read: if true;
+        allow write: if (adminCan('quizzes') || adminCan('programaccess'));
+
+        match /questions/{questionId} {
+          allow read: if adminCan('questions')
+            || !quizLockedByDefault(getQuizData(id, quizId), id)
+            || (isActiveStudent() && quizAccess(request.auth.uid, id, quizId));
+          allow write: if adminCan('questions');
+        }
+      }
+    }
+
+    // AResources — books and videos shown in the student app's AResources tab.
+    // Metadata is public (like modules); only admins with the 'resources' permission can write.
+    match /books/{id} {
+      allow read: if true;
+      allow write: if adminCan('resources');
+    }
+
+    match /videos/{id} {
+      allow read: if true;
+      allow write: if adminCan('resources');
+    }
+
+    match /packages/{id} {
+      allow read: if true;
+      allow write: if (adminCan('bundles') || adminCan('enroll') || adminCan('programaccess'));
+    }
+
+    match /bankAccounts/{id} {
+      // Bank details are intentionally public because a student must see
+      // them before submitting a manual bank transfer.
+      allow read: if true;
+      allow write: if (adminCan('payments') || adminCan('settings'));
+    }
+
+    // =====================================================================
+    // Settings — only non-sensitive settings are public.
+    // Telegram credentials must never be readable from a student browser.
+    // =====================================================================
+    match /settings/{id} {
+      allow read: if id in ['system', 'contentVersion', 'appVersion', 'forceDeviceLock', 'lockConfig', 'pricing']
+        || (id == 'pricing' && adminCan('pricing'))
+        || adminCan('settings');
+      allow write: if id == 'pricing'
+        ? adminCan('pricing')
+        : id == 'contentVersion'
+          ? (adminCan('modules') || adminCan('subjects') || adminCan('quizzes') || adminCan('questions') || adminCan('programaccess') || adminCan('resources'))
+          : id == 'appVersion'
+            ? (adminCan('settings')
+               || ((adminCan('modules') || adminCan('subjects') || adminCan('quizzes') || adminCan('questions') || adminCan('programaccess') || adminCan('resources'))
+                   && resource != null
+                   && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cv', 'cq'])))
+            : adminCan('settings');
+    }
+
+    // =====================================================================
+    // Unified student entitlements
+    // =====================================================================
+    match /access/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid || isAdmin();
+      allow read: if signedIn() && request.auth.uid == uid || isAdmin();
+      allow create, update: if isAdmin() && (isOwner() || adminCan('programaccess') || adminCan('enroll') || adminCan('payments') || adminCan('bundles'))
+        || (isActiveStudent() && request.auth.uid == uid && get(userPath(uid)).data.migrationState == 'in_progress');
+      allow delete: if isAdmin() && (isOwner() || adminCan('programaccess') || adminCan('enroll') || adminCan('payments') || adminCan('bundles'));
+
+      match /resources/{resourceKey} {
+        allow read: if signedIn() && request.auth.uid == uid || isAdmin();
+        allow create, update: if isAdmin() && (isOwner() || adminCan('programaccess') || adminCan('enroll') || adminCan('payments') || adminCan('bundles'))
+          || (isActiveStudent() && request.auth.uid == uid && get(userPath(uid)).data.migrationState == 'in_progress');
+        allow delete: if isAdmin() && (isOwner() || adminCan('programaccess') || adminCan('enroll') || adminCan('payments') || adminCan('bundles'))
+          || (isActiveStudent() && request.auth.uid == uid && get(userPath(uid)).data.migrationState == 'in_progress');
+      }
+    }
+
+    // Lets the admin list every active grant for a resource in one query
+    // (Enroll screen). Students still only read their own via the rule above.
+    match /{path=**}/resources/{resourceKey} {
+      allow read: if isAdmin();
+    }
+
+    // Admin activity log (written by audit() in the admin dashboard).
+    match /auditLog/{entryId} {
+      allow create: if isAdmin() && request.resource.data.uid == request.auth.uid;
+      allow read: if isAdmin() && (isOwner() || adminCan('activity'));
+      allow update, delete: if false;
+    }
+
+    match /accessHistory/{eventId} {
+      allow read: if isAdmin() && (isOwner() || adminCan('programaccess') || adminCan('activity'));
+      allow create: if isAdmin() && (isOwner() || adminCan('programaccess') || adminCan('enroll') || adminCan('payments') || adminCan('bundles'))
+      || (isActiveStudent() && request.resource.data.studentId == currentStudentId() && get(userPath(request.auth.uid)).data.migrationState == 'in_progress' && request.resource.data.action == 'migration');
+      allow update, delete: if isOwner();
+    }
+
+    // =====================================================================
+    // Legacy student record / entitlement profile
+    // =====================================================================
+    match /secretkeys/{studentId} {
+      // A student may read only their own record. Admins can read all.
+      allow read: if (adminCan('students') || adminCan('programaccess') || adminCan('enroll') || adminCan('bundles') || adminCan('devices') || adminCan('chat'))
+        || (signedIn() && resource.data.authUid == request.auth.uid)
+        || ownsStudent(studentId);
+
+      allow create: if (adminCan('students') || adminCan('programaccess') || adminCan('enroll') || adminCan('bundles') || adminCan('devices') || adminCan('chat')) || (
+        signedIn()
+        && request.auth.uid == request.resource.data.authUid
+        && request.resource.data.keys().hasOnly([
+          'name', 'batch', 'ID', 'authUid', 'userLocks', 'oneTimeUse',
+          'used', 'appearInChat', 'deviceLockEnabled', 'maxDevices',
+          'source', 'status', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.source == 'firebaseAuth'
+        && request.resource.data.userLocks == {}
+        && request.resource.data.deviceLockEnabled == true
+        && request.resource.data.oneTimeUse == false
+        && request.resource.data.used == false
+        && request.resource.data.status == 'active'
+        && getAfter(userPath(request.auth.uid)).data.studentId == studentId
+      );
+
+      // Normal student changes are limited to profile/presence preferences.
+      // Entitlements, authUid, device policy and keys stay privileged.
+      allow update: if (adminCan('students') || adminCan('programaccess') || adminCan('enroll') || adminCan('bundles') || adminCan('devices') || adminCan('chat')) || (
+        signedIn()
+        && !('authUid' in resource.data)
+        && request.resource.data.authUid == request.auth.uid
+        && request.resource.data.secretkey == resource.data.secretkey
+        && request.resource.data.source == 'legacyLinked'
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['authUid', 'email', 'source', 'updatedAt'])
+      ) || (
+        ownsStudent(studentId)
+        && request.resource.data.authUid == resource.data.authUid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'batch', 'ID', 'appearInChat', 'online', 'lastSeen',
+          'lastActiveDeviceId', 'updatedAt'
+        ])
+      );
+
+      allow delete: if isOwner();
+
+      // -------------------------------------------------------------------
+      // Device registrations are policy state, not authentication. A
+      // student can register their own browser but cannot make it blocked:
+      // false. Only admins can block/delete devices.
+      // -------------------------------------------------------------------
+      match /devices/{deviceId} {
+        allow read: if isAdmin() || ownsStudent(studentId);
+        allow create: if adminCan('devices') || (
+          ownsStudent(studentId)
+          && request.resource.data.blocked == false
+          && request.resource.data.keys().hasOnly([
+            'model', 'fingerprint', 'ua', 'firstSeen', 'lastSeen',
+            'lastLogin', 'blocked'
+          ])
+        );
+        allow update: if adminCan('devices') || (
+          ownsStudent(studentId)
+          && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['lastSeen', 'lastLogin'])
+          && request.resource.data.blocked == resource.data.blocked
+        );
+        allow delete: if adminCan('devices');
+      }
+    }
+
+    // =====================================================================
+    // Personal quiz pins
+    // =====================================================================
+    match /studentPins/{studentId} {
+      allow read, create, update: if isActiveStudent() && currentStudentId() == studentId;
+      allow delete: if adminCan('live') || ownsStudent(studentId);
+    }
+
+    // =====================================================================
+    // Quiz progress — document key is the Firebase UID.
+    // =====================================================================
+    match /progress/{uid} {
+      allow read, create, update: if isActiveStudent()
+        && request.auth.uid == uid
+        && request.resource.data.uid == uid
+        && request.resource.data.studentId == currentStudentId();
+      allow delete: if adminCan('results') || (signedIn() && request.auth.uid == uid);
+    }
+
+    // =====================================================================
+    // Quiz results — identity-bound to Firebase Auth UID. Legacy records
+    // without uid remain admin-readable but are not student-readable until
+    // they are migrated.
+    // =====================================================================
+    match /results/{id} {
+      allow read: if adminCan('results') || (
+        isActiveStudent()
+        && resource.data.uid == request.auth.uid
+        && resource.data.studentId == currentStudentId()
+      );
+      allow create: if isActiveStudent()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.studentId == currentStudentId();
+      allow update: if isActiveStudent()
+        && resource.data.uid == request.auth.uid
+        && resource.data.studentId == currentStudentId()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.studentId == currentStudentId();
+      allow delete: if adminCan('results') || (
+        isActiveStudent() && resource.data.uid == request.auth.uid
+        && resource.data.studentId == currentStudentId()
+      );
+    }
+
+    // =====================================================================
+    // In-app timed exam attempts — identity-bound to Firebase Auth UID, same
+    // model as quiz results. Students create and read only their own attempts;
+    // attempts are immutable for students (no update/delete).
+    // =====================================================================
+    match /examAttempts/{id} {
+      allow read: if adminCan('results') || (
+        isActiveStudent()
+        && resource.data.uid == request.auth.uid
+        && resource.data.studentId == currentStudentId()
+      );
+      allow create: if isActiveStudent()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.studentId == currentStudentId();
+      allow update, delete: if adminCan('results');
+    }
+
+    // =====================================================================
+    // Payment submissions — a student can submit and view only their own
+    // pending/previous submissions. Approval remains an admin operation.
+    // =====================================================================
+    match /paymentSubmissions/{id} {
+      allow read: if adminCan('payments') || (
+        isActiveStudent() && resource.data.uid == request.auth.uid
+        && resource.data.studentId == currentStudentId()
+      );
+
+      allow create: if isActiveStudent()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.studentId == currentStudentId()
+        && request.resource.data.status == 'pending';
+
+      allow update, delete: if adminCan('payments');
+    }
+
+    // =====================================================================
+    // Chat — authenticated, identity-bound, participant-bound.
+    // =====================================================================
+    match /chatProfiles/{profileId} {
+      allow read: if isActiveStudent() || adminCan('chat');
+      allow create: if adminCan('chat') || (
+        ownsStudent(profileId)
+        && request.resource.data.studentId == profileId
+      );
+      allow update: if adminCan('chat') || ownsStudent(profileId);
+      allow delete: if adminCan('chat');
+    }
+
+    match /classChat/{messageId} {
+      allow read: if isActiveStudent() || adminCan('chat');
+      allow create: if isActiveStudent()
+        && request.resource.data.authUid == request.auth.uid
+        && request.resource.data.studentId == currentStudentId();
+      allow update: if adminCan('chat') || (
+        isActiveStudent()
+        && resource.data.authUid == request.auth.uid
+        && request.resource.data.authUid == resource.data.authUid
+        && request.resource.data.studentId == resource.data.studentId
+      );
+      allow delete: if adminCan('chat');
+    }
+
+    match /privateChats/{chatId} {
+      allow read: if adminCan('chat') || (isActiveStudent()
+        && currentStudentId() in resource.data.participantIds);
+      allow create: if isActiveStudent()
+        && currentStudentId() in request.resource.data.participantIds;
+      allow update: if isActiveStudent()
+        && currentStudentId() in resource.data.participantIds
+        && currentStudentId() in request.resource.data.participantIds;
+      allow delete: if adminCan('chat');
+
+      match /messages/{messageId} {
+        allow read: if adminCan('chat') || (isActiveStudent()
+          && currentStudentId() in get(parentChatPath(chatId)).data.participantIds);
+        allow create: if isActiveStudent()
+          && request.resource.data.authUid == request.auth.uid
+          && request.resource.data.studentId == currentStudentId()
+          && currentStudentId() in get(parentChatPath(chatId)).data.participantIds;
+        allow update: if adminCan('chat') || (
+          isActiveStudent()
+          && resource.data.authUid == request.auth.uid
+          && request.resource.data.authUid == resource.data.authUid
+          && request.resource.data.studentId == resource.data.studentId
+          && currentStudentId() in get(parentChatPath(chatId)).data.participantIds
+        );
+        allow delete: if adminCan('chat');
+      }
+    }
+
+    match /chatGroups/{groupId} {
+      allow read: if adminCan('chat') || (isActiveStudent()
+        && currentStudentId() in resource.data.memberIds);
+      allow create: if adminCan('chat') || (isActiveStudent()
+        && currentStudentId() in request.resource.data.memberIds);
+      allow update: if adminCan('chat') || (isActiveStudent()
+        && currentStudentId() in resource.data.memberIds
+        && currentStudentId() in request.resource.data.memberIds);
+      allow delete: if adminCan('chat');
+
+      match /messages/{messageId} {
+        allow read: if adminCan('chat') || (isActiveStudent()
+          && currentStudentId() in get(parentGroupPath(groupId)).data.memberIds);
+        allow create: if isActiveStudent()
+          && request.resource.data.authUid == request.auth.uid
+          && request.resource.data.studentId == currentStudentId()
+          && currentStudentId() in get(parentGroupPath(groupId)).data.memberIds;
+        allow update: if adminCan('chat') || (
+          isActiveStudent()
+          && resource.data.authUid == request.auth.uid
+          && request.resource.data.authUid == resource.data.authUid
+          && request.resource.data.studentId == resource.data.studentId
+          && currentStudentId() in get(parentGroupPath(groupId)).data.memberIds
+        );
+        allow delete: if adminCan('chat');
+      }
+    }
+
+    // =====================================================================
+    // Helper functions for protected content / chat parent reads
+    // =====================================================================
+    function getQuizData(subjectId, quizId) {
+      return get(/databases/$(database)/documents/subjects/$(subjectId)/quizzes/$(quizId)).data;
+    }
+
+    function subjectDoc(subjId) {
+      return exists(/databases/$(database)/documents/subjects/$(subjId))
+        ? get(/databases/$(database)/documents/subjects/$(subjId)).data
+        : null;
+    }
+
+    function moduleDocFor(subjData) {
+      return (subjData != null && 'moduleId' in subjData
+              && exists(/databases/$(database)/documents/modules/$(subjData.moduleId)))
+        ? get(/databases/$(database)/documents/modules/$(subjData.moduleId)).data
+        : null;
+    }
+
+    function studentDoc(studentId) {
+      return (studentId != null
+              && exists(/databases/$(database)/documents/secretkeys/$(studentId)))
+        ? get(/databases/$(database)/documents/secretkeys/$(studentId)).data
+        : null;
+    }
+
+    function isPublicUnlock(itemData) {
+      return itemData != null && 'locked' in itemData && itemData.locked == 'public_unlock';
+    }
+
+    function isDefaultQuiz(itemData) {
+      return itemData != null && 'locked' in itemData && itemData.locked == 'default';
+    }
+
+    function baseLocked(itemData) {
+      return itemData != null && 'locked' in itemData
+        && (itemData.locked == true || itemData.locked == 'public_lock');
+    }
+
+    function quizLockedByDefault(quizData, subjId) {
+      let subjData = subjectDoc(subjId);
+      let modData = moduleDocFor(subjData);
+      return isPublicUnlock(quizData) ? false
+        : isDefaultQuiz(quizData)
+          ? (modData != null ? baseLocked(modData) : baseLocked(subjData))
+          : (baseLocked(quizData) || baseLocked(subjData) || baseLocked(modData));
+    }
+
+    function overrideLocked(itemData, itemId, studentId, sData) {
+      return (itemData != null && 'locked' in itemData && itemData.locked == 'public_lock') ? true
+        : (itemData != null && 'locked' in itemData && itemData.locked == 'public_unlock') ? false
+        : (itemData != null && 'userLocks' in itemData
+              && studentId != null && studentId in itemData.userLocks)
+          ? itemData.userLocks[studentId] == true
+          : (sData != null && 'userLocks' in sData && itemId in sData.userLocks)
+            ? sData.userLocks[itemId] == true
+            : baseLocked(itemData);
+    }
+
+    function quizLockedForStudent(quizData, quizId, subjId, studentId, sData) {
+      let subjData = subjectDoc(subjId);
+      let modData = moduleDocFor(subjData);
+      let moduleId = (subjData != null && 'moduleId' in subjData) ? subjData.moduleId : null;
+      let enrolled = moduleId != null && (
+        (modData != null && 'userLocks' in modData && studentId != null
+          && studentId in modData.userLocks && modData.userLocks[studentId] == 'enrolled')
+        || (sData != null && 'userLocks' in sData
+          && moduleId in sData.userLocks && sData.userLocks[moduleId] == 'enrolled')
+      );
+      return !isPublicUnlock(quizData) && !enrolled && (isDefaultQuiz(quizData)
+        ? (overrideLocked(quizData, quizId, studentId, sData)
+          || (moduleId != null
+            ? overrideLocked(modData, moduleId, studentId, sData)
+            : overrideLocked(subjData, subjId, studentId, sData)))
+        : (overrideLocked(quizData, quizId, studentId, sData)
+          || overrideLocked(subjData, subjId, studentId, sData)
+          || (moduleId != null && overrideLocked(modData, moduleId, studentId, sData))));
+    }
+
+    function parentChatPath(chatId) {
+      return /databases/$(database)/documents/privateChats/$(chatId);
+    }
+
+    function parentGroupPath(groupId) {
+      return /databases/$(database)/documents/chatGroups/$(groupId);
+    }
+  }
+}

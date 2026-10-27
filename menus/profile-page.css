@@ -1,0 +1,345 @@
+/* ========================================================================
+   ALIF Med — full-screen Profile page
+   Layer: above nav/search (≤700), below overlays (1000) and toasts (1200)
+   so confirm dialogs and toasts still appear on top of it.
+   ======================================================================== */
+.profile-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: var(--paper);
+  color: var(--ink);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  isolation: isolate;
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity .28s var(--ease), transform .32s var(--ease);
+}
+.profile-screen.hidden { display: none; }
+.profile-screen.open { opacity: 1; transform: none; }
+
+/* ----- top bar ----- */
+.pf-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  background: var(--paper);
+  border-bottom: 1px solid transparent;
+}
+.pf-topbar-title {
+  flex: 1;
+  text-align: center;
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 700;
+  font-size: 17px;
+}
+.pf-back, .pf-topbar-spacer { width: 40px; height: 40px; flex: none; }
+.pf-back {
+  border-radius: 50%;
+  border: 1px solid var(--card-border);
+  background: var(--card);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+  transition: transform .15s var(--ease), background .2s;
+}
+.pf-back:active { transform: scale(.92); }
+
+/* ----- layout ----- */
+.pf-main {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 4px 16px calc(40px + env(safe-area-inset-bottom));
+}
+
+/* ----- hero ----- */
+.pf-hero {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  color: #fff;
+  border-radius: var(--radius-lg);
+  padding: 34px 20px 28px;
+  background: linear-gradient(135deg, var(--artery) 0%, color-mix(in srgb, var(--artery) 52%, #06120f) 100%);
+  box-shadow: var(--shadow-lg);
+}
+.pf-hero::before, .pf-hero::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .08);
+  pointer-events: none;
+}
+.pf-hero::before { width: 220px; height: 220px; top: -90px; right: -60px; }
+.pf-hero::after { width: 160px; height: 160px; bottom: -80px; left: -50px; }
+.pf-avatar {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .16);
+  border: 3px solid rgba(255, 255, 255, .55);
+  box-shadow: 0 0 0 6px rgba(255, 255, 255, .1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 700;
+  font-size: 34px;
+  letter-spacing: .02em;
+}
+.pf-name {
+  position: relative;
+  margin: 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(22px, 5.5vw, 28px);
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.pf-chips {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.pf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, .16);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.pf-chip i { font-size: 11px; opacity: .85; }
+.pf-email {
+  position: relative;
+  margin-top: 12px;
+  font-size: 12.5px;
+  opacity: .82;
+  overflow-wrap: anywhere;
+}
+.pf-email i { margin-right: 6px; }
+
+/* ----- sections ----- */
+.pf-section-title {
+  margin: 26px 6px 10px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.pf-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.pf-card-pad { padding: 14px; }
+
+/* ----- rows (toggles / actions) ----- */
+.pf-row, .pf-action {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+}
+.pf-row + .pf-row, .pf-action + .pf-action, .pf-row + .pf-action {
+  border-top: 1px solid var(--card-border);
+}
+.pf-action { transition: background .15s; }
+.pf-action:hover { background: var(--paper-2); }
+.pf-action:disabled { opacity: .75; cursor: default; }
+.pf-ico {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 14%, transparent);
+}
+.pf-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pf-row-title { font-size: 14px; font-weight: 700; }
+.pf-row-sub { font-size: 12px; color: var(--ink-faint); line-height: 1.4; }
+.pf-chev {
+  color: var(--ink-faint);
+  font-size: 12px;
+  transition: transform .25s var(--ease);
+}
+.pf-action[aria-expanded="true"] .pf-chev { transform: rotate(90deg); color: var(--artery); }
+.pf-danger .pf-row-title { color: #d64545; }
+.pf-danger:hover { background: color-mix(in srgb, #d64545 8%, var(--card)); }
+
+/* ----- theme segmented control ----- */
+.pf-seg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--paper-2);
+}
+.pf-seg .theme-opt {
+  justify-content: center;
+  width: auto;
+  gap: 8px;
+  padding: 11px 8px;
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.pf-seg .theme-opt:hover { background: transparent; color: var(--ink); }
+.pf-seg .theme-opt.active {
+  background: var(--card);
+  color: var(--artery);
+  box-shadow: var(--shadow);
+}
+
+/* ----- access (expandable rows) ----- */
+.pf-access-group + .pf-access-group { border-top: 1px solid var(--card-border); }
+.pf-expand {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows .3s var(--ease);
+}
+.pf-expand.open { grid-template-rows: 1fr; }
+.pf-expand-inner { overflow: hidden; }
+.pf-expand .pf-list {
+  padding: 0 14px 14px;
+  max-height: 280px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* ----- devices ----- */
+.pf-sub-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 800;
+}
+.pf-sub-head > i { color: var(--artery); font-size: 13px; }
+.pf-count {
+  margin-left: auto;
+  min-width: 26px;
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--paper-2);
+  border: 1px solid var(--card-border);
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+.pf-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; overscroll-behavior: contain; }
+.pf-item, .pf-device {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: var(--paper-2);
+  border: 1px solid var(--card-border);
+}
+.pf-device.mine { border-color: var(--artery); }
+.pf-item-ico {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 14%, transparent);
+}
+.pf-item-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pf-ok { color: var(--right); font-size: 13px; }
+.pf-device-body { flex: 1; min-width: 0; }
+.pf-device-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pf-this { margin-left: 8px; font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--artery); }
+.pf-device-st { font-size: 11px; margin-top: 2px; color: var(--ink-faint); }
+.pf-st.good { color: var(--right); font-weight: 700; }
+.pf-st.bad { color: #d64545; font-weight: 700; }
+.pf-empty { padding: 14px 8px; text-align: center; font-size: 12px; color: var(--ink-faint); }
+
+/* ----- change password form (inside an expandable row) ----- */
+.pf-form { padding: 2px 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+.pf-field { display: flex; flex-direction: column; gap: 6px; }
+.pf-field-label { font-size: 12px; font-weight: 700; color: var(--ink-soft); }
+.pf-input-wrap { position: relative; display: block; }
+.pf-input-wrap input {
+  width: 100%; box-sizing: border-box;
+  padding: 12px 44px 12px 14px;
+  font: inherit; font-size: 14px; color: var(--ink);
+  background: var(--paper-2);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.pf-input-wrap input:focus { border-color: var(--artery); box-shadow: 0 0 0 3px color-mix(in srgb, var(--artery) 18%, transparent); }
+.pf-eye {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  width: 38px; height: 38px; border: 0; background: transparent;
+  color: var(--ink-faint); cursor: pointer; border-radius: 10px;
+}
+.pf-eye:hover { color: var(--ink); }
+.pf-form-msg { display: none; padding: 10px 12px; border-radius: 10px; font-size: 12.5px; line-height: 1.45; }
+.pf-form-msg.show { display: block; }
+.pf-form-msg.bad { color: #d64545; background: color-mix(in srgb, #d64545 10%, transparent); }
+.pf-submit {
+  padding: 13px 16px; border: 0; border-radius: 12px; cursor: pointer;
+  font: inherit; font-size: 14px; font-weight: 700; color: #fff; background: var(--artery);
+  transition: opacity .15s, transform .15s;
+}
+.pf-submit:active { transform: scale(.98); }
+.pf-submit:disabled { opacity: .7; cursor: default; }
+
+.pf-actions { margin-top: 26px; }
+
+/* ----- larger screens ----- */
+@media (min-width: 700px) {
+  .pf-main { padding-top: 12px; }
+  .pf-hero { padding: 42px 28px 36px; }
+}
+@media (min-width: 1000px) {
+  .profile-screen { transform: scale(.985); }
+  .profile-screen.open { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .profile-screen { transition: opacity .15s; transform: none; }
+  .pf-expand { transition: none; }
+  .pf-chev { transition: none; }
+}

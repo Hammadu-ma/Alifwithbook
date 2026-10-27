@@ -1,0 +1,87 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "*.md",
+      ".env*",
+      "AUTH_MIGRATION.md",
+      "SECURITY_ARCHITECTURE.md",
+      "admin/**",
+      "api/**",
+      "firebase.json",
+      "firestore.indexes.json",
+      "firestore.rules",
+      "node_modules/**",
+      "optional-backend/**",
+      "tools/**",
+      "storage.rules"
+    ],
+    "cleanUrls": true,
+    "headers": [
+      {
+        "source": "/",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "source": "**/*.@(html|js|css)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "source": "/sw.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "/assets/fonts/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "**/*.@(png|webp|jpg|jpeg|ico|svg)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400, stale-while-revalidate=604800"
+          }
+        ]
+      },
+      {
+        "source": "/manifest.webmanifest",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400"
+          }
+        ]
+      }
+    ],
+    "predeploy": [
+      "node tools/stamp-sw.mjs"
+    ]
+  },
+  "storage": {
+    "rules": "storage.rules"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "alif-web-push-api",
+  "private": true,
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.5.0",
+    "web-push": "^3.6.7",
+    "@supabase/supabase-js": "^2.57.4"
+  }
+}
