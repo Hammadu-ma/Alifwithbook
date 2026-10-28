@@ -17,7 +17,7 @@
 
    Firestore / Auth / push-API traffic is never touched by this worker.
    ========================================================================= */
-const BUILD = '8e7ca1ac5922';
+const BUILD = 'f67ed6cbc3da';
 /*SHELL_START*/
 const SHELL = [
   "/assets/ui-fonts.css",
@@ -58,6 +58,10 @@ const SHELL = [
   "/menus/quiz-engine.js",
   "/menus/quiz-live.js",
   "/menus/read-cache.js",
+  "/menus/resources-player.js",
+  "/menus/resources-quiz.js",
+  "/menus/resources-reader.js",
+  "/menus/resources-util.js",
   "/menus/resources.css",
   "/menus/resources.js",
   "/menus/runtime-ext.js",

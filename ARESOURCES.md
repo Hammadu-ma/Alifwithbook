@@ -26,3 +26,14 @@ Books and videos can each use an **external link or an upload** for the file, th
 `videos/{id}`: title, description, moduleId, subjectId?, lecturer, lecturerTitle?, lecturerPhoto?, sourceType, videoUrl, thumbUrl?, duration?, order, active, universityId
 
 Files: `menus/resources.js|css` (student), `admin/resources-admin.js` (admin), `storage.rules`.
+
+## Video player, related content and inline quizzes
+- **Own player controls** (themed progress bar, play/pause, ±10s, volume, speed 0.75–2×, fullscreen, double-tap to skip on touch, keyboard shortcuts). They sit over uploaded/direct MP4-WebM, **YouTube** (IFrame API) and **Vimeo** (Player API) videos, with the native controls hidden. Google Drive and unknown sites expose no player API, so they use a plain embed.
+- **Under the video**: tabs **Videos · Books · Quizzes**. A book (PDF reader) or a quiz opens right there in the panel while the video keeps playing. Choosing a related video switches the player.
+- **Admin links** (Admin → AResources → add/edit):
+  - Video form → *Related content*: related videos, related books, related quizzes.
+  - Book form → *Link to videos*: the book also shows under those videos.
+  - Quiz links: a **specific quiz** (e.g. a year's paper), **every quiz of a subject**, **every quiz of a module**, or a **question category** (mixed practice from that subject's quizzes).
+  - If no related videos are linked, the app suggests videos from the same subject/module.
+- Inline quizzes give instant feedback + explanations, a score summary and "retry mistakes". They respect quiz locks. They are practice only: results are not written to the Exams progress/ranking.
+- Data: `videos.related = { videos:[id], books:[id], quizzes:[{type:'quiz'|'subject'|'module'|'category', ...}] }`, `books.linkedVideoIds:[id]`.

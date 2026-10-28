@@ -26,7 +26,7 @@ const safeUrl = u => (/^https?:\/\//i.test(String(u || '').trim()) ? String(u).t
 
 const LIMITS = { image: 8 * 1024 * 1024, book: 200 * 1024 * 1024, video: 500 * 1024 * 1024 };
 
-let S = { kind: 'books', mods: [], subs: [], books: [], videos: [], loaded: false, q: '', mod: '', editing: null };
+let S = { kind: 'books', mods: [], subs: [], books: [], videos: [], loaded: false, q: '', mod: '', editing: null, qz: {}, cats: {} };
 let F = null;          // form state while the modal is open
 let inited = false;
 let storage = null;
@@ -57,6 +57,12 @@ function ensureUi() {
   #resAdmModal .rs-prog{height:6px;border-radius:6px;background:var(--paper-2);overflow:hidden;margin-top:8px;display:none}
   #resAdmModal .rs-prog i{display:block;height:100%;width:0;background:var(--artery);transition:width .2s}
   #resAdmModal .rs-sec{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin:20px 0 10px;padding-top:14px;border-top:1px solid var(--card-border)}
+  #resAdmModal .rs-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  #resAdmModal .rs-chip{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:5px 6px 5px 11px;border-radius:99px;background:var(--paper-2);border:1px solid var(--card-border);font-size:12px;font-weight:600}
+  #resAdmModal .rs-chip span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px}
+  #resAdmModal .rs-chip button{border:0;background:var(--card);width:20px;height:20px;border-radius:50%;line-height:1;cursor:pointer;color:var(--ink-soft)}
+  #resAdmModal .rs-qb{border:1px dashed var(--card-border);border-radius:12px;padding:12px;margin-top:6px;display:grid;gap:10px}
+  #resAdmModal .rs-qb .rs-grid2{gap:10px}
   #resAdmModal .rs-err{color:var(--wrong);font-size:12.5px;font-weight:600;margin-top:10px;min-height:16px}
   `;
   document.head.appendChild(css);
@@ -184,7 +190,9 @@ function openForm(item) {
     keep: { file: it.sourceType === 'upload' ? { url: books ? it.fileUrl : it.videoUrl, path: it.filePath, name: it.fileName, size: it.fileSize } : null,
             thumb: it.thumbPath ? { url: it.thumbUrl, path: it.thumbPath } : null,
             photo: it.photoPath ? { url: it.lecturerPhoto, path: it.photoPath } : null },
-    files: {}, oldPaths: []
+    files: {}, oldPaths: [],
+    rel: { videos: [...(it.related?.videos || [])], books: [...(it.related?.books || [])], quizzes: [...(it.related?.quizzes || [])] },
+    linkedVideos: [...(it.linkedVideoIds || [])]
   };
   $('rsMTitle').textContent = `${item ? 'Edit' : 'Add'} ${books ? 'book' : 'video'}`;
   const defOrder = it.order ?? (Math.max(0, ...S[S.kind].map(x => Number(x.order) || 0)) + 1);
@@ -212,6 +220,7 @@ function openForm(item) {
     <div class="rs-sec">Thumbnail</div>
     ${srcField('thumb', 'Cover / thumbnail', { noneOk: true, accept: 'image/*', help: books ? 'Without a thumbnail the app draws a coloured cover with the title.' : 'Optional — YouTube videos get their thumbnail automatically. Images up to 8 MB.' })}
     ${books ? '' : `<div class="rs-sec">Lecturer photo</div>${srcField('photo', 'Photo', { noneOk: true, accept: 'image/*', help: 'Optional. Shown on the Lecturers tab. Without it, initials are shown.' })}`}
+    ${books ? relBooksSection() : relVideosSection()}
     <div class="rs-sec">Display</div>
     <div class="rs-grid2">
       <div class="form-group"><label>Order</label><input class="form-control" type="number" id="rsOrder" value="${esc(defOrder)}" /></div>
@@ -225,16 +234,19 @@ function openForm(item) {
     </div>`;
 
   fillSubjects(it.subjectId || '');
+  initRelated();
   $('rsMod').addEventListener('change', () => fillSubjects(''));
   ['file', 'thumb', 'photo'].forEach(k => { if ($('rsForm').querySelector(`[data-field="${k}"]`)) syncField(k); });
   $('rsCancel').addEventListener('click', closeForm);
   $('rsForm').onsubmit = e => { e.preventDefault(); save(); };
   $('rsForm').onclick = e => {
+    if (relClick(e)) return;
     const b = e.target.closest('[data-seg] button'); if (!b || F.busy) return;
     const k = b.closest('[data-seg]').dataset.seg; F.m[k] = b.dataset.m; syncField(k);
   };
   $('rsForm').onchange = e => {
     const t = e.target;
+    if (relChange(e)) return;
     if (t.matches('input[type=file]')) {
       const k = t.dataset.in.replace('File', ''); const f = t.files[0];
       const kind = k === 'file' ? (S.kind === 'books' ? 'book' : 'video') : 'image';
@@ -333,11 +345,11 @@ async function save() {
     };
     if (F.isNew) data.createdAt = serverTimestamp();
     if (books) {
-      Object.assign(data, { author: $('rsAuthor').value.trim(), fileUrl: file.url, filePath: file.path || '',
+      Object.assign(data, { linkedVideoIds: F.linkedVideos, author: $('rsAuthor').value.trim(), fileUrl: file.url, filePath: file.path || '',
         fileName: F.files.file ? F.files.file.name : (file.path ? (F.keep.file?.name || '') : ''),
         fileSize: F.files.file ? F.files.file.size : (file.path ? (F.keep.file?.size || 0) : 0) });
     } else {
-      Object.assign(data, { lecturer, lecturerTitle: $('rsLectTitle').value.trim(), lecturerPhoto: photo.url || '', photoPath: photo.path || '',
+      Object.assign(data, { related: { videos: F.rel.videos, books: F.rel.books, quizzes: F.rel.quizzes }, lecturer, lecturerTitle: $('rsLectTitle').value.trim(), lecturerPhoto: photo.url || '', photoPath: photo.path || '',
         videoUrl: file.url, filePath: file.path || '', duration: $('rsDur').value.trim() });
     }
     await setDoc(doc(db, S.kind, F.id), data, { merge: true });
@@ -367,6 +379,120 @@ async function removeItem(it) {
     renderTable();
     toast('Deleted.', 'success');
   } catch (e) { toast('Delete failed: ' + (e.message || e), 'error'); }
+}
+
+
+/* ------------------------------------------------- related content (links) */
+const relBooksSection = () => `<div class="rs-sec">Link to videos</div>
+  <div class="help" style="margin:-4px 0 10px">This book will also appear under the “Books” tab of each video you choose here.</div>
+  ${chipBox('lvideos', 'Show this book under these videos')}`;
+const relVideosSection = () => `<div class="rs-sec">Related content</div>
+  <div class="help" style="margin:-4px 0 10px">Shown in the tabs under the video in the app. Books and quizzes open right there while the video keeps playing. If you link no videos, the app suggests videos from the same subject.</div>
+  ${chipBox('videos', 'Related videos')}${chipBox('books', 'Related books')}
+  <div class="form-group"><label>Related quizzes</label><div class="rs-chips" data-quizchips></div>
+    <div class="rs-qb">
+      <select class="form-control" data-q="type">
+        <option value="quiz">A specific quiz (e.g. a year’s paper)</option>
+        <option value="subject">Every quiz of a subject</option>
+        <option value="module">Every quiz of a module</option>
+        <option value="category">A question category</option>
+      </select>
+      <div class="rs-grid2">
+        <select class="form-control" data-q="mod"><option value="">Module…</option>${S.mods.map(m => `<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('')}</select>
+        <select class="form-control" data-q="sub"><option value="">Subject…</option></select>
+      </div>
+      <select class="form-control" data-q="quiz" style="display:none"><option value="">Quiz…</option></select>
+      <div data-q-catwrap style="display:none"><input class="form-control" data-q="cat" list="rsCatList" placeholder="Category (type or pick)…" /><datalist id="rsCatList"></datalist><div class="help" data-q-cathelp></div></div>
+      <button type="button" class="btn" data-q-add><i class="fa-solid fa-plus"></i> Add quiz link</button>
+    </div></div>`;
+const chipBox = (kind, label) => `<div class="form-group" data-chipbox="${kind}"><label>${label}</label><div class="rs-chips"></div><select class="form-control" data-addsel="${kind}"></select></div>`;
+
+const relList = k => (k === 'videos' ? F.rel.videos : k === 'books' ? F.rel.books : F.linkedVideos);
+const relSource = k => (k === 'books' ? S.books : S.videos);
+function renderChips(kind) {
+  const box = $('rsForm').querySelector(`[data-chipbox="${kind}"]`); if (!box) return;
+  const sel = relList(kind), src = relSource(kind);
+  box.querySelector('.rs-chips').innerHTML = sel.length
+    ? sel.map(id => { const x = src.find(y => y.id === id); return `<span class="rs-chip"><span>${esc(x ? x.title : '(deleted)')}</span><button type="button" data-rm="${kind}:${esc(id)}" aria-label="Remove">×</button></span>`; }).join('')
+    : '<span class="help">Nothing linked yet</span>';
+  box.querySelector('select').innerHTML = '<option value="">Add…</option>' + src.filter(x => x.id !== F.id && !sel.includes(x.id))
+    .map(x => `<option value="${esc(x.id)}">${esc(modName(x.moduleId))} · ${esc(x.title)}</option>`).join('');
+}
+function renderQuizChips() {
+  const el = $('rsForm').querySelector('[data-quizchips]'); if (!el) return;
+  el.innerHTML = F.rel.quizzes.length
+    ? F.rel.quizzes.map((l, i) => `<span class="rs-chip"><span>${esc(linkLabel(l))}</span><button type="button" data-rmq="${i}" aria-label="Remove">×</button></span>`).join('')
+    : '<span class="help">No quizzes linked yet</span>';
+}
+function linkLabel(l) {
+  if (l.label) return l.label;
+  if (l.type === 'module') return `Module · ${modName(l.moduleId)}`;
+  if (l.type === 'subject') return `Subject · ${subName(l.subjectId)}`;
+  if (l.type === 'category') return `Category · ${l.category} (${subName(l.subjectId)})`;
+  return `Quiz · ${subName(l.subjectId)}`;
+}
+function initRelated() {
+  ['videos', 'books', 'lvideos'].forEach(renderChips);
+  renderQuizChips();
+  if ($('rsForm').querySelector('[data-q=type]')) qbSync();
+}
+const qb = k => $('rsForm').querySelector(`[data-q=${k}]`);
+function qbSync() {
+  const type = qb('type').value;
+  qb('sub').style.display = type === 'module' ? 'none' : '';
+  qb('quiz').style.display = type === 'quiz' ? '' : 'none';
+  $('rsForm').querySelector('[data-q-catwrap]').style.display = type === 'category' ? '' : 'none';
+  const mid = qb('mod').value, keep = qb('sub').value;
+  qb('sub').innerHTML = '<option value="">Subject…</option>' + S.subs.filter(s => !mid || s.moduleId === mid).map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
+  if (keep && [...qb('sub').options].some(o => o.value === keep)) qb('sub').value = keep;   // keep the choice when only the type changes
+}
+async function qbLoadSubject() {
+  const type = qb('type').value, sid = qb('sub').value; if (!sid) return;
+  try {
+    if (type === 'quiz') {
+      qb('quiz').innerHTML = '<option value="">Loading…</option>';
+      if (!S.qz[sid]) S.qz[sid] = (await getDocs(collection(db, 'subjects', sid, 'quizzes'))).docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+      qb('quiz').innerHTML = '<option value="">Quiz…</option>' + S.qz[sid].map(q => `<option value="${esc(q.id)}">${esc(q.name || q.id)}</option>`).join('');
+    } else if (type === 'category') {
+      const help = $('rsForm').querySelector('[data-q-cathelp]'); help.textContent = 'Loading categories…';
+      if (!S.cats[sid]) {
+        const quizzes = S.qz[sid] || (S.qz[sid] = (await getDocs(collection(db, 'subjects', sid, 'quizzes'))).docs.map(d => ({ id: d.id, ...d.data() })));
+        const set = new Set();
+        await Promise.all(quizzes.map(async q => (await getDocs(collection(db, 'subjects', sid, 'quizzes', q.id, 'questions'))).docs.forEach(d => { const x = d.data(); const c = x.categoryLabel || x.category; if (c) set.add(c); })));
+        S.cats[sid] = [...set].sort();
+      }
+      $('rsCatList').innerHTML = S.cats[sid].map(c => `<option value="${esc(c)}">`).join('');
+      help.textContent = S.cats[sid].length ? `${S.cats[sid].length} categories found in this subject.` : 'No categories found — type one exactly as in your questions.';
+    }
+  } catch (e) { toast('Could not load: ' + (e.message || e), 'error'); }
+}
+function qbAdd() {
+  const type = qb('type').value, mid = qb('mod').value, sid = qb('sub').value, qid = qb('quiz').value, cat = qb('cat').value.trim();
+  let link;
+  if (type === 'module') { if (!mid) return toast('Choose a module.', 'error'); link = { type, moduleId: mid, label: `Module · ${modName(mid)}` }; }
+  else if (!sid) return toast('Choose a subject.', 'error');
+  else if (type === 'subject') link = { type, subjectId: sid, label: `Subject · ${subName(sid)}` };
+  else if (type === 'quiz') { if (!qid) return toast('Choose a quiz.', 'error'); const q = (S.qz[sid] || []).find(x => x.id === qid); link = { type, subjectId: sid, quizId: qid, label: `Quiz · ${subName(sid)} → ${q ? q.name : qid}` }; }
+  else { if (!cat) return toast('Enter a category.', 'error'); link = { type, subjectId: sid, category: cat, label: `Category · ${cat} (${subName(sid)})` }; }
+  const key = JSON.stringify([link.type, link.moduleId, link.subjectId, link.quizId, (link.category || '').toLowerCase()]);
+  if (F.rel.quizzes.some(l => JSON.stringify([l.type, l.moduleId, l.subjectId, l.quizId, (l.category || '').toLowerCase()]) === key)) return toast('Already linked.', 'info');
+  F.rel.quizzes.push(link); renderQuizChips(); qb('cat').value = '';
+}
+function relClick(e) {
+  const rm = e.target.closest('[data-rm]');
+  if (rm) { const [k, id] = rm.dataset.rm.split(':'); const l = relList(k); l.splice(l.indexOf(id), 1); renderChips(k); return true; }
+  const rq = e.target.closest('[data-rmq]');
+  if (rq) { F.rel.quizzes.splice(+rq.dataset.rmq, 1); renderQuizChips(); return true; }
+  if (e.target.closest('[data-q-add]')) { qbAdd(); return true; }
+  return false;
+}
+function relChange(e) {
+  const t = e.target;
+  if (t.matches('[data-addsel]')) { if (t.value) { relList(t.dataset.addsel).push(t.value); renderChips(t.dataset.addsel); } return true; }
+  if (t.matches('[data-q=type]')) { qbSync(); qbLoadSubject(); return true; }
+  if (t.matches('[data-q=mod]')) { qbSync(); return true; }
+  if (t.matches('[data-q=sub]')) { qbLoadSubject(); return true; }
+  return false;
 }
 
 /* ------------------------------------------------------------ entry point */

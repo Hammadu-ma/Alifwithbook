@@ -25,7 +25,7 @@ import { closeChatScreen } from './class-chat.js';
 import { db } from './cloud-sync.js';
 import { homeScreen, pickerScreen } from './gate-screen.js';
 import { triggerLockResponse } from './home-screen.js';
-import { cacheState, escapeHtml as esc, getCachedWithTTL, setCachedWithTTL } from './loaders.js';
+import { cacheState, getCachedWithTTL, setCachedWithTTL } from './loaders.js';
 import { getEffectiveLockMessage, isResourceLocked } from './lock.js';
 import { popModalState, pushModalState } from './modal-backbutton.js';
 import { loadModules, loadSubjects } from './onboarding-tour.js';
@@ -36,6 +36,9 @@ import {
 import { progressScreen } from './progress-page.js';
 import { pushAppState } from './progress-rings.js';
 import { collection, getDocs } from './runtime-ext.js';
+import { mountPlayer } from './resources-player.js';
+import { mountReader } from './resources-reader.js';
+import { esc, driveId, fileExt, norm, plural, safeUrl, thumbSrc, videoThumb } from './resources-util.js';
 
 const $ = id => document.getElementById(id);
 const screen = $('resourcesScreen');
@@ -72,40 +75,6 @@ let query = '';
 const snap = () => ({ tab: nav.tab, view: nav.view, moduleId: nav.moduleId, vtab: nav.vtab, lecturer: nav.lecturer });
 const isOpen = () => screen && !screen.classList.contains('hidden');
 
-/* -------------------------------------------------------------- helpers */
-function safeUrl(u) {
-  const s = String(u || '').trim();
-  return /^https?:\/\//i.test(s) ? s : '';
-}
-function driveId(u) {
-  const m = String(u || '').match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:[^#]*&)?id=)([\w-]{10,})/i);
-  return m ? m[1] : '';
-}
-function ytId(u) {
-  const m = String(u || '').match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:[^#]*&)?v=|embed\/|shorts\/|live\/|v\/))([\w-]{11})/i);
-  return m ? m[1] : '';
-}
-function vimeoParts(u) {
-  const m = String(u || '').match(/vimeo\.com\/(?:video\/)?(\d+)(?:\/([\w]+))?/i);
-  return m ? { id: m[1], h: m[2] || '' } : null;
-}
-/* Image URL for a thumbnail: understands Google Drive share links. */
-function thumbSrc(u) {
-  const url = safeUrl(u);
-  if (!url) return '';
-  const d = driveId(url);
-  return d ? `https://drive.google.com/thumbnail?id=${d}&sz=w640` : url;
-}
-function videoThumb(v) {
-  const t = thumbSrc(v.thumbUrl);
-  if (t) return t;
-  const y = ytId(v.videoUrl);
-  return y ? `https://i.ytimg.com/vi/${y}/hqdefault.jpg` : '';
-}
-function fileExt(u) {
-  const m = String(u || '').split(/[?#]/)[0].match(/\.([a-z0-9]{2,5})$/i);
-  return m ? m[1].toLowerCase() : '';
-}
 function bookTypeLabel(b) {
   const e = fileExt(b.fileName || b.fileUrl);
   if (e === 'pdf') return 'PDF';
@@ -121,8 +90,6 @@ function fmtSize(n) {
   if (!n) return '';
   return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
 }
-const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
-const norm = s => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
 const subjectName = id => (SUBJ.find(s => s.id === id) || {}).name || '';
 const moduleById = id => MODS.find(m => m.id === id) || null;
 const isNew = it => it.createdMs && Date.now() - it.createdMs < 14 * 864e5;
@@ -621,165 +588,35 @@ function closeSheet() { hideOverlay(elSheet, closeSheet); }
 
 
 /* ------------------------------------------------------------ book reader */
-const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174';
-let pdfjsP = null, readerToken = 0, readerPdf = null, readerIO = null, readerIO2 = null;
-
-function loadPdfjs() {
-  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
-  if (!pdfjsP) pdfjsP = new Promise((res, rej) => {
-    const sc = document.createElement('script');
-    sc.src = PDFJS + '/pdf.min.js';
-    sc.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + '/pdf.worker.min.js'; res(window.pdfjsLib); };
-    sc.onerror = () => { pdfjsP = null; rej(new Error('pdf.js failed to load')); };
-    document.head.appendChild(sc);
-  });
-  return pdfjsP;
-}
-
-function readerPlan(b) {
-  const url = safeUrl(b.fileUrl);
-  if (!url) return { kind: 'none' };
-  const d = driveId(url);
-  if (d) return { kind: 'iframe', src: `https://drive.google.com/file/d/${d}/preview`, url };
-  const ext = fileExt(b.fileName || url);
-  if (ext === 'pdf' || (b.sourceType === 'upload' && !ext)) return { kind: 'pdf', url };
-  if (/^(docx?|pptx?|xlsx?|rtf|odt|odp|ods)$/.test(ext)) return { kind: 'iframe', src: `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(url)}`, url };
-  if (ext === 'epub') return { kind: 'unsupported' };
-  return { kind: 'iframe', src: url, url, loose: true };
-}
-
+let readerHandle = null;
 function openReader(b) {
-  const plan = readerPlan(b);
-  const token = ++readerToken;
-  const body = plan.kind === 'pdf'
-    ? '<div class="res-reader-body" id="rdBody"><div class="res-reader-msg"><i class="fa-solid fa-hourglass-half"></i><p>Opening book…</p></div></div>'
-    : plan.kind === 'iframe'
-      ? `<div class="res-reader-body frame"><iframe src="${esc(plan.src)}" title="${esc(b.title || 'Book')}" referrerpolicy="no-referrer"></iframe></div>${plan.loose ? '<div class="res-reader-foot">If the page stays blank, its host doesn’t allow reading inside the app.</div>' : ''}`
-      : `<div class="res-reader-body"><div class="res-reader-msg"><i class="fa-solid fa-book"></i><p>${plan.kind === 'unsupported' ? 'EPUB books can’t be read in the app yet.' : 'This book’s link isn’t available yet.'}</p></div></div>`;
-  elReader.innerHTML = `
-    <div class="res-reader-card" role="dialog" aria-modal="true" aria-label="${esc(b.title || 'Book')}">
-      <div class="res-reader-bar">
-        <div class="res-reader-name">${esc(b.title || 'Book')}</div>
-        ${plan.kind === 'pdf' ? '<span class="res-reader-pg" id="rdPg"></span><button type="button" class="res-sheet-x static" data-zoom="-1" aria-label="Zoom out"><i class="fa-solid fa-minus"></i></button><button type="button" class="res-sheet-x static" data-zoom="1" aria-label="Zoom in"><i class="fa-solid fa-plus"></i></button>' : ''}
-        <button type="button" class="res-sheet-x static" data-close aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      ${body}
-    </div>`;
+  if (readerHandle) readerHandle.destroy();
   showOverlay(elReader, closeReader);
-  if (plan.kind === 'pdf') renderPdf(plan, b, token);
+  readerHandle = mountReader(elReader, b, { onClose: closeReader });
 }
-
 function closeReader() {
-  readerToken++;
-  if (readerIO) readerIO.disconnect();
-  if (readerIO2) readerIO2.disconnect();
-  readerIO = readerIO2 = null;
-  if (readerPdf) { try { readerPdf.destroy(); } catch (_) {} readerPdf = null; }
+  if (readerHandle) { readerHandle.destroy(); readerHandle = null; }
   hideOverlay(elReader, closeReader);
 }
 
-async function renderPdf(plan, b, token) {
-  const body = $('rdBody');
-  try {
-    const lib = await loadPdfjs();
-    const pdf = await lib.getDocument({ url: plan.url }).promise;
-    if (token !== readerToken) { pdf.destroy(); return; }
-    readerPdf = pdf;
-    const first = await pdf.getPage(1);
-    const vp = first.getViewport({ scale: 1 });
-    const ratio = vp.height / vp.width;
-    body.innerHTML = '<div class="res-pages" id="rdPages"></div>';
-    const wrap = $('rdPages');
-    let zoom = 1;
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const d = document.createElement('div');
-      d.className = 'res-pg'; d.dataset.n = i; d.style.aspectRatio = `1 / ${ratio}`;
-      wrap.appendChild(d);
-    }
-    const pg = $('rdPg'); if (pg) pg.textContent = `1 / ${pdf.numPages}`;
-    const draw = async d => {
-      if (d.dataset.busy || d.querySelector('canvas')) return;
-      d.dataset.busy = '1';
-      try {
-        const page = await pdf.getPage(+d.dataset.n);
-        if (token !== readerToken) return;
-        const base = page.getViewport({ scale: 1 });
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        const v = page.getViewport({ scale: (d.clientWidth / base.width) * dpr });
-        const c = document.createElement('canvas');
-        c.width = v.width; c.height = v.height;
-        await page.render({ canvasContext: c.getContext('2d'), viewport: v }).promise;
-        if (token === readerToken) { d.appendChild(c); d.style.aspectRatio = `${c.width} / ${c.height}`; }
-      } catch (_) {} finally { delete d.dataset.busy; }
-    };
-    readerIO = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) draw(e.target); }), { root: body, rootMargin: '900px 0px' });
-    readerIO2 = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting && pg) pg.textContent = `${e.target.dataset.n} / ${pdf.numPages}`; }), { root: body, threshold: 0.5 });
-    wrap.querySelectorAll('.res-pg').forEach(d => { readerIO.observe(d); readerIO2.observe(d); });
-    elReader.onclick = e => {
-      const z = e.target.closest('[data-zoom]');
-      if (z) {
-        zoom = Math.min(3, Math.max(1, zoom + (+z.dataset.zoom) * 0.5));
-        wrap.style.width = zoom * 100 + '%';
-        wrap.querySelectorAll('.res-pg').forEach(d => { d.querySelector('canvas')?.remove(); readerIO.unobserve(d); readerIO.observe(d); });
-        return;
-      }
-      if (e.target === elReader || e.target.closest('[data-close]')) closeReader();
-    };
-  } catch (err) {
-    if (token !== readerToken) return;
-    // CORS-blocked or unreadable PDF: fall back to an embedded viewer, still inside the app
-    body.classList.add('frame');
-    body.innerHTML = `<iframe src="https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(plan.url)}" title="${esc(b.title || 'Book')}" referrerpolicy="no-referrer"></iframe>`;
-  }
-}
-
 /* ------------------------------------------------------------ video player */
-function parseVideo(u, b) {
-  const url = safeUrl(u);
-  if (!url) return { kind: 'none' };
-  const y = ytId(url);
-  if (y) return { kind: 'iframe', src: `https://www.youtube-nocookie.com/embed/${y}?autoplay=1&rel=0&modestbranding=1&playsinline=1`, url };
-  const vm = vimeoParts(url);
-  if (vm) return { kind: 'iframe', src: `https://player.vimeo.com/video/${vm.id}?autoplay=1${vm.h ? '&h=' + vm.h : ''}`, url };
-  const d = driveId(url);
-  if (d) return { kind: 'iframe', src: `https://drive.google.com/file/d/${d}/preview`, url };
-  const ext = fileExt(url);
-  if (b && b.sourceType === 'upload' || /^(mp4|webm|ogg|ogv|mov|m4v)$/.test(ext)) return { kind: 'file', src: url, url };
-  return { kind: 'iframe', src: url, url, loose: true };   // unknown host: try embedding it in the player
-}
-
+let playerHandle = null;
+const playerCtx = {
+  data: () => ({ BOOKS, VIDEOS, SUBJ, MODS }),
+  student: () => getStoredStudent(),
+  subjectName, initials, accent: accentFor,
+  lock: (el, msg) => triggerLockResponse(el, msg),
+  close: () => closePlayer()
+};
 function openVideo(v) {
-  const info = parseVideo(v.videoUrl, v);
-  const t = videoThumb(v);
-  let stage;
-  if (info.kind === 'iframe') {
-    stage = `<iframe src="${esc(info.src)}" title="${esc(v.title || 'Video')}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
-  } else if (info.kind === 'file') {
-    stage = `<video src="${esc(info.src)}" controls autoplay playsinline controlsList="nodownload" ${t ? `poster="${esc(t)}"` : ''}></video>`;
-  } else {
-    stage = `<div class="res-player-fallback">${t ? `<img src="${esc(t)}" alt="" referrerpolicy="no-referrer">` : ''}
-      <div><i class="fa-solid fa-play"></i><p>This video’s link isn’t available yet.</p></div></div>`;
-  }
-  const sub = subjectName(v.subjectId);
-  elPlayer.innerHTML = `
-    <div class="res-player-card" role="dialog" aria-modal="true" aria-label="${esc(v.title || 'Video')}">
-      <div class="res-player-bar"><div class="res-player-name">${esc(v.title || 'Video')}</div>
-        <button type="button" class="res-sheet-x static" data-close aria-label="Close"><i class="fa-solid fa-xmark"></i></button></div>
-      <div class="res-stage">${stage}</div>
-      <div class="res-player-info">
-        <h3>${esc(v.title || 'Untitled')}</h3>
-        <div class="res-player-meta">
-          ${v.lecturer ? `<span class="res-vid-lect"><span class="res-av sm">${safeUrl(v.lecturerPhoto) ? `<img src="${esc(thumbSrc(v.lecturerPhoto))}" alt="" referrerpolicy="no-referrer">` : esc(initials(v.lecturer))}</span><span>${esc(v.lecturer)}</span></span>` : ''}
-          ${sub ? `<span class="res-chip"><i class="fa-solid fa-tag"></i>${esc(sub)}</span>` : ''}
-          ${v.duration ? `<span class="res-chip"><i class="fa-solid fa-clock"></i>${esc(v.duration)}</span>` : ''}
-        </div>
-        ${v.description ? `<p class="res-sheet-desc">${esc(v.description)}</p>` : ''}
-        ${info.loose ? '<p class="res-sheet-note">If the video stays blank, its host doesn’t allow playing inside the app — ask your admin to re-add it as a YouTube, Vimeo, Drive or uploaded video.</p>' : ''}
-      </div>
-    </div>`;
+  if (playerHandle) { playerHandle.destroy(); playerHandle = null; }
   showOverlay(elPlayer, closePlayer);
+  playerHandle = mountPlayer(elPlayer, v, playerCtx);
 }
-function closePlayer() { hideOverlay(elPlayer, closePlayer); }
+function closePlayer() {
+  if (playerHandle) { playerHandle.destroy(); playerHandle = null; }
+  hideOverlay(elPlayer, closePlayer);
+}
 
 /* if anything else takes over the screen, tear down the sheet / player (stops playback) */
 new MutationObserver(() => { if (!isOpen()) { closeReader(); closeSheet(); closePlayer(); } })
@@ -800,7 +637,7 @@ function hideOverlay(el, closer) {
   el.innerHTML = '';          // also stops any playing iframe / <video>
   popModalState(closer);
 }
-[[elSheet, closeSheet], [elPlayer, closePlayer], [elReader, closeReader]].forEach(([el, closer]) => {
+[[elSheet, closeSheet], [elReader, closeReader]].forEach(([el, closer]) => {
   el.addEventListener('click', e => { if (e.target === el || e.target.closest('[data-close]')) closer(); });
 });
 elSheet.addEventListener('click', e => {
