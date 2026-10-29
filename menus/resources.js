@@ -524,6 +524,75 @@ elHead.addEventListener('click', e => {
   }
 });
 
+/* ---- swipe left/right between tabs (ABooks <-> AVideos, All <-> Lecturers) ---- */
+function swipeTabs() {
+  if (nav.view === 'root') return { keys: ['books', 'videos'], cur: nav.tab, set: k => go({ tab: k }) };
+  if (nav.view === 'module' && nav.tab === 'videos') return { keys: ['all', 'lect'], cur: nav.vtab, set: k => go({ vtab: k }) };
+  return null;
+}
+(function initTabSwipe() {
+  const reduce = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let t0 = null, lock = null, sw = null, dx = 0;
+  const target = () => (dx < 0 ? 1 : -1);
+  const inRange = () => { const i = sw.keys.indexOf(sw.cur) + target(); return i >= 0 && i < sw.keys.length; };
+  const reset = () => { elMain.style.transition = ''; elMain.style.transform = ''; elMain.style.opacity = ''; };
+
+  screen.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1 || e.target.closest('#resHead, .res-head, .res-sheet, .res-player, [role="dialog"], input, textarea, select')) { t0 = null; return; }
+    sw = swipeTabs();
+    if (!sw) { t0 = null; return; }
+    const t = e.touches[0];
+    t0 = { x: t.clientX, y: t.clientY, time: Date.now() }; lock = null; dx = 0;
+    elMain.style.transition = 'none';
+  }, { passive: true });
+
+  screen.addEventListener('touchmove', e => {
+    if (!t0) return;
+    const t = e.touches[0], mx = t.clientX - t0.x, my = t.clientY - t0.y;
+    if (!lock) {
+      if (Math.abs(mx) > 10 && Math.abs(mx) > Math.abs(my) * 1.3) lock = 'x';
+      else if (Math.abs(my) > 10) { lock = 'y'; t0 = null; reset(); return; }
+      else return;
+    }
+    dx = mx;
+    const resist = inRange() ? 1 : 0.22;          // rubber-band at the first / last tab
+    const w = elMain.clientWidth || 360;
+    elMain.style.transform = `translate3d(${dx * resist}px,0,0)`;
+    elMain.style.opacity = String(1 - Math.min(Math.abs(dx) / w, 1) * 0.55);
+  }, { passive: true });
+
+  const finish = () => {
+    if (!t0 || lock !== 'x') { t0 = null; reset(); return; }
+    const w = elMain.clientWidth || 360, dt = Math.max(Date.now() - t0.time, 1);
+    const fast = Math.abs(dx) / dt > 0.45, far = Math.abs(dx) > w * 0.28;
+    const dir = target(), ok = inRange() && (far || fast) && Math.abs(dx) > 40;
+    t0 = null;
+    if (!ok || reduce()) {
+      elMain.style.transition = 'transform .28s cubic-bezier(.16,1,.3,1), opacity .28s';
+      elMain.style.transform = 'translate3d(0,0,0)'; elMain.style.opacity = '1';
+      if (ok) sw.set(sw.keys[sw.keys.indexOf(sw.cur) + dir]);
+      setTimeout(reset, 300);
+      return;
+    }
+    const key = sw.keys[sw.keys.indexOf(sw.cur) + dir];
+    elMain.style.transition = 'transform .16s ease-in, opacity .16s ease-in';
+    elMain.style.transform = `translate3d(${dir > 0 ? -w * 0.35 : w * 0.35}px,0,0)`;
+    elMain.style.opacity = '0';
+    setTimeout(() => {
+      sw.set(key);
+      elMain.style.transition = 'none';
+      elMain.style.transform = `translate3d(${dir > 0 ? w * 0.35 : -w * 0.35}px,0,0)`;
+      elMain.style.opacity = '0';
+      void elMain.offsetWidth;
+      elMain.style.transition = 'transform .32s cubic-bezier(.16,1,.3,1), opacity .24s ease-out';
+      elMain.style.transform = 'translate3d(0,0,0)'; elMain.style.opacity = '1';
+      setTimeout(reset, 340);
+    }, 160);
+  };
+  screen.addEventListener('touchend', finish, { passive: true });
+  screen.addEventListener('touchcancel', () => { t0 = null; reset(); }, { passive: true });
+})();
+
 elMain.addEventListener('input', e => {
   if (e.target && e.target.id === 'resSearch') { query = e.target.value; renderList({ animate: false }); }
 });

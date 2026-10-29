@@ -787,3 +787,7 @@ body:has(#resourcesScreen:not(.hidden)) .desktop-nav { z-index: 330; }
 
 /* Header: title + subtitle only, no leading icon */
 .res-brand-ico { display: none !important; }
+
+/* swipe between tabs: let the browser handle vertical scroll only */
+.res-screen { touch-action: pan-y; }
+#resMain { will-change: transform, opacity; }
