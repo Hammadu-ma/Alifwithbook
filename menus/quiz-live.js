@@ -373,7 +373,7 @@ liveSectionStyle.textContent = `
     display: flex; align-items: center; gap: 9px;
     font-size: 15.5px; font-weight: 900; margin: 0 0 12px;
     letter-spacing: -.01em;
-    background: linear-gradient(90deg, #ff3d3d, #ff8a3d 55%, #ff3d3d);
+    background:  #ff3d3d;
     background-size: 200% auto;
     -webkit-background-clip: text; background-clip: text; color: transparent;
     animation: ql-card-drift 4s ease-in-out infinite;
@@ -390,39 +390,34 @@ liveSectionStyle.textContent = `
   .live-card {
     scroll-snap-align: start; flex: 0 0 236px; cursor: pointer;
     border-radius: 20px; padding: 2px; position: relative;
-    background: linear-gradient(135deg,
-      rgba(var(--live-color-rgb,76,110,245),.9),
-      rgba(var(--live-color-rgb,76,110,245),.25) 45%,
-      rgba(var(--live-color-rgb,76,110,245),.9));
+    background:  rgba(var(--live-color-rgb,37,99,235),.9);
     background-size: 220% 220%;
     animation: ql-card-rise .4s cubic-bezier(.2,.9,.25,1) both, ql-card-drift 5s ease-in-out infinite;
     transition: transform .2s ease, box-shadow .2s ease;
-    box-shadow: 0 10px 24px -12px rgba(var(--live-color-rgb,76,110,245),.55);
+    box-shadow: 0 10px 24px -12px rgba(var(--live-color-rgb,37,99,235),.55);
   }
-  .live-card:hover { transform: translateY(-4px) scale(1.015); box-shadow: 0 16px 32px -12px rgba(var(--live-color-rgb,76,110,245),.7); }
+  .live-card:hover { transform: translateY(-4px) scale(1.015); box-shadow: 0 16px 32px -12px rgba(var(--live-color-rgb,37,99,235),.7); }
   .live-card:active { transform: translateY(-1px) scale(.99); }
 
   .live-card .lc-inner {
     position: relative; overflow: hidden; border-radius: 18px;
     padding: 14px 14px 13px;
     background:
-      radial-gradient(120% 140% at 100% 0%, rgba(var(--live-color-rgb,76,110,245),.16), transparent 60%),
-      color-mix(in srgb, var(--ql-card-bg, #ffffff) 96%, transparent);
+       color-mix(in srgb, var(--ql-card-bg, #ffffff) 96%, transparent);
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   }
   .live-card .lc-inner::before {
     content: ''; position: absolute; top: 0; bottom: 0; width: 55%;
-    background: linear-gradient(100deg, transparent, rgba(255,255,255,.4), transparent);
-    animation: ql-shimmer-sweep 3.5s ease-in-out infinite;
+    background: none;
     pointer-events: none;
   }
 
   .live-card .lc-badge {
     position: absolute; top: 12px; right: 12px; z-index: 2;
     display: inline-flex; align-items: center; gap: 5px;
-    background: var(--live-color,#4C6EF5); color: #fff; font-size: 9px; font-weight: 900;
+    background: var(--live-color,#2563EB); color: #fff; font-size: 9px; font-weight: 900;
     text-transform: uppercase; letter-spacing: .06em; padding: 4px 10px 4px 8px; border-radius: 999px;
-    box-shadow: 0 4px 12px -2px rgba(var(--live-color-rgb,76,110,245),.6);
+    box-shadow: 0 4px 12px -2px rgba(var(--live-color-rgb,37,99,235),.6);
   }
   .live-card .lc-badge .lc-dot {
     width: 6px; height: 6px; border-radius: 50%; background: #fff;
@@ -432,8 +427,8 @@ liveSectionStyle.textContent = `
   .live-card .cc-top { position: relative; z-index: 1; }
   .live-card .cc-icon {
     width: 40px; height: 40px; border-radius: 13px; display: flex; align-items: center; justify-content: center;
-    background: linear-gradient(135deg, rgba(var(--live-color-rgb,76,110,245),.22), rgba(var(--live-color-rgb,76,110,245),.08));
-    box-shadow: inset 0 0 0 1px rgba(var(--live-color-rgb,76,110,245),.25);
+    background:  rgba(var(--live-color-rgb,37,99,235),.22);
+    box-shadow: inset 0 0 0 1px rgba(var(--live-color-rgb,37,99,235),.25);
     font-size: 15px;
   }
   .live-card .cc-body { position: relative; z-index: 1; }
@@ -441,12 +436,12 @@ liveSectionStyle.textContent = `
     display: inline-flex; align-items: center; gap: 5px; max-width: 100%;
     font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
     padding: 3px 8px; margin-top: 10px; border-radius: 999px;
-    color: var(--live-color, #4C6EF5); background: rgba(var(--live-color-rgb,76,110,245),.12);
+    color: var(--live-color, #2563EB); background: rgba(var(--live-color-rgb,37,99,235),.12);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .live-card .cc-subject {
     font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
-    color: var(--live-color,#4C6EF5); opacity: .85; margin-top: 10px;
+    color: var(--live-color,#2563EB); opacity: .85; margin-top: 10px;
   }
   .live-card h4 {
     margin: 3px 0 0; font-size: 15px; font-weight: 900; line-height: 1.28;
@@ -462,8 +457,8 @@ liveSectionStyle.textContent = `
   }
   .live-card .lc-start {
     font-size: 11.5px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 5px;
-    background: var(--live-color,#4C6EF5); padding: 6px 12px; border-radius: 999px;
-    box-shadow: 0 4px 10px -3px rgba(var(--live-color-rgb,76,110,245),.6);
+    background: var(--live-color,#2563EB); padding: 6px 12px; border-radius: 999px;
+    box-shadow: 0 4px 10px -3px rgba(var(--live-color-rgb,37,99,235),.6);
     transition: transform .15s ease;
   }
   .live-card:hover .lc-start { transform: scale(1.05); }
@@ -506,7 +501,7 @@ function renderLiveSection() {
 
   liveRail.innerHTML = liveQuizzes.map((q) => {
     const isLive = liveStatus(q) === 'live';
-    const cardColor = q.liveCardColor || '#4C6EF5';
+    const cardColor = q.liveCardColor || '#2563EB';
     const cardColorRgb = hexToRgb(cardColor);
     const metaTag = isLive
       ? `<span class="lc-countdown" style="color:${cardColor};background:rgba(${cardColorRgb},0.12);"><i class="fa-solid fa-hourglass-half"></i> ${formatCountdown(q.liveEnd)}</span>`
@@ -615,14 +610,12 @@ noteStyle.textContent = `
   body.dark .ql-note-card { background: #1b1c22; }
   .ql-note-hero {
     position: relative; padding: 30px 28px 22px;
-    background: linear-gradient(135deg, rgba(var(--note-color-rgb),.95), rgba(var(--note-color-rgb),.65) 60%, rgba(var(--note-color-rgb),.4));
+    background:  rgba(var(--note-color-rgb),.95);
     border-radius: 24px 24px 0 0; color: #fff; overflow: hidden;
   }
   .ql-note-hero::after {
     content: ''; position: absolute; inset: 0;
-    background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.25) 45%, transparent 60%);
-    background-size: 250% 100%;
-    animation: ql-shine 3.2s ease-in-out infinite;
+    background: none;
     pointer-events: none;
   }
   .ql-note-card h1.ql-note-title {
@@ -671,7 +664,7 @@ function showLiveNoteModal(quiz, proceed) {
   const hasContent = quiz.liveNoteTitle || quiz.liveNoteBody || (quiz.liveNoteImages && quiz.liveNoteImages.length);
   if (!quiz.liveNoteEnabled || !hasContent) { proceed(); return; }
 
-  const color = quiz.liveCardColor || '#4C6EF5';
+  const color = quiz.liveCardColor || '#2563EB';
   const colorRgb = hexToRgb(color);
 
   const overlay = document.createElement('div');
@@ -763,7 +756,7 @@ function buildLiveQuizEntry(q, name) {
     moduleName: q.moduleName,
     liveStart: q.liveStart,
     liveLabel: q.liveLabel,
-    liveCardColor: q.liveCardColor || '#4C6EF5',
+    liveCardColor: q.liveCardColor || '#2563EB',
     pinnedByAdmin: !!q.pinnedByAdmin,
     liveNoteEnabled: !!q.liveNoteEnabled,
     liveNoteTitle: q.liveNoteTitle || '',
@@ -797,7 +790,7 @@ function applyCardVisuals(card, q) {
   }
 
   if (liveStatus(q) === 'live') {
-    const cardColor = q.liveCardColor || '#4C6EF5';
+    const cardColor = q.liveCardColor || '#2563EB';
     card.style.setProperty('--ql-color', cardColor);
     card.style.setProperty('--ql-color-rgb', hexToRgb(cardColor));
 
