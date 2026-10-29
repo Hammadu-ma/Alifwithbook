@@ -204,3 +204,23 @@ body:not(.dark) :is(.quiz-card, .module-card, .subject-card, .continue-card, .pa
   border-radius: 0 !important;
   box-shadow: none !important;
 }
+
+/* ---- Mobile: questions form one long full-width card (no timeline gutter, no gaps) ---- */
+@media (max-width: 640px) {
+  .qcard, body.dark .qcard { margin: 0 !important; padding: 0 !important; }
+  .qcard::before, .qcard .node { display: none !important; }
+  .qcard .card-inner, body.dark .qcard .card-inner {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    width: 100%;
+    padding: 20px 16px 22px !important;
+    position: relative;
+  }
+  .qcard:not(:last-child) .card-inner::after {
+    content: ''; position: absolute; left: 16px; right: 16px; bottom: 0;
+    height: 1px; background: var(--ui-border); opacity: .7; pointer-events: none;
+  }
+  .qcard:first-of-type .card-inner { border-top-left-radius: 18px !important; border-top-right-radius: 18px !important; }
+  .qcard:last-of-type .card-inner { border-bottom-left-radius: 18px !important; border-bottom-right-radius: 18px !important; }
+}
