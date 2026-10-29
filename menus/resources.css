@@ -791,3 +791,5 @@ body:has(#resourcesScreen:not(.hidden)) .desktop-nav { z-index: 330; }
 /* swipe between tabs: let the browser handle vertical scroll only */
 .res-screen { touch-action: pan-y; }
 #resMain { will-change: transform, opacity; }
+/* no staggered card entrance while swiping between tabs (the slide is the animation) */
+.res-swiping .res-mod, .res-swiping .res-book, .res-swiping .res-vid, .res-swiping .res-sk { animation: none !important; opacity: 1 !important; }
