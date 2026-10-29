@@ -224,3 +224,14 @@ body:not(.dark) :is(.quiz-card, .module-card, .subject-card, .continue-card, .pa
   .qcard:first-of-type .card-inner { border-top-left-radius: 18px !important; border-top-right-radius: 18px !important; }
   .qcard:last-of-type .card-inner { border-bottom-left-radius: 18px !important; border-bottom-right-radius: 18px !important; }
 }
+
+/* ---- Mobile: question feed breaks out of <main>'s side padding so the long card spans the full width ---- */
+@media (max-width: 640px) {
+  #feed { margin-left: -12px !important; margin-right: -12px !important; }  /* main has 12px side padding on phones */
+  #feed .cat-divider { padding-left: 16px !important; padding-right: 16px !important; }
+  #feed .qcard .card-inner { border-radius: 0 !important; }
+  #feed .qcard:first-of-type .card-inner,
+  #feed .cat-divider + .qcard .card-inner { border-top-left-radius: 18px !important; border-top-right-radius: 18px !important; }
+  #feed .qcard:last-of-type .card-inner,
+  #feed .qcard:has(+ .cat-divider) .card-inner { border-bottom-left-radius: 18px !important; border-bottom-right-radius: 18px !important; }
+}
