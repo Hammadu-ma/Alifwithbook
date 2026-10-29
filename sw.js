@@ -17,7 +17,7 @@
 
    Firestore / Auth / push-API traffic is never touched by this worker.
    ========================================================================= */
-const BUILD = '7f33c157aa0b';
+const BUILD = '13e6a5365a45';
 /*SHELL_START*/
 const SHELL = [
   "/assets/arqam-style.css",
@@ -76,9 +76,6 @@ const SHELL = [
   "/push-config.js"
 ];
 const SOFT = [
-  "/assets/fonts/fa-brands-subset.woff2",
-  "/assets/fonts/fa-regular-400.woff2",
-  "/assets/fonts/fa-solid-subset.woff2",
   "/assets/fonts/inter-latin-wght-normal.woff2",
   "/assets/fonts/jetbrains-mono-400.woff2",
   "/assets/fonts/jetbrains-mono-500.woff2",
