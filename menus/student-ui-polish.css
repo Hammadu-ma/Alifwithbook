@@ -133,3 +133,82 @@ body{background:var(--paper);}
     backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);
     border-color:color-mix(in srgb,var(--ink) 10%,transparent)!important;}
 }
+
+/* =====================================================================
+   ALIF — elite accent system
+   Canvas stays pure: #FFFFFF in light, #000000 (AMOLED) in dark. The brand
+   blue is never a background wash — it appears only on things you touch or
+   that mean something: primary actions, the active item, focus, progress,
+   and a signature ECG line taken from the logo.
+   ===================================================================== */
+/* primary actions: gradient, crisp edge, top highlight, coloured glow */
+.home-hero-cta, .pill-btn.primary, .primary-btn, .submit-btn, .pkd-cta-btn, .tour-next-btn,
+.bf-btn.primary, .chat-send-btn, .action-modal-actions button.primary, .student-chip .guest-signup-btn,
+.profile-btn.signup-btn, .learn-celebrate-card .lc-btn {
+  background-image: var(--brand-grad);
+  background-color: var(--primary);
+  color: var(--on-primary);
+  border: 0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.30), inset 0 -1px 0 rgba(0,0,0,.14), 0 0 0 1px rgba(5, 70, 118, .55), var(--brand-glow);
+  text-shadow: 0 1px 0 rgba(0,0,0,.12);
+}
+body.dark .home-hero-cta, body.dark .pill-btn.primary, body.dark .primary-btn, body.dark .submit-btn,
+body.dark .pkd-cta-btn, body.dark .tour-next-btn, body.dark .bf-btn.primary, body.dark .chat-send-btn,
+body.dark .action-modal-actions button.primary {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.28), inset 0 -1px 0 rgba(0,0,0,.25), 0 0 0 1px rgba(45, 182, 245, .35), var(--brand-glow);
+}
+.home-hero-cta:hover, .pill-btn.primary:hover, .primary-btn:hover, .submit-btn:hover, .pkd-cta-btn:hover,
+.bf-btn.primary:hover, .action-modal-actions button.primary:hover, .student-chip .guest-signup-btn:hover { filter: brightness(1.08) saturate(1.08); }
+
+/* focus: one clear, accessible ring everywhere */
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline: none; }
+
+/* active nav: sharp indicator bar + brand icon, no tinted chip */
+.bn-item { position: relative; }
+.bn-item.active { color: var(--primary) !important; background: transparent !important; }
+.bn-item.active i { filter: drop-shadow(0 2px 6px rgba(var(--primary-rgb), .45)); }
+.bn-item.active::before {
+  content: ''; position: absolute; top: -7px; left: 50%; width: 22px; height: 3px; margin-left: -11px; border-radius: 0 0 4px 4px;
+  background: var(--brand-grad); box-shadow: 0 2px 10px rgba(var(--primary-rgb), .7);
+}
+.dn-item.active { color: var(--primary); background: var(--primary-soft); box-shadow: inset 0 0 0 1px var(--primary-line); }
+
+/* selected cards: neutral surface, crisp brand outline + glow (no colour slab) */
+.module-card.active, .subject-card.active, .university-card.current {
+  background: var(--card) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 1px var(--primary), var(--brand-glow) !important;
+}
+.module-card.active .module-icon, .subject-card.active .subject-icon { background: var(--primary-soft) !important; color: var(--primary) !important; }
+.module-card.active .module-name, .subject-card.active .subject-name, .university-card.current .module-name { color: var(--ink) !important; }
+.module-card.active .module-count, .subject-card.active .subject-count, .university-card.current .module-count { color: var(--ink-soft) !important; opacity: 1 !important; }
+.university-card.current .uni-active-badge { color: var(--primary); opacity: 1; }
+
+/* pills: selected = brand gradient, unselected stay neutral */
+.pill.active { background-image: var(--brand-grad); border-color: transparent; color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.28), var(--brand-glow); }
+
+/* tinted icon wells: hairline-defined instead of filled */
+.hero-icon-badge, .quick-action-btn .qa-icon, .continue-card .cc-icon, .package-card .pk-icon,
+.reco-card .rc-icon, .quiz-card .qc-icon, .package-overlay-icon, .pkg-filter-icon {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent, var(--artery)) 28%, transparent);
+}
+
+/* home hero: clean card + the logo's ECG line as a signature */
+.home-hero-inner .eyebrow { color: var(--primary); }
+body.dark .home-hero-inner .eyebrow { color: var(--brand-sky); }
+body.dark .hero-icon-badge { background: var(--primary-soft); color: var(--brand-sky); box-shadow: inset 0 0 0 1px var(--primary-line); }
+.home-hero-visual { display: none; }
+.home-hero-inner::after {
+  content: ''; position: absolute; z-index: 0; top: 22px; right: 22px; width: 132px; height: 38px; pointer-events: none;
+  background: no-repeat center / contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 132 38' fill='none'%3E%3Cpath d='M0 22h30l6-14 8 26 8-34 8 22h14l5-8 5 8h48' stroke='%232DB6F5' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  filter: drop-shadow(0 0 6px rgba(45, 182, 245, .55)); opacity: .95;
+}
+@media (max-width: 640px) { .home-hero-inner::after { width: 92px; height: 28px; top: 20px; right: 18px; } }
+
+/* inputs & selection */
+.text-input:focus, .picker-search input:focus, .search-box input:focus {
+  border-color: var(--primary); box-shadow: 0 0 0 3px rgba(var(--primary-rgb), .18);
+}
+::selection { background: rgba(var(--primary-rgb), .28); }
+

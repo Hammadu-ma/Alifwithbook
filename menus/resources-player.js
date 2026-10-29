@@ -217,7 +217,7 @@ export function mountPlayer(host, first, ctx) {
               ${v.description ? `<p class="res-sheet-desc">${esc(v.description)}</p>` : ''}
             </div>
           </div>
-          <div class="res-pl-split" data-split role="separator" tabindex="0" aria-label="Resize video and panel (drag, or use arrow keys; double-tap to reset)"><i></i></div>
+          <div class="res-pl-split" data-split role="separator" tabindex="0" aria-label="Resize video and panel (drag, or use arrow keys; double-tap to reset)"><i></i><b class="res-pl-tip" aria-hidden="true"></b></div>
           <div class="res-pl-right">
             <div class="res-pl-tabs" data-tabs></div>
             <div class="res-pl-panel" data-panel></div>
@@ -400,6 +400,8 @@ export function mountPlayer(host, first, ctx) {
   function initSplit() {
     const body = host.querySelector('.res-pl-body'), bar = host.querySelector('[data-split]'), meta = host.querySelector('.res-pl-meta');
     if (!body || !bar) return;
+    const tip = bar.querySelector('.res-pl-tip');
+    const SNAP_PX = 14;                                   // magnetic distance to a snap point
     let pf = null;
     try { pf = JSON.parse(localStorage.getItem(SPLIT_KEY)); } catch (_) {}
     const save = () => { try { localStorage.setItem(SPLIT_KEY, JSON.stringify(pf)); } catch (_) {} };
@@ -413,43 +415,88 @@ export function mountPlayer(host, first, ctx) {
       const r = body.getBoundingClientRect();
       return { h: Math.min((r.width * 9) / 16, r.height * 0.42) / r.height, w: 0.31 };
     };
+    // magnetic stops: panel width (side by side) or stage height (stacked)
+    const snaps = () => {
+      const { r, min, max } = limits(), d = defaults();
+      const pts = wideNow() ? [0.25, 0.31, 0.4, 0.5].map(f => f * r.width) : [0.3, 0.4, 0.5].map(f => f * r.height).concat(d.h * r.height);
+      return pts.filter(p => p >= min && p <= max);
+    };
+    const share = v => { const { r } = limits(); return Math.round((wideNow() ? 1 - v / r.width : v / r.height) * 100); };
+    const label = v => {
+      const t = 'Video ' + Math.min(100, Math.max(0, share(v))) + '%';
+      if (tip) tip.textContent = t;
+      bar.setAttribute('aria-valuetext', t);
+    };
     const apply = () => {
       const { r, min, max } = limits(), d = pf || defaults();
       bar.setAttribute('aria-orientation', wideNow() ? 'vertical' : 'horizontal');
-      if (wideNow()) body.style.setProperty('--pl-w', clampN(d.w * r.width, min, max) + 'px');
-      else body.style.setProperty('--pl-h', clampN(d.h * r.height, min, max) + 'px');
+      const v = wideNow() ? clampN(d.w * r.width, min, max) : clampN(d.h * r.height, min, max);
+      body.style.setProperty(wideNow() ? '--pl-w' : '--pl-h', v + 'px');
+      label(v);
     };
     const set = px => {                                   // px = new stage height (stacked) or panel width (side by side)
       const { r, min, max } = limits(), v = clampN(px, min, max), d = pf || defaults();
       pf = { ...d, ...(wideNow() ? { w: v / r.width } : { h: v / r.height }) };
       body.style.setProperty(wideNow() ? '--pl-w' : '--pl-h', v + 'px');
+      label(v);
       return v;
     };
     const current = () => parseFloat(getComputedStyle(body).getPropertyValue(wideNow() ? '--pl-w' : '--pl-h')) || 0;
+    const reset = () => { pf = null; try { localStorage.removeItem(SPLIT_KEY); } catch (_) {} apply(); };
     apply();
+    // animate size changes only after the first paint (so opening the player never "slides")
+    requestAnimationFrame(() => requestAnimationFrame(() => body.classList.add('ready')));
 
-    let start = null;
+    let start = null, lastSnap = null, lastTap = 0, moved = 0;
     on(bar, 'pointerdown', e => {
+      if (e.button > 0) return;
       e.preventDefault(); bar.setPointerCapture(e.pointerId);
-      start = { x: e.clientX, y: e.clientY, v: current() };
+      start = { x: e.clientX, y: e.clientY, v: current() }; moved = 0; lastSnap = null;
       bar.classList.add('drag'); host.classList.add('resizing');
+      label(start.v);
     });
     on(bar, 'pointermove', e => {
       if (!start) return;
-      set(wideNow() ? start.v - (e.clientX - start.x) : start.v + (e.clientY - start.y));
+      moved = Math.max(moved, Math.abs(e.clientX - start.x), Math.abs(e.clientY - start.y));
+      const raw = wideNow() ? start.v - (e.clientX - start.x) : start.v + (e.clientY - start.y);
+      const { min, max } = limits();
+      bar.classList.toggle('limit', raw <= min || raw >= max);
+      let v = raw, hit = null;
+      if (!e.altKey) for (const p of snaps()) if (Math.abs(raw - p) <= SNAP_PX) { hit = p; break; }
+      if (hit != null) {
+        v = hit;
+        if (lastSnap !== hit) { lastSnap = hit; try { navigator.vibrate && navigator.vibrate(6); } catch (_) {} bar.classList.remove('snap'); void bar.offsetWidth; }
+      } else lastSnap = null;
+      bar.classList.toggle('snap', hit != null);
+      set(v);
     });
-    const end = () => { if (!start) return; start = null; bar.classList.remove('drag'); host.classList.remove('resizing'); save(); };
-    on(bar, 'pointerup', end);
+    const end = () => {
+      if (!start) return;
+      start = null; bar.classList.remove('drag', 'snap', 'limit'); host.classList.remove('resizing');
+      if (moved > 5) save();
+    };
+    on(bar, 'pointerup', () => {
+      const tapped = start && moved <= 5;
+      end();
+      if (tapped) {                                       // double-tap / double-click anywhere on the grip resets the layout
+        const now = Date.now();
+        if (now - lastTap < 320) { lastTap = 0; reset(); } else lastTap = now;
+      }
+    });
     on(bar, 'pointercancel', end);
-    on(bar, 'dblclick', () => { pf = null; try { localStorage.removeItem(SPLIT_KEY); } catch (_) {} apply(); });
     on(bar, 'keydown', e => {
       const step = e.shiftKey ? 64 : 24, k = e.key;
+      if (k === 'Home' || k === 'Escape') { e.preventDefault(); e.stopPropagation(); reset(); return; }
       const grow = wideNow() ? (k === 'ArrowLeft' ? 1 : k === 'ArrowRight' ? -1 : 0) : (k === 'ArrowDown' ? 1 : k === 'ArrowUp' ? -1 : 0);
       if (!grow) return;
       e.preventDefault(); e.stopPropagation();
       set(current() + (wideNow() ? -grow : grow) * step); save();
     });
-    on(window, 'resize', apply);
+    let rz = 0;
+    on(window, 'resize', () => {                          // no animation while the window itself is being resized
+      body.classList.remove('ready'); apply();
+      clearTimeout(rz); rz = setTimeout(() => body.classList.add('ready'), 200);
+    });
   }
 
   /* ---------- tabs + panel ---------- */

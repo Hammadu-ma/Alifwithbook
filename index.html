@@ -123,14 +123,14 @@
     /* ----- light / dark variables (ALIF Medical brand system) ----- */
     :root {
       --paper: #FFFFFF;
-      --paper-2: #F0F7FB;
-      --ink: #0C1B2A;
-      --ink-soft: rgba(12, 27, 42, .68);
-      --ink-faint: rgba(12, 27, 42, .46);
+      --paper-2: #F5F5F7;
+      --ink: #0A0A0C;
+      --ink-soft: rgba(10, 10, 12, .66);
+      --ink-faint: rgba(10, 10, 12, .44);
       --card: #FFFFFF;
-      --card-border: rgba(16, 70, 110, .11);
-      --shadow: 0 1px 2px rgba(14, 52, 86, .06), 0 12px 30px -16px rgba(14, 82, 128, .24);
-      --shadow-lg: 0 22px 44px -16px rgba(12, 62, 104, .34);
+      --card-border: rgba(10, 10, 12, .08);
+      --shadow: 0 1px 2px rgba(10, 10, 12, .05), 0 10px 28px -16px rgba(10, 10, 12, .20);
+      --shadow-lg: 0 20px 40px -16px rgba(10, 10, 12, .28);
       --backdrop: rgba(255, 255, 255, .14);
       --right: #2f7a52;
       --right-soft: #ddebe1;
@@ -142,19 +142,17 @@
       /* One primary blue for the whole app. --artery is kept as an alias so
          every existing component picks it up automatically. */
       /* ALIF brand: sky #60BADE (logo disc) · deep blue (actions) · navy (EKG line) · steel (stethoscope) */
-      --brand-sky: #60BADE;
-      --brand-sky-rgb: 96, 186, 222;
-      --brand-navy: #1F5B84;
-      --brand-steel: #8E9AA6;
-      --brand-mist: #EAF5FB;
-      --primary: #1A78AD;
-      --primary-rgb: 26, 120, 173;
-      --primary-hover: #146294;
-      --primary-press: #0F4F78;
-      --brand-grad: linear-gradient(135deg, #3FA6D6 0%, #1A78AD 55%, #1F5B84 100%);
-      --atmosphere: radial-gradient(880px 420px at 88% -90px, rgba(96, 186, 222, .22), transparent 70%), radial-gradient(680px 340px at -8% -40px, rgba(31, 91, 132, .09), transparent 72%);
-      --primary-soft: color-mix(in srgb, var(--primary) 10%, var(--card));
-      --primary-line: color-mix(in srgb, var(--primary) 28%, transparent);
+      --brand-sky: #2DB6F5;
+      --brand-sky-rgb: 45, 182, 245;
+      --brand-navy: #064F82;
+      --primary: #0679BC;
+      --primary-rgb: 6, 121, 188;
+      --primary-hover: #0A8AD4;
+      --primary-press: #055F94;
+      --brand-grad: linear-gradient(135deg, #1CA0E6 0%, #0679BC 58%, #05609A 100%);
+      --brand-glow: 0 10px 24px -10px rgba(6, 121, 188, .70);
+      --primary-soft: color-mix(in srgb, var(--primary) 7%, var(--card));
+      --primary-line: color-mix(in srgb, var(--primary) 30%, transparent);
       --on-primary: #FFFFFF;
       --artery: var(--primary);
       --vein: #E85A3B;
@@ -177,19 +175,19 @@
       --topbar-bg: rgba(255, 255, 255, .14);
       --input-bg: var(--paper);
       --input-border: var(--card-border);
-      --module-active: var(--primary);
-      --module-active-text: var(--on-primary);
+      --module-active: var(--card);
+      --module-active-text: var(--ink);
       --pill-active: var(--primary);
       --pill-active-text: var(--on-primary);
       --sk-base: var(--paper-2);
       --sk-highlight: var(--card);
       --sk-shimmer: linear-gradient(100deg, var(--sk-base) 30%, var(--sk-highlight) 50%, var(--sk-base) 70%);
-      --explain-bg: #F3F9FC;
-      --explain-bg-accent: #E4F1F8;
-      --explain-text: #0F2A3D;
-      --explain-text-body: #44566A;
-      --explain-text-soft: rgba(15, 42, 61, .6);
-      --explain-border: rgba(15, 70, 110, .13);
+      --explain-bg: #F6F6F8;
+      --explain-bg-accent: #EDEDF0;
+      --explain-text: #0A0A0C;
+      --explain-text-body: #4a4a52;
+      --explain-text-soft: rgba(10, 10, 12, .6);
+      --explain-border: rgba(10, 10, 12, .1);
       --radius-sm: 10px;
       --radius-md: 18px;
       --radius-lg: 26px;
@@ -198,15 +196,15 @@
     }
 
     body.dark {
-      --paper: #060F17;
-      --paper-2: #0A1722;
-      --ink: #EAF3F9;
-      --ink-soft: rgba(234, 243, 249, .70);
-      --ink-faint: rgba(234, 243, 249, .46);
-      --card: #0C1824;
-      --card-border: rgba(150, 205, 235, .11);
-      --shadow: 0 1px 3px rgba(0, 0, 0, .45), 0 14px 34px -16px rgba(0, 0, 0, .75);
-      --shadow-lg: 0 24px 48px -16px rgba(0, 0, 0, .75);
+      --paper: #000000;
+      --paper-2: #0A0A0A;
+      --ink: #F5F5F7;
+      --ink-soft: rgba(245, 245, 247, .68);
+      --ink-faint: rgba(245, 245, 247, .44);
+      --card: #0A0A0B;
+      --card-border: rgba(255, 255, 255, .10);
+      --shadow: 0 1px 3px rgba(0, 0, 0, .5), 0 12px 32px -16px rgba(0, 0, 0, .8);
+      --shadow-lg: 0 24px 48px -16px rgba(0, 0, 0, .8);
       --backdrop: rgba(0, 0, 0, .14);
       --right: #4ba37a;
       --right-soft: #1e3a2e;
@@ -215,18 +213,16 @@
       --gold: #F0B429;
       --lock: #b8943f;
       --lock-soft: #2f281a;
-      --brand-navy: #8FC8E6;
-      --brand-steel: #93A3B1;
-      --brand-mist: #10202D;
-      --primary: #2089C2;
-      --primary-rgb: 32, 137, 194;
-      --primary-hover: #3A9CD3;
-      --primary-press: #1A78AD;
-      --primary-soft: color-mix(in srgb, var(--primary) 16%, var(--card));
-      --primary-line: color-mix(in srgb, var(--primary) 40%, transparent);
+      --brand-navy: #7CCBF5;
+      --primary: #098FD7;
+      --primary-rgb: 9, 143, 215;
+      --primary-hover: #1BA3EC;
+      --primary-press: #0679BC;
+      --primary-soft: color-mix(in srgb, var(--primary) 7%, var(--card));
+      --primary-line: color-mix(in srgb, var(--primary) 45%, transparent);
       --on-primary: #FFFFFF;
-      --brand-grad: linear-gradient(135deg, #4DB0E2 0%, #2089C2 55%, #1A6E9E 100%);
-      --atmosphere: radial-gradient(880px 440px at 88% -100px, rgba(95, 184, 224, .17), transparent 70%), radial-gradient(680px 360px at -8% -40px, rgba(40, 110, 160, .16), transparent 72%);
+      --brand-grad: linear-gradient(135deg, #25B0F2 0%, #098FD7 55%, #0679BC 100%);
+      --brand-glow: 0 10px 28px -10px rgba(9, 143, 215, .85);
       --artery: var(--primary);
       --vein: #FF6B4A;
       --portal: #F0B429;
@@ -245,22 +241,22 @@
       --bg-grad-1: transparent;
       --bg-grad-2: transparent;
       --sidebar-bg: color-mix(in srgb, var(--paper-2) 14%, transparent);
-      --topbar-bg: rgba(6, 15, 23, .14);
+      --topbar-bg: rgba(0, 0, 0, .14);
       --input-bg: var(--paper-2);
       --input-border: var(--card-border);
-      --module-active: var(--primary);
-      --module-active-text: var(--on-primary);
+      --module-active: var(--card);
+      --module-active-text: var(--ink);
       --pill-active: var(--primary);
       --pill-active-text: var(--on-primary);
-      --sk-base: #0F1D2A;
-      --sk-highlight: #162838;
+      --sk-base: #111113;
+      --sk-highlight: #1A1A1D;
       --sk-shimmer: linear-gradient(100deg, var(--sk-base) 30%, var(--sk-highlight) 50%, var(--sk-base) 70%);
-      --explain-bg: #0B1722;
-      --explain-bg-accent: #11222F;
-      --explain-text: #DCEAF4;
-      --explain-text-body: #9DB2C4;
-      --explain-text-soft: rgba(220, 234, 244, .6);
-      --explain-border: rgba(150, 205, 235, .16);
+      --explain-bg: #0A0A0C;
+      --explain-bg-accent: #131316;
+      --explain-text: #E6E6EA;
+      --explain-text-body: #9a9aa4;
+      --explain-text-soft: rgba(230, 230, 234, .6);
+      --explain-border: rgba(255, 255, 255, .13);
     }
 
     /* ===== Accent polish: the primary shows up as a designed system, not just a fill ===== */
@@ -282,16 +278,6 @@
     .text-input:focus, .picker-search input:focus, .search-box input:focus {
       border-color: var(--primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 16%, transparent);
     }
-
-    /* ===== ALIF brand finish: logo-sky gradient on hero surfaces & primary actions ===== */
-    .home-hero-cta, .pill-btn.primary, .primary-btn, .submit-btn, .pkd-cta-btn, .tour-next-btn,
-    .bf-btn.primary, .chat-send-btn, .action-modal-actions button.primary {
-      background-image: var(--brand-grad);
-    }
-    .home-hero-cta:hover, .pill-btn.primary:hover, .primary-btn:hover, .submit-btn:hover,
-    .pkd-cta-btn:hover, .bf-btn.primary:hover, .action-modal-actions button.primary:hover { filter: brightness(1.06) saturate(1.05); }
-    .bn-item.active { box-shadow: inset 0 0 0 1px var(--primary-line); }
-    .screen-card, .card-inner, .quiz-card, .module-card, .subject-card { border-color: var(--card-border); }
 
     /* ----- smooth theme switch -----
        Primary path: native View Transitions API — the browser just
@@ -332,8 +318,7 @@
     }
 
     body {
-      background: var(--atmosphere), var(--paper);
-      background-repeat: no-repeat;
+      background: var(--paper);
       color: var(--ink);
     }
 
@@ -1186,7 +1171,7 @@
       align-items: center;
       justify-content: center;
       font-size: 16px;
-      background:  color-mix(in srgb, var(--artery) 22%, var(--card));
+      background:  color-mix(in srgb, var(--artery) 7%, var(--card));
       color: var(--artery);
       box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--artery) 20%, transparent);
     }
@@ -1250,7 +1235,7 @@
       font-size: 13.5px;
       transition: background 0.2s;
     }
-    .home-hero-cta-ghost:hover { background: color-mix(in srgb, var(--artery) 10%, var(--paper-2)); }
+    .home-hero-cta-ghost:hover { background: color-mix(in srgb, var(--artery) 7%, var(--paper-2)); }
     @media (max-width: 640px) {
       .home-hero-card { padding: 0 16px; margin-top: 14px; }
       .home-hero-inner { padding: 24px 20px; border-radius: var(--radius-md); }
@@ -1260,8 +1245,8 @@
        flat dark-card reuse — deep gradient base, brighter glows, and a faint
        edge so it visibly lifts off the already-dark page background. */
     body.dark .home-hero-inner {
-      background: color-mix(in srgb, var(--primary) 12%, var(--card));
-      border: 1px solid rgba(255,255,255,.07);
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,.09);
       box-shadow: 0 1px 3px rgba(0,0,0,.5), 0 30px 60px -20px rgba(0,0,0,.85);
     }
     body.dark .home-hero-visual { color: #FFFFFF; opacity: .09; }
@@ -1320,7 +1305,7 @@
       align-items: center;
       justify-content: center;
       font-size: 15px;
-      background: color-mix(in srgb, var(--qa-color, var(--artery)) 15%, var(--card));
+      background: color-mix(in srgb, var(--qa-color, var(--artery)) 7%, var(--card));
       color: var(--qa-color, var(--artery));
     }
     .quick-action-btn .qa-label {
@@ -1437,7 +1422,7 @@
       align-items: center;
       justify-content: center;
       font-size: 15px;
-      background: color-mix(in srgb, var(--accent, var(--artery)) 16%, var(--card));
+      background: color-mix(in srgb, var(--accent, var(--artery)) 7%, var(--card));
       color: var(--accent, var(--artery));
     }
     .continue-card .cc-pct-badge {
@@ -1446,7 +1431,7 @@
       font-size: 10.5px;
       font-weight: 700;
       color: var(--accent, var(--artery));
-      background: color-mix(in srgb, var(--accent, var(--artery)) 14%, var(--card));
+      background: color-mix(in srgb, var(--accent, var(--artery)) 7%, var(--card));
       border-radius: 20px;
       padding: 4px 9px;
       line-height: 1.4;
@@ -1756,7 +1741,7 @@
       align-items: center;
       justify-content: center;
       font-size: 17px;
-      background: color-mix(in srgb, var(--accent, var(--artery)) 16%, var(--card));
+      background: color-mix(in srgb, var(--accent, var(--artery)) 7%, var(--card));
       color: var(--accent, var(--artery));
       flex: none;
     }
@@ -1767,7 +1752,7 @@
       letter-spacing: .04em;
       text-transform: uppercase;
       color: var(--gold);
-      background: color-mix(in srgb, var(--gold) 16%, var(--card));
+      background: color-mix(in srgb, var(--gold) 7%, var(--card));
       border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
       border-radius: 20px;
       padding: 4px 9px;
@@ -1884,7 +1869,7 @@
       justify-content: center;
       font-size: 20px;
       margin-bottom: 14px;
-      background: color-mix(in srgb, var(--accent, var(--artery)) 16%, var(--card));
+      background: color-mix(in srgb, var(--accent, var(--artery)) 7%, var(--card));
       color: var(--accent, var(--artery));
     }
     .package-overlay-card h3 {
@@ -2011,7 +1996,7 @@
       align-items: center;
       justify-content: center;
       font-size: 15px;
-      background: color-mix(in srgb, var(--pkg-accent, var(--artery)) 18%, var(--card));
+      background: color-mix(in srgb, var(--pkg-accent, var(--artery)) 7%, var(--card));
       color: var(--pkg-accent, var(--artery));
     }
     .pkg-filter-text { flex: 1; min-width: 0; }
@@ -2109,7 +2094,7 @@
       align-items: center;
       justify-content: center;
       font-size: 18px;
-      background: color-mix(in srgb, var(--accent, var(--artery)) 16%, var(--card));
+      background: color-mix(in srgb, var(--accent, var(--artery)) 7%, var(--card));
       color: var(--accent, var(--artery));
     }
     .reco-card .rc-subject {
@@ -2579,7 +2564,7 @@
       align-items: center;
       justify-content: center;
       font-size: 16px;
-      background: color-mix(in srgb, var(--accent, var(--artery)) 16%, var(--card));
+      background: color-mix(in srgb, var(--accent, var(--artery)) 7%, var(--card));
       color: var(--accent, var(--artery));
       transition: background 0.2s, color 0.2s, transform .3s var(--ease);
     }
@@ -2869,7 +2854,7 @@
       align-items: center;
       justify-content: center;
       font-size: 18px;
-      background: color-mix(in srgb, var(--accent, var(--vein)) 14%, var(--card));
+      background: color-mix(in srgb, var(--accent, var(--vein)) 7%, var(--card));
       color: var(--accent, var(--vein));
       box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, var(--vein)) 16%, transparent);
       transition: background 0.2s, color 0.2s, transform .3s var(--ease);
@@ -3069,7 +3054,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background:  color-mix(in srgb, var(--accent, var(--artery)) 22%, var(--card));
+      background:  color-mix(in srgb, var(--accent, var(--artery)) 7%, var(--card));
       color: var(--accent, var(--artery));
       font-size: 17px;
       box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent, var(--artery)) 20%, transparent);
@@ -3762,7 +3747,7 @@
       color: var(--ink-faint);
     }
     .related-sidebar .quiz-card.active-quiz {
-      background: color-mix(in srgb, var(--accent, var(--artery)) 12%, var(--card));
+      background: color-mix(in srgb, var(--accent, var(--artery)) 7%, var(--card));
       border-left-color: var(--accent, var(--artery));
       cursor: default;
     }
@@ -4428,7 +4413,7 @@
       padding: 3px 8px;
       border-radius: 20px;
       font-weight: 600;
-      background: color-mix(in srgb, var(--color, var(--artery)) 16%, var(--card));
+      background: color-mix(in srgb, var(--color, var(--artery)) 7%, var(--card));
       color: var(--color, var(--artery));
     }
     .bookmark-btn {
@@ -4960,7 +4945,7 @@
     }
     .bnm-toggle-btn.open {
       border-color: var(--artery);
-      background: color-mix(in srgb, var(--artery) 10%, var(--paper-2));
+      background: color-mix(in srgb, var(--artery) 7%, var(--paper-2));
       border-bottom-left-radius: 14px;
       border-bottom-right-radius: 14px;
     }
@@ -5708,7 +5693,7 @@
     background: var(--paper-2);
 }
 .theme-opt.active {
-    background: color-mix(in srgb, var(--artery) 12%, var(--card));
+    background: color-mix(in srgb, var(--artery) 7%, var(--card));
     color: var(--artery);
 }
 .theme-opt i {
@@ -6063,7 +6048,7 @@
     .pg-stat .stat-icon {
       width: 30px; height: 30px; border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
-      background: color-mix(in srgb, var(--tint, var(--vein)) 18%, var(--card));
+      background: color-mix(in srgb, var(--tint, var(--vein)) 7%, var(--card));
       color: var(--tint, var(--vein));
       font-size: 13px;
       margin-bottom: 10px;
@@ -6088,7 +6073,7 @@
     .pg-subject-row .sicon {
       width: 26px; height: 26px; border-radius: 8px; flex: none;
       display: flex; align-items: center; justify-content: center;
-      font-size: 11px; background: color-mix(in srgb, var(--rowc, var(--vein)) 16%, var(--card)); color: var(--rowc, var(--vein));
+      font-size: 11px; background: color-mix(in srgb, var(--rowc, var(--vein)) 7%, var(--card)); color: var(--rowc, var(--vein));
     }
     .pg-subject-row .sname { width: 140px; flex: none; font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .pg-subject-row .bar-track { flex: 1; height: 9px; border-radius: 6px; }
@@ -6421,7 +6406,7 @@
       font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
       text-transform: uppercase; letter-spacing: .06em;
       padding: 4px 9px; border-radius: 20px;
-      background: color-mix(in srgb, var(--artery) 14%, var(--card));
+      background: color-mix(in srgb, var(--artery) 7%, var(--card));
       color: var(--artery);
       flex: none;
     }
@@ -6456,7 +6441,7 @@
       position: sticky; top: 0; z-index: 5;
       display: flex; align-items: center; justify-content: space-between; gap: 10px;
       margin: 0 0 16px; padding: 10px 16px; border-radius: 14px;
-      background: color-mix(in srgb, var(--gold) 14%, var(--card));
+      background: color-mix(in srgb, var(--gold) 7%, var(--card));
       border: 1px solid color-mix(in srgb, var(--gold) 34%, var(--card-border));
       font-size: 13px; font-weight: 700; color: var(--ink);
       box-shadow: 0 6px 18px -10px rgba(17,19,24,.2);
@@ -6476,7 +6461,7 @@
     .learn-complete-card .lcc-icon {
       width: 60px; height: 60px; margin: 0 auto 16px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      background: color-mix(in srgb, var(--gold) 18%, var(--card)); color: var(--gold); font-size: 24px;
+      background: color-mix(in srgb, var(--gold) 7%, var(--card)); color: var(--gold); font-size: 24px;
     }
     .learn-complete-card h3 { font-family: 'Fraunces', Georgia, serif; font-size: 20px; margin: 0 0 8px; }
     .learn-complete-card p { color: var(--ink-soft); font-size: 14px; margin: 0; }
@@ -6540,7 +6525,7 @@
     .pg-module-group-head .micon {
       width: 28px; height: 28px; border-radius: 9px; flex: none;
       display: flex; align-items: center; justify-content: center;
-      font-size: 12px; background: color-mix(in srgb, var(--rowc, var(--vein)) 16%, var(--card)); color: var(--rowc, var(--vein));
+      font-size: 12px; background: color-mix(in srgb, var(--rowc, var(--vein)) 7%, var(--card)); color: var(--rowc, var(--vein));
     }
     .pg-module-group-head .mname { font-weight: 700; font-size: 13.5px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .pg-module-group-head .mpct { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: var(--ink-faint); flex: none; }
@@ -6550,7 +6535,7 @@
       font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
       color: var(--gold);
     }
-    .pg-stat.streak .stat-icon { background: color-mix(in srgb, var(--gold) 20%, var(--card)); color: var(--gold); }
+    .pg-stat.streak .stat-icon { background: color-mix(in srgb, var(--gold) 7%, var(--card)); color: var(--gold); }
 
     /* ----- confetti ----- */
     .confetti-piece {
@@ -6595,7 +6580,7 @@
       transition: color .2s, background .2s;
     }
     .bn-item i { font-size: 17px; }
-    .bn-item.active { color: var(--artery); background: color-mix(in srgb, var(--artery) 10%, transparent); }
+    .bn-item.active { color: var(--artery); background: transparent; }
 
     /* ----- DESKTOP NAV (floating dock, bottom-right; quiz's own jump-fab lives in the
        same corner but is only shown while a quiz is open, when this dock is hidden) ----- */
@@ -6943,7 +6928,7 @@
        floating context menu next to the message, Telegram-style, instead of a row
        of buttons sitting under every single message. ----- */
     .chat-msg.ctx-active .chat-bubble {
-      background: color-mix(in srgb, var(--artery) 12%, var(--card));
+      background: color-mix(in srgb, var(--artery) 7%, var(--card));
       box-shadow: 0 1px 2px rgba(17,19,24,.04), 0 6px 16px -10px rgba(17,19,24,.18), 0 0 0 1.5px var(--artery);
     }
     .chat-bubble { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
@@ -7060,7 +7045,7 @@
     .sor-item .sor-cat {
       font-family: 'JetBrains Mono', monospace; font-size: 9.5px; text-transform: uppercase;
       letter-spacing: .04em; padding: 2px 7px; border-radius: 10px;
-      background: color-mix(in srgb, var(--artery) 14%, var(--card)); color: var(--artery);
+      background: color-mix(in srgb, var(--artery) 7%, var(--card)); color: var(--artery);
     }
     .sor-item .sor-snippet { font-size: 13.5px; color: var(--ink); line-height: 1.45; }
     .sor-item .sor-snippet mark { background: color-mix(in srgb, var(--gold) 35%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
@@ -7137,8 +7122,8 @@
     /* ALIF login v4 - photo background, glass card, compact form */
     body.auth-gate-open:has(#gateScreen:not(.hidden)){overflow:hidden!important}
     body.auth-gate-open .sidebar-edge-toggle,body.auth-gate-open .related-sidebar-edge-toggle,body.auth-gate-open .focus-topbar{display:none!important}
-    #gateScreen{--auth-photo:url("assets/login-light.jpg");--art-a1:#1A78AD;--art-a2:#60BADE;--art-bokeh:#60BADE;--auth-fg:#0b2540;--auth-fg-soft:rgba(11,37,64,.68);--auth-card-bg:rgba(255,255,255,.26);--auth-card-bd:rgba(255,255,255,.55);--auth-card-sh:0 40px 90px -30px rgba(15,60,110,.45),0 2px 0 rgba(255,255,255,.7) inset;--auth-bg-1:#ffffff;--auth-bg-2:#eef7fb;--auth-scrim:rgba(255,255,255,.7);--auth-shade:rgba(255,255,255,.3)}
-    body.dark #gateScreen{--auth-photo:url("assets/login-dark.jpg");--art-a1:#4DB0E2;--art-a2:#9BD6F0;--art-bokeh:#2B9AD1;--auth-fg:#fff;--auth-fg-soft:rgba(255,255,255,.7);--auth-card-bg:rgba(0,0,0,.28);--auth-card-bd:rgba(255,255,255,.2);--auth-card-sh:0 40px 90px -30px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.1) inset;--auth-bg-1:#060F17;--auth-bg-2:#0A1722;--auth-scrim:rgba(6,15,23,.55);--auth-shade:rgba(6,15,23,.5)}
+    #gateScreen{--auth-photo:url("assets/login-light.jpg");--art-a1:#0679BC;--art-a2:#2DB6F5;--art-bokeh:#2DB6F5;--auth-fg:#0b2540;--auth-fg-soft:rgba(11,37,64,.68);--auth-card-bg:rgba(255,255,255,.26);--auth-card-bd:rgba(255,255,255,.55);--auth-card-sh:0 40px 90px -30px rgba(15,60,110,.45),0 2px 0 rgba(255,255,255,.7) inset;--auth-bg-1:#ffffff;--auth-bg-2:#f5f5f7;--auth-scrim:rgba(255,255,255,.7);--auth-shade:rgba(255,255,255,.3)}
+    body.dark #gateScreen{--auth-photo:url("assets/login-dark.jpg");--art-a1:#25B0F2;--art-a2:#7CCBF5;--art-bokeh:#098FD7;--auth-fg:#fff;--auth-fg-soft:rgba(255,255,255,.7);--auth-card-bg:rgba(0,0,0,.28);--auth-card-bd:rgba(255,255,255,.2);--auth-card-sh:0 40px 90px -30px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.1) inset;--auth-bg-1:#000000;--auth-bg-2:#0A0A0A;--auth-scrim:rgba(0,0,0,.55);--auth-shade:rgba(0,0,0,.5)}
     #gateScreen{position:fixed;inset:0;z-index:10000;display:block!important;min-height:0!important;padding:0!important;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--auth-bg-1)}
     #gateScreen.hidden{display:none!important}
     .auth-bg{position:fixed;inset:0;z-index:0;background-color:var(--auth-bg-1);background-image:var(--auth-photo);background-size:cover;background-position:center;background-repeat:no-repeat}
@@ -7260,7 +7245,7 @@
           <div class="auth-logo">
             <img src="/logo-360.webp" alt="ALIF Med" decoding="async" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
             <svg class="auth-logo-fallback" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" style="display:none">
-              <defs><linearGradient id="alifLg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#60BADE"/><stop offset="1" stop-color="#1A78AD"/></linearGradient></defs>
+              <defs><linearGradient id="alifLg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2DB6F5"/><stop offset="1" stop-color="#0679BC"/></linearGradient></defs>
               <rect x="4" y="4" width="88" height="88" rx="26" fill="url(#alifLg1)"/>
               <path d="M48 20 L68 74 H59 L54.5 61 H41.5 L37 74 H28 Z M48 36 L44 51 H52 Z" fill="#fff" fill-rule="evenodd"/>
               <path d="M18 56 H34 L39 47 L45 66 L51 52 L55 56 H78" fill="none" stroke="#111318" stroke-opacity=".55" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
