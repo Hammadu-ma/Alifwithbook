@@ -11,7 +11,7 @@
    * Under the video: tabs for Related videos / books / quizzes. A book or a
      quiz opens right there in the panel while the video keeps playing.
    ======================================================================== */
-import { mountReader } from './resources-reader.js';
+import { mountReader, SANDBOX } from './resources-reader.js';
 import { loadCategoryQuestions, loadQuizQuestions, lockMessage, mountQuiz, resolveQuizLinks } from './resources-quiz.js';
 import { driveId, esc, plural, safeUrl, thumbSrc, videoThumb, vimeoParts, ytId, fileExt } from './resources-util.js';
 
@@ -94,16 +94,19 @@ function htmlEngine(stage, src, poster) {
 
 async function youtubeEngine(stage, id) {
   await loadOnce('yt', 'https://www.youtube.com/iframe_api', () => window.YT && window.YT.Player);
-  const host = document.createElement('div');
-  stage.prepend(host);
+  // our own iframe, so it can be sandboxed (no pop-outs / "Watch on YouTube" navigation) before it loads
+  const f = document.createElement('iframe');
+  f.setAttribute('sandbox', SANDBOX);
+  f.allow = 'autoplay; encrypted-media; picture-in-picture';
+  f.referrerPolicy = 'strict-origin-when-cross-origin';
+  f.src = `https://www.youtube-nocookie.com/embed/${id}?enablejsapi=1&autoplay=1&controls=0&disablekb=1&fs=0&iv_load_policy=3&modestbranding=1&playsinline=1&rel=0&origin=${encodeURIComponent(location.origin)}`;
+  stage.prepend(f);
   stage.classList.add('yt');
   const ev = emitter();
   return new Promise((res, rej) => {
-    let p, ready = false;
+    let ready = false;
     const tmo = setTimeout(() => { if (!ready) rej(new Error('yt timeout')); }, 12000);
-    p = new window.YT.Player(host, {
-      videoId: id, host: 'https://www.youtube-nocookie.com',
-      playerVars: { autoplay: 1, controls: 0, disablekb: 1, fs: 0, iv_load_policy: 3, modestbranding: 1, playsinline: 1, rel: 0, origin: location.origin },
+    const p = new window.YT.Player(f, {
       events: {
         onReady: () => {
           ready = true; clearTimeout(tmo);
@@ -114,7 +117,7 @@ async function youtubeEngine(stage, id) {
             buffered: () => (p.getVideoLoadedFraction() || 0) * (p.getDuration() || 0),
             setRate: r => p.setPlaybackRate(r), setVol: v => { p.setVolume(v * 100); v === 0 ? p.mute() : p.unMute(); },
             setMuted: m => (m ? p.mute() : p.unMute()),
-            destroy: () => { try { p.destroy(); } catch (_) {} }
+            destroy: () => { try { p.destroy(); } catch (_) {} f.remove(); }
           });
         },
         onStateChange: e => ev.emit('state', { 0: 'ended', 1: 'playing', 2: 'paused', 3: 'buffering' }[e.data] || 'idle'),
@@ -129,6 +132,7 @@ async function vimeoEngine(stage, id, h) {
   const f = document.createElement('iframe');
   f.src = `https://player.vimeo.com/video/${id}?controls=0&playsinline=1&title=0&byline=0&portrait=0&dnt=1&autoplay=1${h ? '&h=' + h : ''}`;
   f.allow = 'autoplay; fullscreen; picture-in-picture';
+  f.setAttribute('sandbox', SANDBOX);
   stage.prepend(f);
   const p = new window.Vimeo.Player(f);
   const ev = emitter();
@@ -239,7 +243,7 @@ export function mountPlayer(host, first, ctx) {
     if (info.kind === 'none') { stage.innerHTML = '<div class="res-pl-msg"><i class="fa-solid fa-play"></i><p>This video’s link isn’t available yet.</p></div>'; return; }
     const frame = (src, loose) => {
       stage.classList.remove('yt'); stage.classList.add('plain');
-      stage.innerHTML = `<iframe src="${esc(src)}" title="${esc(v.title || 'Video')}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+      stage.innerHTML = `<iframe src="${esc(src)}" title="${esc(v.title || 'Video')}" sandbox="${SANDBOX}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe><div class="rd-frame-guard"></div>
         <div class="res-pl-note">${loose ? 'If the video stays blank, this host doesn’t allow playing inside the app.' : 'Basic player for this source.'}</div>`;
     };
     if (info.kind === 'frame') { frame(info.src, info.loose); return; }

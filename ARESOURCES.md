@@ -16,10 +16,19 @@ Bottom nav is now **Home · Exams · AResources · Chat** (Progress is still rea
 Admin → **AResources** (new permission "AResources (books & videos)"; owner has it automatically).
 Books and videos can each use an **external link or an upload** for the file, the thumbnail and (videos) the lecturer photo. Lecturers are entered per video; reuse the same name (autocomplete helps) to group them.
 
+## The reader
+Immersive full-screen reader for PDFs (and a compact version under videos):
+- **Themes** Paper / Sepia / Night, **Scroll** or **Pages** layout (swipe, tap the edges, arrow keys), zoom, jump-to-page, page slider.
+- **Contents** from the PDF outline, **bookmarks**, **full-text search** with highlighted snippets.
+- Resumes at the page you stopped on, remembers theme/layout, keeps the screen awake, toolbars hide while you read.
+- **Nothing can leave the app**: no links anywhere, link clicks are swallowed, and every embedded viewer/video frame is sandboxed without pop-ups or top-level navigation.
+- Word/PowerPoint/Excel and Google Drive files open in a sandboxed embedded viewer (less featureful). For the full reader experience, **upload PDFs or use a direct PDF link whose server allows CORS**; otherwise the reader falls back to the embedded viewer.
+
 ## Deploy checklist
 1. `firebase deploy --only firestore:rules` (adds `books`, `videos`, `resources` permission).
 2. For **uploads**: enable Firebase Storage, then `firebase deploy --only storage`. NOTE: new Firebase projects may require the **Blaze** plan for Storage. On Spark, use external links (Drive / YouTube / any URL) — everything else works without Storage.
-3. Deploy hosting as usual (`tools/stamp-sw.mjs` already ran, so the offline shell includes the new files).
+3. **Uploaded PDFs need CORS** so the reader can draw them natively: `gsutil cors set cors.json gs://YOUR_BUCKET` (file `cors.json` is included; replace `*` with your site's origin if you prefer).
+4. Deploy hosting as usual (`tools/stamp-sw.mjs` already ran, so the offline shell includes the new files).
 
 ## Data model
 `books/{id}`: title, author, description, moduleId, subjectId?, sourceType (link|upload), fileUrl, thumbUrl?, order, active, universityId  

@@ -618,6 +618,9 @@ function closePlayer() {
   hideOverlay(elPlayer, closePlayer);
 }
 
+/* AResources never sends the student out of the app: swallow any link click and block window.open from these screens */
+[screen, elSheet, elPlayer, elReader].forEach(el => el.addEventListener('click', e => { if (e.target.closest('a[href]')) e.preventDefault(); }, true));
+
 /* if anything else takes over the screen, tear down the sheet / player (stops playback) */
 new MutationObserver(() => { if (!isOpen()) { closeReader(); closeSheet(); closePlayer(); } })
   .observe(screen, { attributes: true, attributeFilter: ['class'] });
