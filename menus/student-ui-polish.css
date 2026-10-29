@@ -325,9 +325,7 @@ body.dark .learn-celebrate-card .lc-btn { transition: transform .2s var(--ease),
    ===================================================================== */
 .home-hero-card .home-hero-inner,
 body.dark .home-hero-card .home-hero-inner {
-  background:
-    radial-gradient(120% 90% at 100% 0%, rgba(110, 160, 255, .55) 0%, rgba(110, 160, 255, 0) 58%),
-    linear-gradient(145deg, #2A62FF 0%, #1B3FD6 32%, #0E1F6B 66%, #060B1E 100%) !important;
+  background: var(--hero-grad) !important;
   border: 1px solid rgba(140, 175, 255, .28) !important;
   color: #FFFFFF !important;
   box-shadow: 0 24px 48px -22px rgba(42, 98, 255, .60), 0 2px 8px rgba(6, 11, 30, .30) !important;
@@ -346,7 +344,7 @@ body.dark .home-hero-card .home-hero-inner {
 body.dark .home-hero-card .home-hero-cta {
   background: #FFFFFF !important;
   background-image: none !important;
-  color: #1638A8 !important;
+  color: var(--primary-press) !important;
   text-shadow: none !important;
   box-shadow: 0 12px 24px -12px rgba(2, 8, 40, .65) !important;
 }

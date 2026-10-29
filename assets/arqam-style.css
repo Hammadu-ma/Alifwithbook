@@ -20,8 +20,8 @@ html:root {
   --ink-faint: rgba(11, 21, 48, .46);
   --shadow: 0 5px 20px rgba(14, 33, 88, .05);
   --shadow-lg: 0 16px 38px rgba(14, 33, 88, .12);
-  --brand-grad: linear-gradient(105deg, #163DB0 0%, #3A6BF0 100%);   /* Arqam's 105deg two-tone button gradient */
-  --brand-glow: 0 6px 14px rgba(30, 79, 216, .22);
+  --brand-grad: linear-gradient(145deg, #2A62FF 0%, #1B3FD6 48%, #0E1F6B 100%);   /* welcome-card palette */
+  --brand-glow: 0 10px 22px -10px rgba(42, 98, 255, .55);
   --primary-soft: color-mix(in srgb, var(--primary) 9%, #ffffff);
   --primary-line: color-mix(in srgb, var(--primary) 28%, transparent);
   --topbar-bg: #FFFFFF;
