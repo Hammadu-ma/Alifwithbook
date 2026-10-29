@@ -423,11 +423,13 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
   }, true);
 
   // re-layout on rotation / resize
-  let rzT = 0, lastW = 0;
+  let rzT = 0, lastW = 0, lastH = 0;
   const ro = new ResizeObserver(() => {
-    const w = stage.clientWidth;
-    if (!n || Math.abs(w - lastW) < 8) { lastW = w; return; }
-    lastW = w; clearTimeout(rzT); rzT = setTimeout(() => !dead && layout(cur), 180);
+    const w = stage.clientWidth, h = stage.clientHeight;
+    const changed = Math.abs(w - lastW) >= 8 || (mode === 'page' && Math.abs(h - lastH) >= 8);
+    lastW = w; lastH = h;
+    if (!n || !changed) return;
+    clearTimeout(rzT); rzT = setTimeout(() => !dead && layout(cur), 180);
   });
   ro.observe(stage);
   offs.push(() => ro.disconnect());

@@ -217,6 +217,7 @@ export function mountPlayer(host, first, ctx) {
               ${v.description ? `<p class="res-sheet-desc">${esc(v.description)}</p>` : ''}
             </div>
           </div>
+          <div class="res-pl-split" data-split role="separator" tabindex="0" aria-label="Resize video and panel (drag, or use arrow keys; double-tap to reset)"><i></i></div>
           <div class="res-pl-right">
             <div class="res-pl-tabs" data-tabs></div>
             <div class="res-pl-panel" data-panel></div>
@@ -224,6 +225,7 @@ export function mountPlayer(host, first, ctx) {
         </div>
       </div>`;
     host.scrollTop = 0;
+    initSplit();
     renderTabs(rel);
     renderPanel(rel);
     startStage(host.querySelector('[data-stage]'), info, v);
@@ -388,6 +390,66 @@ export function mountPlayer(host, first, ctx) {
       else if (e.key === 'm') setMuted(!ui.muted); else if (e.key === 'f') setFs();
     });
     showUi();
+  }
+
+
+  /* ---------- resizable split (video ⇄ panel) ---------- */
+  const SPLIT_KEY = 'alif_pl_split_v1';
+  const wideNow = () => window.matchMedia('(min-width: 900px)').matches;
+  const clampN = (v, a, b) => Math.min(Math.max(v, a), Math.max(a, b));
+  function initSplit() {
+    const body = host.querySelector('.res-pl-body'), bar = host.querySelector('[data-split]'), meta = host.querySelector('.res-pl-meta');
+    if (!body || !bar) return;
+    let pf = null;
+    try { pf = JSON.parse(localStorage.getItem(SPLIT_KEY)); } catch (_) {}
+    const save = () => { try { localStorage.setItem(SPLIT_KEY, JSON.stringify(pf)); } catch (_) {} };
+    const limits = () => {
+      const r = body.getBoundingClientRect();
+      return wideNow()
+        ? { r, min: 280, max: r.width * 0.62 }
+        : { r, min: 110, max: r.height - meta.offsetHeight - bar.offsetHeight - 44 - 130 };   // keep tabs + a bit of panel visible
+    };
+    const defaults = () => {
+      const r = body.getBoundingClientRect();
+      return { h: Math.min((r.width * 9) / 16, r.height * 0.42) / r.height, w: 0.31 };
+    };
+    const apply = () => {
+      const { r, min, max } = limits(), d = pf || defaults();
+      bar.setAttribute('aria-orientation', wideNow() ? 'vertical' : 'horizontal');
+      if (wideNow()) body.style.setProperty('--pl-w', clampN(d.w * r.width, min, max) + 'px');
+      else body.style.setProperty('--pl-h', clampN(d.h * r.height, min, max) + 'px');
+    };
+    const set = px => {                                   // px = new stage height (stacked) or panel width (side by side)
+      const { r, min, max } = limits(), v = clampN(px, min, max), d = pf || defaults();
+      pf = { ...d, ...(wideNow() ? { w: v / r.width } : { h: v / r.height }) };
+      body.style.setProperty(wideNow() ? '--pl-w' : '--pl-h', v + 'px');
+      return v;
+    };
+    const current = () => parseFloat(getComputedStyle(body).getPropertyValue(wideNow() ? '--pl-w' : '--pl-h')) || 0;
+    apply();
+
+    let start = null;
+    on(bar, 'pointerdown', e => {
+      e.preventDefault(); bar.setPointerCapture(e.pointerId);
+      start = { x: e.clientX, y: e.clientY, v: current() };
+      bar.classList.add('drag'); host.classList.add('resizing');
+    });
+    on(bar, 'pointermove', e => {
+      if (!start) return;
+      set(wideNow() ? start.v - (e.clientX - start.x) : start.v + (e.clientY - start.y));
+    });
+    const end = () => { if (!start) return; start = null; bar.classList.remove('drag'); host.classList.remove('resizing'); save(); };
+    on(bar, 'pointerup', end);
+    on(bar, 'pointercancel', end);
+    on(bar, 'dblclick', () => { pf = null; try { localStorage.removeItem(SPLIT_KEY); } catch (_) {} apply(); });
+    on(bar, 'keydown', e => {
+      const step = e.shiftKey ? 64 : 24, k = e.key;
+      const grow = wideNow() ? (k === 'ArrowLeft' ? 1 : k === 'ArrowRight' ? -1 : 0) : (k === 'ArrowDown' ? 1 : k === 'ArrowUp' ? -1 : 0);
+      if (!grow) return;
+      e.preventDefault(); e.stopPropagation();
+      set(current() + (wideNow() ? -grow : grow) * step); save();
+    });
+    on(window, 'resize', apply);
   }
 
   /* ---------- tabs + panel ---------- */
