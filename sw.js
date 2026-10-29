@@ -21,6 +21,7 @@ const BUILD = 'e4f4d00bf3da';
 /*SHELL_START*/
 const SHELL = [
   "/assets/arqam-style.css",
+  "/assets/amoled-dark.css",
   "/assets/ui-fonts.css",
   "/index.html",
   "/manifest.webmanifest",
