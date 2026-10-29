@@ -196,3 +196,11 @@ body:not(.dark) :is(.quiz-card, .module-card, .subject-card, .continue-card, .pa
 }
 /* quiz-card's left edge too (its mobile accent bar is overridden by the base border anyway) */
 .quiz-card:not(:hover), body.dark .quiz-card:not(:hover) { border-left-color: transparent !important; }
+
+/* ---- Question page: .qcard is only a wrapper; .card-inner is the visible card (no double card) ---- */
+.qcard, body.dark .qcard {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
