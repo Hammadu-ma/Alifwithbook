@@ -168,37 +168,6 @@ body.dark .bottom-nav { box-shadow: 0 -6px 20px rgba(0, 0, 0, .35); }
 /* ---- 11. progress ---- */
 .bar-track, .ts-track { border-radius: 999px; background: color-mix(in srgb, var(--primary) 12%, var(--card)); }
 
-/* ---- Mobile quiz list: borderless rows, no gaps, one continuous list ---- */
-@media (max-width: 640px) {
-  .quiz-grid {
-    gap: 0 !important;
-    padding: 0 !important;
-    margin-top: 16px !important;
-  }
-  .quiz-grid .quiz-card,
-  body.dark .quiz-grid .quiz-card {
-    border: 0 !important;
-    border-left: 3px solid var(--accent, var(--artery)) !important; /* subject accent only */
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    margin: 0 !important;
-    padding: 14px 16px !important;
-    position: relative;
-  }
-  /* faint inset hairline so rows stay readable without a break or a border */
-  .quiz-grid .quiz-card:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    left: 16px; right: 0; bottom: 0;
-    height: 1px;
-    background: var(--ui-border);
-    opacity: .6;
-    pointer-events: none;
-  }
-  .quiz-grid .quiz-card:hover,
-  body.dark .quiz-grid .quiz-card:hover { box-shadow: none !important; }
-}
-
 /* ---- Mobile question/practice page: borderless, continuous, edge to edge ---- */
 @media (max-width: 640px) {
   /* question cards: drop timeline rail + outline, stack with no gaps */
