@@ -10,18 +10,17 @@ body.dark {
   color-scheme: dark;
 
   /* surfaces — elevation 0 → 3 */
-  /* everything is true black; cards are separated by light, not colour:
-     a faint top-lit sheen + a 1px highlight edge. Charcoal is reserved for
-     controls that must read as 'pressable' (answer options, inputs). */
+  /* black page; cards are one soft step lighter (no borders/gradients);
+     answer options and inputs are one step lighter again */
   --paper: #000000;
   --paper-2: #000000;
-  --charcoal: #14161A;
-  --charcoal-hover: #1B1E24;
-  --card: #000000;
-  --card-raised: #000000;
-  --card-hover: #000000;
-  --card-sheen: linear-gradient(180deg, rgba(255,255,255,.06) 0%, rgba(255,255,255,.018) 34%, rgba(255,255,255,0) 100%);
-  --card-edge: inset 0 1px 0 rgba(255,255,255,.11);
+  --card: #0F1115;
+  --card-raised: #14171C;
+  --card-hover: #14171C;
+  --charcoal: #1A1D23;
+  --charcoal-hover: #21252D;
+  --card-sheen: none;
+  --card-edge: 0 0 0 0 transparent;
   --card-border: rgba(255, 255, 255, .07);
   --ui-border: rgba(255, 255, 255, .07);
   --input-bg: var(--charcoal);
@@ -35,8 +34,8 @@ body.dark {
   --ink-faint: rgba(243, 246, 252, .56);
 
   /* depth: soft, tight, black-on-black plus a 1px top highlight */
-  --shadow: var(--card-edge);
-  --shadow-lg: var(--card-edge), 0 0 36px -14px rgba(var(--primary-rgb), .30);
+  --shadow: none;
+  --shadow-lg: 0 18px 44px -20px rgba(0, 0, 0, .9);
   --ui-shadow: var(--shadow);
   --ui-shadow-strong: var(--shadow-lg);
 
@@ -56,8 +55,8 @@ body.dark {
   --lock: #D4AE5A;
   --lock-soft: #1E1708;
 
-  --sk-base: #0A0B0D;
-  --sk-highlight: #16181D;
+  --sk-base: #0F1115;
+  --sk-highlight: #1A1D23;
 }
 
 /* page + chrome */
@@ -76,18 +75,18 @@ body.dark .bottom-nav, body.dark .desktop-nav, body.dark .sidebar {
 body.dark :is(.screen-card, .card-inner, .quiz-card, .module-card, .subject-card, .overlay-panel,
   .action-modal-panel, .package-card, .package-overlay-card, .university-card, .reco-card, .live-card,
   .pg-section, .sp-section, .continue-card, .learn-celebrate-card, .qcard) {
-  background-color: #000;
-  background-image: var(--card-sheen);
+  background-color: var(--card);
+  background-image: none;
   border: 1px solid transparent;
-  box-shadow: var(--card-edge) !important;
+  box-shadow: none !important;
 }
 body.dark :is(.quiz-card, .module-card, .subject-card, .continue-card, .package-card, .university-card):not(.active):not(.current):hover {
-  background-image: linear-gradient(180deg, rgba(255,255,255,.09) 0%, rgba(255,255,255,.025) 38%, rgba(255,255,255,0) 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.16) !important;
+  background-color: var(--card-hover);
+  box-shadow: none !important;
 }
 body.dark :is(.overlay-panel, .action-modal-panel, .package-overlay-card, .search-overlay-results) {
-  background-color: #000;
-  box-shadow: var(--card-edge), 0 -20px 60px rgba(0,0,0,.9) !important;
+  background-color: var(--card-raised);
+  box-shadow: 0 -20px 60px rgba(0,0,0,.9) !important;
 }
 
 /* text + links readable */
@@ -127,5 +126,5 @@ body.dark .opt:not(:disabled):hover { background: var(--charcoal-hover) !importa
 body.dark .opt.reveal-correct { background: var(--right-soft) !important; }
 body.dark .opt.reveal-wrong { background: var(--wrong-soft) !important; }
 
-/* question cards: flat black, no sheen gradient (keeps only the thin top edge) */
+/* question cards: flat, no gradient */
 body.dark .qcard, body.dark .qcard .card-inner { background-image: none !important; }
