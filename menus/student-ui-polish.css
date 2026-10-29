@@ -11,7 +11,7 @@
   --ui-smooth:220ms cubic-bezier(.16,1,.3,1);
 }
 body.dark{
-  --ui-border:rgba(242,242,245,.10);
+  --ui-border:rgba(140,165,255,.12);
   --ui-shadow:0 8px 28px rgba(0,0,0,.22);
   --ui-shadow-strong:0 18px 44px rgba(0,0,0,.34);
 }
@@ -361,3 +361,12 @@ body.dark .home-hero-card .home-hero-cta-ghost {
 }
 .home-hero-card .home-hero-cta-ghost:hover,
 body.dark .home-hero-card .home-hero-cta-ghost:hover { background: rgba(255, 255, 255, .20) !important; }
+
+/* AMOLED: the welcome card fades into true black so it melts into the page */
+body.dark .home-hero-card .home-hero-inner {
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgba(90, 140, 255, .50) 0%, rgba(90, 140, 255, 0) 58%),
+    linear-gradient(145deg, #2A62FF 0%, #1B3FD6 28%, #0A1650 62%, #000000 100%) !important;
+  border: 1px solid rgba(140, 175, 255, .20) !important;
+  box-shadow: 0 24px 54px -24px rgba(42, 98, 255, .55), 0 0 0 1px rgba(0, 0, 0, .6) !important;
+}

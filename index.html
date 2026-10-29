@@ -196,16 +196,16 @@
     }
 
     body.dark {
-      --paper: #060B1E;
-      --paper-2: #0A1230;
-      --ink: #EAF0FF;
-      --ink-soft: rgba(234, 240, 255, .68);
-      --ink-faint: rgba(234, 240, 255, .44);
-      --card: #0D1738;
-      --card-border: rgba(150, 175, 255, .12);
-      --shadow: 0 1px 3px rgba(2, 5, 18, .5), 0 12px 32px -16px rgba(2, 5, 18, .8);
-      --shadow-lg: 0 24px 48px -16px rgba(2, 5, 18, .8);
-      --backdrop: rgba(6, 11, 30, .14);
+      --paper: #000000;
+      --paper-2: #05070D;
+      --ink: #EDF2FF;
+      --ink-soft: rgba(237, 242, 255, .68);
+      --ink-faint: rgba(237, 242, 255, .42);
+      --card: #080B14;
+      --card-border: rgba(140, 165, 255, .10);
+      --shadow: 0 1px 3px rgba(0, 0, 0, .70), 0 12px 32px -16px rgba(0, 0, 0, .95);
+      --shadow-lg: 0 24px 48px -16px rgba(0, 0, 0, .95);
+      --backdrop: rgba(0, 0, 0, .14);
       --right: #4ba37a;
       --right-soft: #1e3a2e;
       --wrong: #c94f47;
@@ -218,7 +218,7 @@
       --primary-rgb: 62, 112, 255;
       --primary-hover: #5D88FF;
       --primary-press: #2A57E6;
-      --primary-soft: color-mix(in srgb, var(--primary) 7%, var(--card));
+      --primary-soft: color-mix(in srgb, var(--primary) 9%, var(--card));
       --primary-line: color-mix(in srgb, var(--primary) 45%, transparent);
       --on-primary: #FFFFFF;
       --brand-grad: linear-gradient(135deg, #5B88FF 0%, #3E70FF 55%, #2A57E6 100%);
@@ -241,22 +241,22 @@
       --bg-grad-1: transparent;
       --bg-grad-2: transparent;
       --sidebar-bg: color-mix(in srgb, var(--paper-2) 14%, transparent);
-      --topbar-bg: rgba(6, 11, 30, .14);
+      --topbar-bg: rgba(0, 0, 0, .14);
       --input-bg: var(--paper-2);
       --input-border: var(--card-border);
       --module-active: var(--card);
       --module-active-text: var(--ink);
       --pill-active: var(--primary);
       --pill-active-text: var(--on-primary);
-      --sk-base: #0C1534;
-      --sk-highlight: #142049;
+      --sk-base: #0A0E18;
+      --sk-highlight: #131A2B;
       --sk-shimmer: linear-gradient(100deg, var(--sk-base) 30%, var(--sk-highlight) 50%, var(--sk-base) 70%);
-      --explain-bg: #08102A;
-      --explain-bg-accent: #0E1838;
+      --explain-bg: #05070E;
+      --explain-bg-accent: #0A0F1D;
       --explain-text: #E3EAFF;
       --explain-text-body: #9AA8CC;
       --explain-text-soft: rgba(227, 234, 255, .6);
-      --explain-border: rgba(150, 175, 255, .14);
+      --explain-border: rgba(140, 165, 255, .12);
     }
 
     /* ===== Accent polish: the primary shows up as a designed system, not just a fill ===== */
@@ -7191,7 +7191,7 @@
   <script src="/push-config.js" defer></script>
 </head>
 <body>
-<script>!function(){const e=localStorage.getItem("atlas_theme_pref");let t=!1;t="dark"===e||"light"!==e&&window.matchMedia("(prefers-color-scheme: dark)").matches,t&&document.body.classList.add("dark");const o=document.querySelector('meta[name="theme-color"]');o&&o.setAttribute("content",t?"#060B1E":"#F6F8FC")}();</script>
+<script>!function(){const e=localStorage.getItem("atlas_theme_pref");let t=!1;t="dark"===e||"light"!==e&&window.matchMedia("(prefers-color-scheme: dark)").matches,t&&document.body.classList.add("dark");const o=document.querySelector('meta[name="theme-color"]');o&&o.setAttribute("content",t?"#000000":"#F6F8FC")}();</script>
 <!-- ============= BOOT LOADER (avoids gate-screen flash on load) ============= -->
   <div class="boot-loader" id="bootLoader">
     <div class="bl-topbar">
