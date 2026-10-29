@@ -123,14 +123,14 @@
     /* ----- light / dark variables (ALIF Medical brand system) ----- */
     :root {
       --paper: #FFFFFF;
-      --paper-2: #F3F4F6;
-      --ink: #111318;
-      --ink-soft: rgba(17, 19, 24, .66);
-      --ink-faint: rgba(17, 19, 24, .44);
+      --paper-2: #F0F7FB;
+      --ink: #0C1B2A;
+      --ink-soft: rgba(12, 27, 42, .68);
+      --ink-faint: rgba(12, 27, 42, .46);
       --card: #FFFFFF;
-      --card-border: rgba(17, 19, 24, .09);
-      --shadow: 0 1px 2px rgba(17, 19, 24, .05), 0 10px 28px -16px rgba(17, 19, 24, .20);
-      --shadow-lg: 0 20px 40px -16px rgba(17, 19, 24, .30);
+      --card-border: rgba(16, 70, 110, .11);
+      --shadow: 0 1px 2px rgba(14, 52, 86, .06), 0 12px 30px -16px rgba(14, 82, 128, .24);
+      --shadow-lg: 0 22px 44px -16px rgba(12, 62, 104, .34);
       --backdrop: rgba(255, 255, 255, .14);
       --right: #2f7a52;
       --right-soft: #ddebe1;
@@ -141,10 +141,18 @@
       --lock-soft: #f1e6c9;
       /* One primary blue for the whole app. --artery is kept as an alias so
          every existing component picks it up automatically. */
-      --primary: #4040B0;
-      --primary-rgb: 64, 64, 176;
-      --primary-hover: #34349A;
-      --primary-press: #2B2B85;
+      /* ALIF brand: sky #60BADE (logo disc) · deep blue (actions) · navy (EKG line) · steel (stethoscope) */
+      --brand-sky: #60BADE;
+      --brand-sky-rgb: 96, 186, 222;
+      --brand-navy: #1F5B84;
+      --brand-steel: #8E9AA6;
+      --brand-mist: #EAF5FB;
+      --primary: #1A78AD;
+      --primary-rgb: 26, 120, 173;
+      --primary-hover: #146294;
+      --primary-press: #0F4F78;
+      --brand-grad: linear-gradient(135deg, #3FA6D6 0%, #1A78AD 55%, #1F5B84 100%);
+      --atmosphere: radial-gradient(880px 420px at 88% -90px, rgba(96, 186, 222, .22), transparent 70%), radial-gradient(680px 340px at -8% -40px, rgba(31, 91, 132, .09), transparent 72%);
       --primary-soft: color-mix(in srgb, var(--primary) 10%, var(--card));
       --primary-line: color-mix(in srgb, var(--primary) 28%, transparent);
       --on-primary: #FFFFFF;
@@ -176,12 +184,12 @@
       --sk-base: var(--paper-2);
       --sk-highlight: var(--card);
       --sk-shimmer: linear-gradient(100deg, var(--sk-base) 30%, var(--sk-highlight) 50%, var(--sk-base) 70%);
-      --explain-bg: #F6F7F9;
-      --explain-bg-accent: #ECEEF2;
-      --explain-text: #142433;
-      --explain-text-body: #4a5568;
-      --explain-text-soft: rgba(20, 36, 51, .6);
-      --explain-border: rgba(20, 36, 51, .12);
+      --explain-bg: #F3F9FC;
+      --explain-bg-accent: #E4F1F8;
+      --explain-text: #0F2A3D;
+      --explain-text-body: #44566A;
+      --explain-text-soft: rgba(15, 42, 61, .6);
+      --explain-border: rgba(15, 70, 110, .13);
       --radius-sm: 10px;
       --radius-md: 18px;
       --radius-lg: 26px;
@@ -190,15 +198,15 @@
     }
 
     body.dark {
-      --paper: #000000;
-      --paper-2: #0A0A0A;
-      --ink: #F2F2F5;
-      --ink-soft: rgba(242, 242, 245, .68);
-      --ink-faint: rgba(242, 242, 245, .44);
-      --card: #0D0D0F;
-      --card-border: rgba(242, 242, 245, .1);
-      --shadow: 0 1px 3px rgba(0, 0, 0, .4), 0 12px 32px -16px rgba(0, 0, 0, .7);
-      --shadow-lg: 0 24px 48px -16px rgba(0, 0, 0, .7);
+      --paper: #060F17;
+      --paper-2: #0A1722;
+      --ink: #EAF3F9;
+      --ink-soft: rgba(234, 243, 249, .70);
+      --ink-faint: rgba(234, 243, 249, .46);
+      --card: #0C1824;
+      --card-border: rgba(150, 205, 235, .11);
+      --shadow: 0 1px 3px rgba(0, 0, 0, .45), 0 14px 34px -16px rgba(0, 0, 0, .75);
+      --shadow-lg: 0 24px 48px -16px rgba(0, 0, 0, .75);
       --backdrop: rgba(0, 0, 0, .14);
       --right: #4ba37a;
       --right-soft: #1e3a2e;
@@ -207,13 +215,18 @@
       --gold: #F0B429;
       --lock: #b8943f;
       --lock-soft: #2f281a;
-      --primary: #6A6AE6;
-      --primary-rgb: 106, 106, 230;
-      --primary-hover: #7C7CF0;
-      --primary-press: #4A5CE8;
+      --brand-navy: #8FC8E6;
+      --brand-steel: #93A3B1;
+      --brand-mist: #10202D;
+      --primary: #2089C2;
+      --primary-rgb: 32, 137, 194;
+      --primary-hover: #3A9CD3;
+      --primary-press: #1A78AD;
       --primary-soft: color-mix(in srgb, var(--primary) 16%, var(--card));
       --primary-line: color-mix(in srgb, var(--primary) 40%, transparent);
       --on-primary: #FFFFFF;
+      --brand-grad: linear-gradient(135deg, #4DB0E2 0%, #2089C2 55%, #1A6E9E 100%);
+      --atmosphere: radial-gradient(880px 440px at 88% -100px, rgba(95, 184, 224, .17), transparent 70%), radial-gradient(680px 360px at -8% -40px, rgba(40, 110, 160, .16), transparent 72%);
       --artery: var(--primary);
       --vein: #FF6B4A;
       --portal: #F0B429;
@@ -232,22 +245,22 @@
       --bg-grad-1: transparent;
       --bg-grad-2: transparent;
       --sidebar-bg: color-mix(in srgb, var(--paper-2) 14%, transparent);
-      --topbar-bg: rgba(0, 0, 0, .14);
+      --topbar-bg: rgba(6, 15, 23, .14);
       --input-bg: var(--paper-2);
       --input-border: var(--card-border);
       --module-active: var(--primary);
       --module-active-text: var(--on-primary);
       --pill-active: var(--primary);
       --pill-active-text: var(--on-primary);
-      --sk-base: #141416;
-      --sk-highlight: #1C1C1F;
+      --sk-base: #0F1D2A;
+      --sk-highlight: #162838;
       --sk-shimmer: linear-gradient(100deg, var(--sk-base) 30%, var(--sk-highlight) 50%, var(--sk-base) 70%);
-      --explain-bg: #0D0D10;
-      --explain-bg-accent: #15151A;
-      --explain-text: #DCE7F0;
-      --explain-text-body: #9aa8b8;
-      --explain-text-soft: rgba(220, 231, 240, .6);
-      --explain-border: rgba(220, 231, 240, .14);
+      --explain-bg: #0B1722;
+      --explain-bg-accent: #11222F;
+      --explain-text: #DCEAF4;
+      --explain-text-body: #9DB2C4;
+      --explain-text-soft: rgba(220, 234, 244, .6);
+      --explain-border: rgba(150, 205, 235, .16);
     }
 
     /* ===== Accent polish: the primary shows up as a designed system, not just a fill ===== */
@@ -269,6 +282,16 @@
     .text-input:focus, .picker-search input:focus, .search-box input:focus {
       border-color: var(--primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 16%, transparent);
     }
+
+    /* ===== ALIF brand finish: logo-sky gradient on hero surfaces & primary actions ===== */
+    .home-hero-cta, .pill-btn.primary, .primary-btn, .submit-btn, .pkd-cta-btn, .tour-next-btn,
+    .bf-btn.primary, .chat-send-btn, .action-modal-actions button.primary {
+      background-image: var(--brand-grad);
+    }
+    .home-hero-cta:hover, .pill-btn.primary:hover, .primary-btn:hover, .submit-btn:hover,
+    .pkd-cta-btn:hover, .bf-btn.primary:hover, .action-modal-actions button.primary:hover { filter: brightness(1.06) saturate(1.05); }
+    .bn-item.active { box-shadow: inset 0 0 0 1px var(--primary-line); }
+    .screen-card, .card-inner, .quiz-card, .module-card, .subject-card { border-color: var(--card-border); }
 
     /* ----- smooth theme switch -----
        Primary path: native View Transitions API — the browser just
@@ -309,8 +332,8 @@
     }
 
     body {
-      background:
-         var(--paper);
+      background: var(--atmosphere), var(--paper);
+      background-repeat: no-repeat;
       color: var(--ink);
     }
 
@@ -7114,8 +7137,8 @@
     /* ALIF login v4 - photo background, glass card, compact form */
     body.auth-gate-open:has(#gateScreen:not(.hidden)){overflow:hidden!important}
     body.auth-gate-open .sidebar-edge-toggle,body.auth-gate-open .related-sidebar-edge-toggle,body.auth-gate-open .focus-topbar{display:none!important}
-    #gateScreen{--auth-photo:url("assets/login-light.jpg");--art-a1:#4040B0;--art-a2:#8E8EE8;--art-bokeh:#8E8EE8;--auth-fg:#0b2540;--auth-fg-soft:rgba(11,37,64,.68);--auth-card-bg:rgba(255,255,255,.26);--auth-card-bd:rgba(255,255,255,.55);--auth-card-sh:0 40px 90px -30px rgba(15,60,110,.45),0 2px 0 rgba(255,255,255,.7) inset;--auth-bg-1:#ffffff;--auth-bg-2:#f3f4f6;--auth-scrim:rgba(255,255,255,.7);--auth-shade:rgba(255,255,255,.3)}
-    body.dark #gateScreen{--auth-photo:url("assets/login-dark.jpg");--art-a1:#7C7CF0;--art-a2:#A8A8F0;--art-bokeh:#3b82f6;--auth-fg:#fff;--auth-fg-soft:rgba(255,255,255,.7);--auth-card-bg:rgba(0,0,0,.28);--auth-card-bd:rgba(255,255,255,.2);--auth-card-sh:0 40px 90px -30px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.1) inset;--auth-bg-1:#000000;--auth-bg-2:#0A0A0C;--auth-scrim:rgba(0,0,0,.55);--auth-shade:rgba(0,0,0,.5)}
+    #gateScreen{--auth-photo:url("assets/login-light.jpg");--art-a1:#1A78AD;--art-a2:#60BADE;--art-bokeh:#60BADE;--auth-fg:#0b2540;--auth-fg-soft:rgba(11,37,64,.68);--auth-card-bg:rgba(255,255,255,.26);--auth-card-bd:rgba(255,255,255,.55);--auth-card-sh:0 40px 90px -30px rgba(15,60,110,.45),0 2px 0 rgba(255,255,255,.7) inset;--auth-bg-1:#ffffff;--auth-bg-2:#eef7fb;--auth-scrim:rgba(255,255,255,.7);--auth-shade:rgba(255,255,255,.3)}
+    body.dark #gateScreen{--auth-photo:url("assets/login-dark.jpg");--art-a1:#4DB0E2;--art-a2:#9BD6F0;--art-bokeh:#2B9AD1;--auth-fg:#fff;--auth-fg-soft:rgba(255,255,255,.7);--auth-card-bg:rgba(0,0,0,.28);--auth-card-bd:rgba(255,255,255,.2);--auth-card-sh:0 40px 90px -30px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.1) inset;--auth-bg-1:#060F17;--auth-bg-2:#0A1722;--auth-scrim:rgba(6,15,23,.55);--auth-shade:rgba(6,15,23,.5)}
     #gateScreen{position:fixed;inset:0;z-index:10000;display:block!important;min-height:0!important;padding:0!important;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--auth-bg-1)}
     #gateScreen.hidden{display:none!important}
     .auth-bg{position:fixed;inset:0;z-index:0;background-color:var(--auth-bg-1);background-image:var(--auth-photo);background-size:cover;background-position:center;background-repeat:no-repeat}
@@ -7237,7 +7260,7 @@
           <div class="auth-logo">
             <img src="/logo-360.webp" alt="ALIF Med" decoding="async" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
             <svg class="auth-logo-fallback" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" style="display:none">
-              <defs><linearGradient id="alifLg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4040B0"/><stop offset="1" stop-color="#4040B0"/></linearGradient></defs>
+              <defs><linearGradient id="alifLg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#60BADE"/><stop offset="1" stop-color="#1A78AD"/></linearGradient></defs>
               <rect x="4" y="4" width="88" height="88" rx="26" fill="url(#alifLg1)"/>
               <path d="M48 20 L68 74 H59 L54.5 61 H41.5 L37 74 H28 Z M48 36 L44 51 H52 Z" fill="#fff" fill-rule="evenodd"/>
               <path d="M18 56 H34 L39 47 L45 66 L51 52 L55 56 H78" fill="none" stroke="#111318" stroke-opacity=".55" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
