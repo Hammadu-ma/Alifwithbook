@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" id="themeColorMeta" content="#F5F6FF" />
+  <meta name="theme-color" id="themeColorMeta" content="#FFFFFF" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/logo.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -122,16 +122,16 @@
 
     /* ----- light / dark variables (ALIF Medical brand system) ----- */
     :root {
-      --paper: #F5F6FF;
-      --paper-2: #ECEEFB;
-      --ink: #0E1230;
-      --ink-soft: rgba(14, 18, 48, .66);
-      --ink-faint: rgba(14, 18, 48, .44);
+      --paper: #FFFFFF;
+      --paper-2: #F3F4F6;
+      --ink: #111318;
+      --ink-soft: rgba(17, 19, 24, .66);
+      --ink-faint: rgba(17, 19, 24, .44);
       --card: #FFFFFF;
-      --card-border: rgba(14, 18, 48, .09);
-      --shadow: 0 1px 2px rgba(var(--primary-rgb), .06), 0 12px 30px -16px rgba(var(--primary-rgb), .32);
-      --shadow-lg: 0 24px 48px -18px rgba(var(--primary-rgb), .38);
-      --backdrop: rgba(245, 246, 255, .14);
+      --card-border: rgba(17, 19, 24, .09);
+      --shadow: 0 1px 2px rgba(17, 19, 24, .05), 0 10px 28px -16px rgba(17, 19, 24, .20);
+      --shadow-lg: 0 20px 40px -16px rgba(17, 19, 24, .30);
+      --backdrop: rgba(255, 255, 255, .14);
       --right: #2f7a52;
       --right-soft: #ddebe1;
       --wrong: #ae3b33;
@@ -141,10 +141,10 @@
       --lock-soft: #f1e6c9;
       /* One primary blue for the whole app. --artery is kept as an alias so
          every existing component picks it up automatically. */
-      --primary: #4F63F5;
-      --primary-rgb: 79, 99, 245;
-      --primary-hover: #3F52E0;
-      --primary-press: #3445C8;
+      --primary: #4040B0;
+      --primary-rgb: 64, 64, 176;
+      --primary-hover: #34349A;
+      --primary-press: #2B2B85;
       --primary-soft: color-mix(in srgb, var(--primary) 10%, var(--card));
       --primary-line: color-mix(in srgb, var(--primary) 28%, transparent);
       --on-primary: #FFFFFF;
@@ -166,7 +166,7 @@
       --bg-grad-1: transparent;
       --bg-grad-2: transparent;
       --sidebar-bg: color-mix(in srgb, var(--paper-2) 14%, transparent);
-      --topbar-bg: rgba(245, 246, 255, .14);
+      --topbar-bg: rgba(255, 255, 255, .14);
       --input-bg: var(--paper);
       --input-border: var(--card-border);
       --module-active: var(--primary);
@@ -176,8 +176,8 @@
       --sk-base: var(--paper-2);
       --sk-highlight: var(--card);
       --sk-shimmer: linear-gradient(100deg, var(--sk-base) 30%, var(--sk-highlight) 50%, var(--sk-base) 70%);
-      --explain-bg: #F1F6FB;
-      --explain-bg-accent: #E3ECF5;
+      --explain-bg: #F6F7F9;
+      --explain-bg-accent: #ECEEF2;
       --explain-text: #142433;
       --explain-text-body: #4a5568;
       --explain-text-soft: rgba(20, 36, 51, .6);
@@ -192,11 +192,11 @@
     body.dark {
       --paper: #000000;
       --paper-2: #0A0A0A;
-      --ink: #ECEEFF;
-      --ink-soft: rgba(236, 238, 255, .68);
-      --ink-faint: rgba(236, 238, 255, .44);
+      --ink: #F2F2F5;
+      --ink-soft: rgba(242, 242, 245, .68);
+      --ink-faint: rgba(242, 242, 245, .44);
       --card: #0D0D0F;
-      --card-border: rgba(236, 238, 255, .1);
+      --card-border: rgba(242, 242, 245, .1);
       --shadow: 0 1px 3px rgba(0, 0, 0, .4), 0 12px 32px -16px rgba(0, 0, 0, .7);
       --shadow-lg: 0 24px 48px -16px rgba(0, 0, 0, .7);
       --backdrop: rgba(0, 0, 0, .14);
@@ -207,9 +207,9 @@
       --gold: #F0B429;
       --lock: #b8943f;
       --lock-soft: #2f281a;
-      --primary: #5B6CFF;
-      --primary-rgb: 91, 108, 255;
-      --primary-hover: #7686FF;
+      --primary: #6A6AE6;
+      --primary-rgb: 106, 106, 230;
+      --primary-hover: #7C7CF0;
       --primary-press: #4A5CE8;
       --primary-soft: color-mix(in srgb, var(--primary) 16%, var(--card));
       --primary-line: color-mix(in srgb, var(--primary) 40%, transparent);
@@ -263,8 +263,6 @@
     .student-chip .guest-signup-btn:hover, .ai-explain-btn:hover { background: var(--primary-hover); }
     .home-hero-cta:active, .pill-btn.primary:active, .action-modal-actions button.primary:active,
     .student-chip .guest-signup-btn:active, .jump-fab:active { transform: scale(.97); background: var(--primary-press); }
-    /* cards respond with an accent-tinted edge */
-    .module-card:hover, .subject-card:hover, .quiz-card:hover { border-color: var(--primary-line); }
     /* active nav: soft accent chip */
     .bn-item.active { background: var(--primary-soft); }
     /* inputs: accent ring */
@@ -334,7 +332,7 @@
       border: 1px solid var(--card-border);
       border-radius: var(--radius-lg);
       padding: clamp(28px, 5vw, 42px);
-      box-shadow: 0 4px 14px -6px rgba(14,18,48,.1), 0 40px 70px -30px rgba(14,18,48,.35);
+      box-shadow: 0 4px 14px -6px rgba(17,19,24,.1), 0 40px 70px -30px rgba(17,19,24,.35);
       position: relative;
     }
     body.dark .screen-card { box-shadow: 0 4px 14px -6px rgba(0,0,0,.35), 0 40px 70px -30px rgba(0,0,0,.7); }
@@ -1243,12 +1241,12 @@
       border: 1px solid rgba(255,255,255,.07);
       box-shadow: 0 1px 3px rgba(0,0,0,.5), 0 30px 60px -20px rgba(0,0,0,.85);
     }
-    body.dark .home-hero-visual { color: #F5F6FF; opacity: .09; }
-    body.dark .home-hero-inner p.sub { color: rgba(236, 238, 255, .78); }
-    body.dark .home-hero-inner .eyebrow { color: color-mix(in srgb, #F5F6FF 78%, var(--gold)); }
+    body.dark .home-hero-visual { color: #FFFFFF; opacity: .09; }
+    body.dark .home-hero-inner p.sub { color: rgba(242, 242, 245, .78); }
+    body.dark .home-hero-inner .eyebrow { color: color-mix(in srgb, #FFFFFF 78%, var(--gold)); }
     body.dark .hero-icon-badge {
       background:  rgba(255,255,255,.06);
-      color: color-mix(in srgb, #F5F6FF 80%, var(--gold));
+      color: color-mix(in srgb, #FFFFFF 80%, var(--gold));
       box-shadow: inset 0 0 0 1px rgba(255,255,255,.14);
     }
     body.dark .home-hero-cta {
@@ -1259,7 +1257,7 @@
     body.dark .home-hero-cta-ghost {
       background: rgba(255,255,255,.08);
       border: 1px solid rgba(255,255,255,.22);
-      color: #F5F6FF;
+      color: #FFFFFF;
     }
     body.dark .home-hero-cta-ghost:hover { background: rgba(255,255,255,.16); }
 
@@ -2598,7 +2596,7 @@
       background: #fff; padding: 10px; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
       align-self: center;
-      box-shadow: 0 6px 16px -8px rgba(14,18,48,.25);
+      box-shadow: 0 6px 16px -8px rgba(17,19,24,.25);
     }
     .university-card .uni-logo-box img {
       width: 100%; height: 100%; object-fit: contain;
@@ -6316,7 +6314,7 @@
       border-radius: 18px;
       background: var(--card);
       border: 1px solid var(--card-border);
-      box-shadow: 0 16px 36px -12px rgba(14,18,48,.35), 0 2px 10px rgba(14,18,48,.08);
+      box-shadow: 0 16px 36px -12px rgba(17,19,24,.35), 0 2px 10px rgba(17,19,24,.08);
       cursor: pointer;
       opacity: 0;
       transform: translateY(-16px) scale(.96);
@@ -6438,7 +6436,7 @@
       background: color-mix(in srgb, var(--gold) 14%, var(--card));
       border: 1px solid color-mix(in srgb, var(--gold) 34%, var(--card-border));
       font-size: 13px; font-weight: 700; color: var(--ink);
-      box-shadow: 0 6px 18px -10px rgba(14,18,48,.2);
+      box-shadow: 0 6px 18px -10px rgba(17,19,24,.2);
     }
     .learn-progress-banner .lpb-fill-track {
       flex: 1; height: 6px; border-radius: 4px; background: var(--paper-2); overflow: hidden; max-width: 160px;
@@ -6466,7 +6464,7 @@
     .learn-celebrate-overlay {
       position: fixed; inset: 0; z-index: 1500;
       display: flex; align-items: center; justify-content: center;
-      background: rgba(14,18,48,.55);
+      background: rgba(17,19,24,.55);
       backdrop-filter: blur(8px);
       opacity: 0; pointer-events: none;
       transition: opacity .35s ease;
@@ -6704,7 +6702,7 @@
     .chat-bubble {
       background: var(--card); border: none;
       padding: 11px 15px; border-radius: 20px 20px 20px 6px; font-size: 14px; line-height: 1.55;
-      box-shadow: 0 1px 2px rgba(14,18,48,.04), 0 6px 16px -10px rgba(14,18,48,.18); min-width: 0;
+      box-shadow: 0 1px 2px rgba(17,19,24,.04), 0 6px 16px -10px rgba(17,19,24,.18); min-width: 0;
     }
     .chat-msg.mine .chat-bubble {
       background:  var(--artery);
@@ -6923,7 +6921,7 @@
        of buttons sitting under every single message. ----- */
     .chat-msg.ctx-active .chat-bubble {
       background: color-mix(in srgb, var(--artery) 12%, var(--card));
-      box-shadow: 0 1px 2px rgba(14,18,48,.04), 0 6px 16px -10px rgba(14,18,48,.18), 0 0 0 1.5px var(--artery);
+      box-shadow: 0 1px 2px rgba(17,19,24,.04), 0 6px 16px -10px rgba(17,19,24,.18), 0 0 0 1.5px var(--artery);
     }
     .chat-bubble { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
     .chat-ctx-menu {
@@ -6934,7 +6932,7 @@
       background: var(--card);
       border: 1px solid var(--card-border);
       border-radius: 14px;
-      box-shadow: 0 20px 44px -14px rgba(14,18,48,.4), 0 4px 14px rgba(14,18,48,.1);
+      box-shadow: 0 20px 44px -14px rgba(17,19,24,.4), 0 4px 14px rgba(17,19,24,.1);
       opacity: 0; transform: scale(.94); transform-origin: top left;
       transition: opacity .12s, transform .12s;
     }
@@ -7116,8 +7114,8 @@
     /* ALIF login v4 - photo background, glass card, compact form */
     body.auth-gate-open:has(#gateScreen:not(.hidden)){overflow:hidden!important}
     body.auth-gate-open .sidebar-edge-toggle,body.auth-gate-open .related-sidebar-edge-toggle,body.auth-gate-open .focus-topbar{display:none!important}
-    #gateScreen{--auth-photo:url("assets/login-light.jpg");--art-a1:#4F63F5;--art-a2:#8B9BFF;--art-bokeh:#8B9BFF;--auth-fg:#0b2540;--auth-fg-soft:rgba(11,37,64,.68);--auth-card-bg:rgba(255,255,255,.26);--auth-card-bd:rgba(255,255,255,.55);--auth-card-sh:0 40px 90px -30px rgba(15,60,110,.45),0 2px 0 rgba(255,255,255,.7) inset;--auth-bg-1:#eaf4ff;--auth-bg-2:#d9f3ee;--auth-scrim:rgba(255,255,255,.7);--auth-shade:rgba(255,255,255,.3)}
-    body.dark #gateScreen{--auth-photo:url("assets/login-dark.jpg");--art-a1:#7686FF;--art-a2:#A5B0FF;--art-bokeh:#3b82f6;--auth-fg:#fff;--auth-fg-soft:rgba(255,255,255,.7);--auth-card-bg:rgba(0,0,0,.28);--auth-card-bd:rgba(255,255,255,.2);--auth-card-sh:0 40px 90px -30px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.1) inset;--auth-bg-1:#000000;--auth-bg-2:#0A0A0C;--auth-scrim:rgba(0,0,0,.55);--auth-shade:rgba(0,0,0,.5)}
+    #gateScreen{--auth-photo:url("assets/login-light.jpg");--art-a1:#4040B0;--art-a2:#8E8EE8;--art-bokeh:#8E8EE8;--auth-fg:#0b2540;--auth-fg-soft:rgba(11,37,64,.68);--auth-card-bg:rgba(255,255,255,.26);--auth-card-bd:rgba(255,255,255,.55);--auth-card-sh:0 40px 90px -30px rgba(15,60,110,.45),0 2px 0 rgba(255,255,255,.7) inset;--auth-bg-1:#ffffff;--auth-bg-2:#f3f4f6;--auth-scrim:rgba(255,255,255,.7);--auth-shade:rgba(255,255,255,.3)}
+    body.dark #gateScreen{--auth-photo:url("assets/login-dark.jpg");--art-a1:#7C7CF0;--art-a2:#A8A8F0;--art-bokeh:#3b82f6;--auth-fg:#fff;--auth-fg-soft:rgba(255,255,255,.7);--auth-card-bg:rgba(0,0,0,.28);--auth-card-bd:rgba(255,255,255,.2);--auth-card-sh:0 40px 90px -30px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.1) inset;--auth-bg-1:#000000;--auth-bg-2:#0A0A0C;--auth-scrim:rgba(0,0,0,.55);--auth-shade:rgba(0,0,0,.5)}
     #gateScreen{position:fixed;inset:0;z-index:10000;display:block!important;min-height:0!important;padding:0!important;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--auth-bg-1)}
     #gateScreen.hidden{display:none!important}
     .auth-bg{position:fixed;inset:0;z-index:0;background-color:var(--auth-bg-1);background-image:var(--auth-photo);background-size:cover;background-position:center;background-repeat:no-repeat}
@@ -7183,7 +7181,7 @@
   <script src="/push-config.js" defer></script>
 </head>
 <body>
-<script>!function(){const e=localStorage.getItem("atlas_theme_pref");let t=!1;t="dark"===e||"light"!==e&&window.matchMedia("(prefers-color-scheme: dark)").matches,t&&document.body.classList.add("dark");const o=document.querySelector('meta[name="theme-color"]');o&&o.setAttribute("content",t?"#000000":"#F5F6FF")}();</script>
+<script>!function(){const e=localStorage.getItem("atlas_theme_pref");let t=!1;t="dark"===e||"light"!==e&&window.matchMedia("(prefers-color-scheme: dark)").matches,t&&document.body.classList.add("dark");const o=document.querySelector('meta[name="theme-color"]');o&&o.setAttribute("content",t?"#000000":"#FFFFFF")}();</script>
 <!-- ============= BOOT LOADER (avoids gate-screen flash on load) ============= -->
   <div class="boot-loader" id="bootLoader">
     <div class="bl-topbar">
@@ -7239,10 +7237,10 @@
           <div class="auth-logo">
             <img src="/logo-360.webp" alt="ALIF Med" decoding="async" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
             <svg class="auth-logo-fallback" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" style="display:none">
-              <defs><linearGradient id="alifLg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F63F5"/><stop offset="1" stop-color="#4F63F5"/></linearGradient></defs>
+              <defs><linearGradient id="alifLg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4040B0"/><stop offset="1" stop-color="#4040B0"/></linearGradient></defs>
               <rect x="4" y="4" width="88" height="88" rx="26" fill="url(#alifLg1)"/>
               <path d="M48 20 L68 74 H59 L54.5 61 H41.5 L37 74 H28 Z M48 36 L44 51 H52 Z" fill="#fff" fill-rule="evenodd"/>
-              <path d="M18 56 H34 L39 47 L45 66 L51 52 L55 56 H78" fill="none" stroke="#0E1230" stroke-opacity=".55" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M18 56 H34 L39 47 L45 66 L51 52 L55 56 H78" fill="none" stroke="#111318" stroke-opacity=".55" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
           <h1>Medicine Made Easy</h1>
