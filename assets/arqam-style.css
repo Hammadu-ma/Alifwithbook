@@ -235,3 +235,28 @@ body:not(.dark) :is(.quiz-card, .module-card, .subject-card, .continue-card, .pa
   #feed .qcard:last-of-type .card-inner,
   #feed .qcard:has(+ .cat-divider) .card-inner { border-bottom-left-radius: 18px !important; border-bottom-right-radius: 18px !important; }
 }
+
+/* ---- Resources page header: solid, clean, on-brand ---- */
+.res-head {
+  background: var(--paper) !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  border-bottom: 1px solid var(--ui-border) !important;
+}
+.res-brand-ico {
+  background: var(--brand-grad) !important;
+  box-shadow: var(--brand-glow) !important;
+  border-radius: 14px;
+}
+.res-title {
+  font-family: 'Inter', system-ui, sans-serif !important;
+  font-weight: 800 !important;
+  font-size: 20px !important;
+  letter-spacing: -.02em !important;
+}
+.res-sub { font-weight: 500; }
+.res-icon-btn {
+  border-color: transparent !important;
+  background: var(--paper-2) !important;
+}
+body.dark .res-icon-btn { background: var(--card) !important; }
+.res-tab.active { color: var(--primary); }
