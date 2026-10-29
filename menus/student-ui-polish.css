@@ -370,3 +370,38 @@ body.dark .home-hero-card .home-hero-inner {
   border: 1px solid rgba(140, 175, 255, .20) !important;
   box-shadow: 0 24px 54px -24px rgba(42, 98, 255, .55), 0 0 0 1px rgba(0, 0, 0, .6) !important;
 }
+
+/* =====================================================================
+   Selected module / subject / university cards — gradient highlight
+   (electric blue → midnight), no outline ring, soft glow only
+   ===================================================================== */
+.module-card.active, .subject-card.active, .university-card.current {
+  background:
+    radial-gradient(130% 100% at 100% 0%, rgba(110, 160, 255, .50) 0%, rgba(110, 160, 255, 0) 60%),
+    linear-gradient(150deg, #2A62FF 0%, #1B3FD6 30%, #0E1F6B 68%, #060B1E 100%) !important;
+  background-origin: border-box !important;
+  border-color: transparent !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 18px 34px -18px rgba(42, 98, 255, .70) !important;
+}
+body.dark .module-card.active, body.dark .subject-card.active, body.dark .university-card.current {
+  background:
+    radial-gradient(130% 100% at 100% 0%, rgba(90, 140, 255, .46) 0%, rgba(90, 140, 255, 0) 60%),
+    linear-gradient(150deg, #2A62FF 0%, #1B3FD6 26%, #0A1650 64%, #000000 100%) !important;
+  background-origin: border-box !important;
+  box-shadow: 0 18px 38px -20px rgba(42, 98, 255, .62) !important;
+}
+/* drop the colour bar / spine / folded corner on the selected card */
+.module-card.active::before, .subject-card.active::before { opacity: 0 !important; }
+.subject-card.active::after { opacity: 0 !important; }
+/* frosted icon well, white text */
+.module-card.active .module-icon, .subject-card.active .subject-icon {
+  background: rgba(255, 255, 255, .16) !important;
+  color: #FFFFFF !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .24) !important;
+}
+.module-card.active .module-icon i, .subject-card.active .subject-icon i { color: #FFFFFF !important; }
+.module-card.active .module-name, .subject-card.active .subject-name, .university-card.current .module-name { color: #FFFFFF !important; }
+.module-card.active .module-count, .subject-card.active .subject-count, .university-card.current .module-count { color: rgba(255, 255, 255, .72) !important; opacity: 1 !important; }
+.university-card.current .uni-active-badge { color: #FFFFFF !important; opacity: .9 !important; }
+.module-card.active .ring-wrap .ring-inner, .subject-card.active .ring-wrap .ring-inner { background: rgba(6, 11, 40, .55) !important; color: #FFFFFF !important; }
