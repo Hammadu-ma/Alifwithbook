@@ -126,3 +126,6 @@ body.dark .opt { background: var(--charcoal) !important; }
 body.dark .opt:not(:disabled):hover { background: var(--charcoal-hover) !important; }
 body.dark .opt.reveal-correct { background: var(--right-soft) !important; }
 body.dark .opt.reveal-wrong { background: var(--wrong-soft) !important; }
+
+/* question cards: flat black, no sheen gradient (keeps only the thin top edge) */
+body.dark .qcard, body.dark .qcard .card-inner { background-image: none !important; }
