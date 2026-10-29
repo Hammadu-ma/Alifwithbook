@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" id="themeColorMeta" content="#FFFFFF" />
+  <meta name="theme-color" id="themeColorMeta" content="#F6F8FC" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/logo.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -122,16 +122,16 @@
 
     /* ----- light / dark variables (ALIF Medical brand system) ----- */
     :root {
-      --paper: #FFFFFF;
-      --paper-2: #F5F5F7;
-      --ink: #0A0A0C;
-      --ink-soft: rgba(10, 10, 12, .66);
-      --ink-faint: rgba(10, 10, 12, .44);
+      --paper: #F6F8FC;
+      --paper-2: #EDF1F9;
+      --ink: #0B1530;
+      --ink-soft: rgba(11, 21, 48, .66);
+      --ink-faint: rgba(11, 21, 48, .44);
       --card: #FFFFFF;
-      --card-border: rgba(10, 10, 12, .08);
-      --shadow: 0 1px 2px rgba(10, 10, 12, .05), 0 10px 28px -16px rgba(10, 10, 12, .20);
-      --shadow-lg: 0 20px 40px -16px rgba(10, 10, 12, .28);
-      --backdrop: rgba(255, 255, 255, .14);
+      --card-border: rgba(11, 21, 48, .08);
+      --shadow: 0 1px 2px rgba(11, 21, 48, .05), 0 10px 28px -16px rgba(11, 21, 48, .20);
+      --shadow-lg: 0 20px 40px -16px rgba(11, 21, 48, .28);
+      --backdrop: rgba(246, 248, 252, .14);
       --right: #2f7a52;
       --right-soft: #ddebe1;
       --wrong: #ae3b33;
@@ -141,16 +141,16 @@
       --lock-soft: #f1e6c9;
       /* One primary blue for the whole app. --artery is kept as an alias so
          every existing component picks it up automatically. */
-      /* ALIF brand: sky #60BADE (logo disc) · deep blue (actions) · navy (EKG line) · steel (stethoscope) */
-      --brand-sky: #2DB6F5;
-      --brand-sky-rgb: 45, 182, 245;
-      --brand-navy: #064F82;
-      --primary: #0679BC;
-      --primary-rgb: 6, 121, 188;
-      --primary-hover: #0A8AD4;
-      --primary-press: #055F94;
-      --brand-grad: linear-gradient(135deg, #1CA0E6 0%, #0679BC 58%, #05609A 100%);
-      --brand-glow: 0 10px 24px -10px rgba(6, 121, 188, .70);
+      /* ALIF brand: sky #6F97F5 (logo disc) · deep blue (actions) · navy (EKG line) · steel (stethoscope) */
+      --brand-sky: #5B8CFF;
+      --brand-sky-rgb: 91, 140, 255;
+      --brand-navy: #0E2158;
+      --primary: #1E4FD8;
+      --primary-rgb: 30, 79, 216;
+      --primary-hover: #3566EA;
+      --primary-press: #163DB0;
+      --brand-grad: linear-gradient(135deg, #3A6BF0 0%, #1E4FD8 58%, #1638A8 100%);
+      --brand-glow: 0 10px 24px -10px rgba(30, 79, 216, .60);
       --primary-soft: color-mix(in srgb, var(--primary) 7%, var(--card));
       --primary-line: color-mix(in srgb, var(--primary) 30%, transparent);
       --on-primary: #FFFFFF;
@@ -172,7 +172,7 @@
       --bg-grad-1: transparent;
       --bg-grad-2: transparent;
       --sidebar-bg: color-mix(in srgb, var(--paper-2) 14%, transparent);
-      --topbar-bg: rgba(255, 255, 255, .14);
+      --topbar-bg: rgba(246, 248, 252, .14);
       --input-bg: var(--paper);
       --input-border: var(--card-border);
       --module-active: var(--card);
@@ -182,12 +182,12 @@
       --sk-base: var(--paper-2);
       --sk-highlight: var(--card);
       --sk-shimmer: linear-gradient(100deg, var(--sk-base) 30%, var(--sk-highlight) 50%, var(--sk-base) 70%);
-      --explain-bg: #F6F6F8;
-      --explain-bg-accent: #EDEDF0;
-      --explain-text: #0A0A0C;
-      --explain-text-body: #4a4a52;
-      --explain-text-soft: rgba(10, 10, 12, .6);
-      --explain-border: rgba(10, 10, 12, .1);
+      --explain-bg: #F3F6FC;
+      --explain-bg-accent: #E8EEFA;
+      --explain-text: #0B1530;
+      --explain-text-body: #43506B;
+      --explain-text-soft: rgba(11, 21, 48, .6);
+      --explain-border: rgba(11, 21, 48, .1);
       --radius-sm: 10px;
       --radius-md: 18px;
       --radius-lg: 26px;
@@ -196,16 +196,16 @@
     }
 
     body.dark {
-      --paper: #000000;
-      --paper-2: #0A0A0A;
-      --ink: #F5F5F7;
-      --ink-soft: rgba(245, 245, 247, .68);
-      --ink-faint: rgba(245, 245, 247, .44);
-      --card: #0A0A0B;
-      --card-border: rgba(255, 255, 255, .10);
-      --shadow: 0 1px 3px rgba(0, 0, 0, .5), 0 12px 32px -16px rgba(0, 0, 0, .8);
-      --shadow-lg: 0 24px 48px -16px rgba(0, 0, 0, .8);
-      --backdrop: rgba(0, 0, 0, .14);
+      --paper: #060B1E;
+      --paper-2: #0A1230;
+      --ink: #EAF0FF;
+      --ink-soft: rgba(234, 240, 255, .68);
+      --ink-faint: rgba(234, 240, 255, .44);
+      --card: #0D1738;
+      --card-border: rgba(150, 175, 255, .12);
+      --shadow: 0 1px 3px rgba(2, 5, 18, .5), 0 12px 32px -16px rgba(2, 5, 18, .8);
+      --shadow-lg: 0 24px 48px -16px rgba(2, 5, 18, .8);
+      --backdrop: rgba(6, 11, 30, .14);
       --right: #4ba37a;
       --right-soft: #1e3a2e;
       --wrong: #c94f47;
@@ -213,16 +213,16 @@
       --gold: #F0B429;
       --lock: #b8943f;
       --lock-soft: #2f281a;
-      --brand-navy: #7CCBF5;
-      --primary: #098FD7;
-      --primary-rgb: 9, 143, 215;
-      --primary-hover: #1BA3EC;
-      --primary-press: #0679BC;
+      --brand-navy: #9DB8FF;
+      --primary: #3E70FF;
+      --primary-rgb: 62, 112, 255;
+      --primary-hover: #5D88FF;
+      --primary-press: #2A57E6;
       --primary-soft: color-mix(in srgb, var(--primary) 7%, var(--card));
       --primary-line: color-mix(in srgb, var(--primary) 45%, transparent);
       --on-primary: #FFFFFF;
-      --brand-grad: linear-gradient(135deg, #25B0F2 0%, #098FD7 55%, #0679BC 100%);
-      --brand-glow: 0 10px 28px -10px rgba(9, 143, 215, .85);
+      --brand-grad: linear-gradient(135deg, #5B88FF 0%, #3E70FF 55%, #2A57E6 100%);
+      --brand-glow: 0 10px 28px -10px rgba(62, 112, 255, .75);
       --artery: var(--primary);
       --vein: #FF6B4A;
       --portal: #F0B429;
@@ -241,22 +241,22 @@
       --bg-grad-1: transparent;
       --bg-grad-2: transparent;
       --sidebar-bg: color-mix(in srgb, var(--paper-2) 14%, transparent);
-      --topbar-bg: rgba(0, 0, 0, .14);
+      --topbar-bg: rgba(6, 11, 30, .14);
       --input-bg: var(--paper-2);
       --input-border: var(--card-border);
       --module-active: var(--card);
       --module-active-text: var(--ink);
       --pill-active: var(--primary);
       --pill-active-text: var(--on-primary);
-      --sk-base: #111113;
-      --sk-highlight: #1A1A1D;
+      --sk-base: #0C1534;
+      --sk-highlight: #142049;
       --sk-shimmer: linear-gradient(100deg, var(--sk-base) 30%, var(--sk-highlight) 50%, var(--sk-base) 70%);
-      --explain-bg: #0A0A0C;
-      --explain-bg-accent: #131316;
-      --explain-text: #E6E6EA;
-      --explain-text-body: #9a9aa4;
-      --explain-text-soft: rgba(230, 230, 234, .6);
-      --explain-border: rgba(255, 255, 255, .13);
+      --explain-bg: #08102A;
+      --explain-bg-accent: #0E1838;
+      --explain-text: #E3EAFF;
+      --explain-text-body: #9AA8CC;
+      --explain-text-soft: rgba(227, 234, 255, .6);
+      --explain-border: rgba(150, 175, 255, .14);
     }
 
     /* ===== Accent polish: the primary shows up as a designed system, not just a fill ===== */
@@ -340,7 +340,7 @@
       border: 1px solid var(--card-border);
       border-radius: var(--radius-lg);
       padding: clamp(28px, 5vw, 42px);
-      box-shadow: 0 4px 14px -6px rgba(17,19,24,.1), 0 40px 70px -30px rgba(17,19,24,.35);
+      box-shadow: 0 4px 14px -6px rgba(11, 21, 48,.1), 0 40px 70px -30px rgba(11, 21, 48,.35);
       position: relative;
     }
     body.dark .screen-card { box-shadow: 0 4px 14px -6px rgba(0,0,0,.35), 0 40px 70px -30px rgba(0,0,0,.7); }
@@ -2604,7 +2604,7 @@
       background: #fff; padding: 10px; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
       align-self: center;
-      box-shadow: 0 6px 16px -8px rgba(17,19,24,.25);
+      box-shadow: 0 6px 16px -8px rgba(11, 21, 48,.25);
     }
     .university-card .uni-logo-box img {
       width: 100%; height: 100%; object-fit: contain;
@@ -6322,7 +6322,7 @@
       border-radius: 18px;
       background: var(--card);
       border: 1px solid var(--card-border);
-      box-shadow: 0 16px 36px -12px rgba(17,19,24,.35), 0 2px 10px rgba(17,19,24,.08);
+      box-shadow: 0 16px 36px -12px rgba(11, 21, 48,.35), 0 2px 10px rgba(11, 21, 48,.08);
       cursor: pointer;
       opacity: 0;
       transform: translateY(-16px) scale(.96);
@@ -6444,7 +6444,7 @@
       background: color-mix(in srgb, var(--gold) 7%, var(--card));
       border: 1px solid color-mix(in srgb, var(--gold) 34%, var(--card-border));
       font-size: 13px; font-weight: 700; color: var(--ink);
-      box-shadow: 0 6px 18px -10px rgba(17,19,24,.2);
+      box-shadow: 0 6px 18px -10px rgba(11, 21, 48,.2);
     }
     .learn-progress-banner .lpb-fill-track {
       flex: 1; height: 6px; border-radius: 4px; background: var(--paper-2); overflow: hidden; max-width: 160px;
@@ -6472,7 +6472,7 @@
     .learn-celebrate-overlay {
       position: fixed; inset: 0; z-index: 1500;
       display: flex; align-items: center; justify-content: center;
-      background: rgba(17,19,24,.55);
+      background: rgba(11, 21, 48,.55);
       backdrop-filter: blur(8px);
       opacity: 0; pointer-events: none;
       transition: opacity .35s ease;
@@ -6710,7 +6710,7 @@
     .chat-bubble {
       background: var(--card); border: none;
       padding: 11px 15px; border-radius: 20px 20px 20px 6px; font-size: 14px; line-height: 1.55;
-      box-shadow: 0 1px 2px rgba(17,19,24,.04), 0 6px 16px -10px rgba(17,19,24,.18); min-width: 0;
+      box-shadow: 0 1px 2px rgba(11, 21, 48,.04), 0 6px 16px -10px rgba(11, 21, 48,.18); min-width: 0;
     }
     .chat-msg.mine .chat-bubble {
       background:  var(--artery);
@@ -6929,7 +6929,7 @@
        of buttons sitting under every single message. ----- */
     .chat-msg.ctx-active .chat-bubble {
       background: color-mix(in srgb, var(--artery) 7%, var(--card));
-      box-shadow: 0 1px 2px rgba(17,19,24,.04), 0 6px 16px -10px rgba(17,19,24,.18), 0 0 0 1.5px var(--artery);
+      box-shadow: 0 1px 2px rgba(11, 21, 48,.04), 0 6px 16px -10px rgba(11, 21, 48,.18), 0 0 0 1.5px var(--artery);
     }
     .chat-bubble { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
     .chat-ctx-menu {
@@ -6940,7 +6940,7 @@
       background: var(--card);
       border: 1px solid var(--card-border);
       border-radius: 14px;
-      box-shadow: 0 20px 44px -14px rgba(17,19,24,.4), 0 4px 14px rgba(17,19,24,.1);
+      box-shadow: 0 20px 44px -14px rgba(11, 21, 48,.4), 0 4px 14px rgba(11, 21, 48,.1);
       opacity: 0; transform: scale(.94); transform-origin: top left;
       transition: opacity .12s, transform .12s;
     }
@@ -7122,8 +7122,8 @@
     /* ALIF login v4 - photo background, glass card, compact form */
     body.auth-gate-open:has(#gateScreen:not(.hidden)){overflow:hidden!important}
     body.auth-gate-open .sidebar-edge-toggle,body.auth-gate-open .related-sidebar-edge-toggle,body.auth-gate-open .focus-topbar{display:none!important}
-    #gateScreen{--auth-photo:url("assets/login-light.jpg");--art-a1:#0679BC;--art-a2:#2DB6F5;--art-bokeh:#2DB6F5;--auth-fg:#0b2540;--auth-fg-soft:rgba(11,37,64,.68);--auth-card-bg:rgba(255,255,255,.26);--auth-card-bd:rgba(255,255,255,.55);--auth-card-sh:0 40px 90px -30px rgba(15,60,110,.45),0 2px 0 rgba(255,255,255,.7) inset;--auth-bg-1:#ffffff;--auth-bg-2:#f5f5f7;--auth-scrim:rgba(255,255,255,.7);--auth-shade:rgba(255,255,255,.3)}
-    body.dark #gateScreen{--auth-photo:url("assets/login-dark.jpg");--art-a1:#25B0F2;--art-a2:#7CCBF5;--art-bokeh:#098FD7;--auth-fg:#fff;--auth-fg-soft:rgba(255,255,255,.7);--auth-card-bg:rgba(0,0,0,.28);--auth-card-bd:rgba(255,255,255,.2);--auth-card-sh:0 40px 90px -30px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.1) inset;--auth-bg-1:#000000;--auth-bg-2:#0A0A0A;--auth-scrim:rgba(0,0,0,.55);--auth-shade:rgba(0,0,0,.5)}
+    #gateScreen{--auth-photo:url("assets/login-light.jpg");--art-a1:#1E4FD8;--art-a2:#5B8CFF;--art-bokeh:#5B8CFF;--auth-fg:#0B1530;--auth-fg-soft:rgba(11, 21, 48,.68);--auth-card-bg:rgba(255,255,255,.26);--auth-card-bd:rgba(255,255,255,.55);--auth-card-sh:0 40px 90px -30px rgba(15,60,110,.45),0 2px 0 rgba(255,255,255,.7) inset;--auth-bg-1:#ffffff;--auth-bg-2:#f5f5f7;--auth-scrim:rgba(255,255,255,.7);--auth-shade:rgba(255,255,255,.3)}
+    body.dark #gateScreen{--auth-photo:url("assets/login-dark.jpg");--art-a1:#5B88FF;--art-a2:#9DB8FF;--art-bokeh:#3E70FF;--auth-fg:#fff;--auth-fg-soft:rgba(255,255,255,.7);--auth-card-bg:rgba(0,0,0,.28);--auth-card-bd:rgba(255,255,255,.2);--auth-card-sh:0 40px 90px -30px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.1) inset;--auth-bg-1:#000000;--auth-bg-2:#0A0A0A;--auth-scrim:rgba(0,0,0,.55);--auth-shade:rgba(0,0,0,.5)}
     #gateScreen{position:fixed;inset:0;z-index:10000;display:block!important;min-height:0!important;padding:0!important;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--auth-bg-1)}
     #gateScreen.hidden{display:none!important}
     .auth-bg{position:fixed;inset:0;z-index:0;background-color:var(--auth-bg-1);background-image:var(--auth-photo);background-size:cover;background-position:center;background-repeat:no-repeat}
@@ -7143,7 +7143,7 @@
     @keyframes authLogoIn{from{opacity:0;transform:translateY(18px) scale(.9)}to{opacity:1;transform:none}}
     @keyframes authBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
     .auth-brand-panel h1{font-family:var(--font-display);font-weight:700;font-size:clamp(38px,5.2vw,74px);line-height:1.02;letter-spacing:-.04em;margin:0;color:var(--auth-fg);text-shadow:0 6px 40px rgba(0,0,0,.25);animation:authLogoIn 1s .15s cubic-bezier(.2,.8,.2,1) both}
-    body:not(.dark) .auth-brand-panel h1{text-shadow:none;color:#0b2540}
+    body:not(.dark) .auth-brand-panel h1{text-shadow:none;color:#0B1530}
     .auth-brand-inner{position:relative}.auth-brand-inner:before{content:"";position:absolute;inset:-40px -60px;z-index:-1;background:none;pointer-events:none}
     .auth-eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--artery);margin-bottom:6px}
     .auth-card{position:relative;width:100%;max-width:470px;justify-self:center;padding:clamp(22px,3vw,34px);border-radius:28px;background:var(--auth-card-bg);border:1px solid var(--auth-card-bd);box-shadow:var(--auth-card-sh);-webkit-backdrop-filter:blur(22px) saturate(1.4);backdrop-filter:blur(22px) saturate(1.4);display:flex;flex-direction:column;min-width:0;animation:authLogoIn .8s .1s cubic-bezier(.2,.8,.2,1) both}
@@ -7191,7 +7191,7 @@
   <script src="/push-config.js" defer></script>
 </head>
 <body>
-<script>!function(){const e=localStorage.getItem("atlas_theme_pref");let t=!1;t="dark"===e||"light"!==e&&window.matchMedia("(prefers-color-scheme: dark)").matches,t&&document.body.classList.add("dark");const o=document.querySelector('meta[name="theme-color"]');o&&o.setAttribute("content",t?"#000000":"#FFFFFF")}();</script>
+<script>!function(){const e=localStorage.getItem("atlas_theme_pref");let t=!1;t="dark"===e||"light"!==e&&window.matchMedia("(prefers-color-scheme: dark)").matches,t&&document.body.classList.add("dark");const o=document.querySelector('meta[name="theme-color"]');o&&o.setAttribute("content",t?"#060B1E":"#F6F8FC")}();</script>
 <!-- ============= BOOT LOADER (avoids gate-screen flash on load) ============= -->
   <div class="boot-loader" id="bootLoader">
     <div class="bl-topbar">
@@ -7247,7 +7247,7 @@
           <div class="auth-logo">
             <img src="/logo-360.webp" alt="ALIF Med" decoding="async" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
             <svg class="auth-logo-fallback" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" style="display:none">
-              <defs><linearGradient id="alifLg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2DB6F5"/><stop offset="1" stop-color="#0679BC"/></linearGradient></defs>
+              <defs><linearGradient id="alifLg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5B8CFF"/><stop offset="1" stop-color="#1E4FD8"/></linearGradient></defs>
               <rect x="4" y="4" width="88" height="88" rx="26" fill="url(#alifLg1)"/>
               <path d="M48 20 L68 74 H59 L54.5 61 H41.5 L37 74 H28 Z M48 36 L44 51 H52 Z" fill="#fff" fill-rule="evenodd"/>
               <path d="M18 56 H34 L39 47 L45 66 L51 52 L55 56 H78" fill="none" stroke="#111318" stroke-opacity=".55" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>

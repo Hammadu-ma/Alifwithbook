@@ -11,22 +11,22 @@
 
 /* ---- 1. tokens (light mode; body.dark in index.html still overrides these) ---- */
 html:root {
-  --paper: #f4f8fb;                       /* tinted page, like Arqam's #f5f8f7 */
-  --paper-2: #eaf1f7;
+  --paper: #F6F8FC;                       /* tinted page, like Arqam's #f5f8f7 */
+  --paper-2: #EDF1F9;
   --card: #ffffff;
-  --card-border: #e1eaf2;
-  --ink: #10253a;                         /* navy-tinted text, like Arqam's green-tinted ink */
-  --ink-soft: rgba(16, 37, 58, .68);
-  --ink-faint: rgba(16, 37, 58, .46);
-  --shadow: 0 5px 20px rgba(6, 79, 130, .05);
-  --shadow-lg: 0 16px 38px rgba(6, 79, 130, .12);
-  --brand-grad: linear-gradient(105deg, #0568a8 0%, #0a86cc 100%);   /* Arqam's 105deg two-tone button gradient */
-  --brand-glow: 0 6px 14px rgba(6, 121, 188, .22);
+  --card-border: #E3E9F5;
+  --ink: #0B1530;                         /* navy-tinted text, like Arqam's green-tinted ink */
+  --ink-soft: rgba(11, 21, 48, .68);
+  --ink-faint: rgba(11, 21, 48, .46);
+  --shadow: 0 5px 20px rgba(14, 33, 88, .05);
+  --shadow-lg: 0 16px 38px rgba(14, 33, 88, .12);
+  --brand-grad: linear-gradient(105deg, #163DB0 0%, #3A6BF0 100%);   /* Arqam's 105deg two-tone button gradient */
+  --brand-glow: 0 6px 14px rgba(30, 79, 216, .22);
   --primary-soft: color-mix(in srgb, var(--primary) 9%, #ffffff);
   --primary-line: color-mix(in srgb, var(--primary) 28%, transparent);
-  --topbar-bg: #ffffff;
+  --topbar-bg: #FFFFFF;
   --input-bg: #ffffff;
-  --input-border: #dbe6ef;
+  --input-border: #DCE3F2;
   --radius-sm: 10px;
   --radius-md: 16px;
   --radius-lg: 20px;
@@ -72,7 +72,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 .quiz-card:hover, .module-card:hover, .subject-card:hover, .continue-card:hover, .package-card:hover, .university-card:hover {
   border-color: var(--primary-line);
-  box-shadow: 0 12px 28px rgba(6, 79, 130, .09);
+  box-shadow: 0 12px 28px rgba(14, 33, 88, .09);
 }
 body.dark .quiz-card:hover, body.dark .module-card:hover, body.dark .subject-card:hover,
 body.dark .continue-card:hover, body.dark .package-card:hover, body.dark .university-card:hover { box-shadow: 0 12px 28px rgba(0, 0, 0, .35); }
@@ -135,7 +135,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),
 .bottom-nav {
   background: var(--card);
   border-top: 1px solid var(--card-border);
-  box-shadow: 0 -6px 20px rgba(6, 79, 130, .06);
+  box-shadow: 0 -6px 20px rgba(14, 33, 88, .06);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }

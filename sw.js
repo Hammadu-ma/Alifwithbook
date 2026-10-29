@@ -17,7 +17,7 @@
 
    Firestore / Auth / push-API traffic is never touched by this worker.
    ========================================================================= */
-const BUILD = '13e6a5365a45';
+const BUILD = '55d52fef93c9';
 /*SHELL_START*/
 const SHELL = [
   "/assets/arqam-style.css",
@@ -109,7 +109,7 @@ const SHELL_ENTRY = '/index.html';
 const OFFLINE_HTML = '<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">' +
   '<title>Alif Med — offline</title><body style="font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;background:#F4F7F5;color:#0f2a22;text-align:center;padding:24px">' +
   '<div><h2 style="margin:0 0 8px">You\'re offline</h2><p style="margin:0 0 18px;opacity:.75">Connect once so Alif Med can save itself to this device, then it will open without internet.</p>' +
-  '<button onclick="location.reload()" style="padding:12px 22px;border:0;border-radius:12px;background:#0679BC;color:#fff;font-weight:700;font-size:15px">Try again</button></div></body>';
+  '<button onclick="location.reload()" style="padding:12px 22px;border:0;border-radius:12px;background:#1E4FD8;color:#fff;font-weight:700;font-size:15px">Try again</button></div></body>';
 
 /* ------------------------------------------------------------------ install */
 self.addEventListener('install', event => {
