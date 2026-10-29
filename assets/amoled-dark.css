@@ -10,16 +10,17 @@ body.dark {
   color-scheme: dark;
 
   /* surfaces — elevation 0 → 3 */
-  --paper: #000000;
-  --paper-2: #07080C;
-  --card: #0B0D12;
-  --card-raised: #11141B;
-  --card-hover: #151926;
-  --card-border: rgba(255, 255, 255, .09);
-  --ui-border: rgba(255, 255, 255, .09);
-  --input-bg: #07080C;
+  /* inverted depth: page is a deep charcoal, cards are pure black on top of it */
+  --paper: #111215;
+  --paper-2: #181A1E;
+  --card: #000000;
+  --card-raised: #050506;
+  --card-hover: #050506;
+  --card-border: rgba(255, 255, 255, .07);
+  --ui-border: rgba(255, 255, 255, .07);
+  --input-bg: #181A1E;
   --input-border: rgba(255, 255, 255, .14);
-  --topbar-bg: #000000;
+  --topbar-bg: #111215;
   --backdrop: rgba(0, 0, 0, .72);
 
   /* text */
@@ -28,8 +29,8 @@ body.dark {
   --ink-faint: rgba(243, 246, 252, .56);
 
   /* depth: soft, tight, black-on-black plus a 1px top highlight */
-  --shadow: 0 1px 0 rgba(255, 255, 255, .04) inset, 0 8px 24px -12px rgba(0, 0, 0, 1);
-  --shadow-lg: 0 1px 0 rgba(255, 255, 255, .05) inset, 0 24px 56px -20px rgba(0, 0, 0, 1);
+  --shadow: 0 0 0 0 transparent, 0 6px 20px -10px rgba(0, 0, 0, .9);
+  --shadow-lg: 0 18px 44px -18px rgba(0, 0, 0, .95);
   --ui-shadow: var(--shadow);
   --ui-shadow-strong: var(--shadow-lg);
 
@@ -49,18 +50,18 @@ body.dark {
   --lock: #D4AE5A;
   --lock-soft: #1E1708;
 
-  --sk-base: #0B0D12;
-  --sk-highlight: #171B27;
+  --sk-base: #000000;
+  --sk-highlight: #15171B;
 }
 
 /* page + chrome */
-body.dark, body.dark html { background: #000 !important; }
+body.dark, body.dark html { background: var(--paper) !important; }
 body.dark .topbar, body.dark .picker-topbar, body.dark .atlas-topbar {
-  background: #000 !important;
+  background: var(--paper) !important;
   border-bottom: 1px solid var(--ui-border) !important;
 }
 body.dark .bottom-nav, body.dark .desktop-nav, body.dark .sidebar {
-  background: #000 !important;
+  background: var(--paper) !important;
   border-color: var(--ui-border) !important;
   box-shadow: none !important;
 }
@@ -75,7 +76,7 @@ body.dark :is(.screen-card, .card-inner, .quiz-card, .module-card, .subject-card
 }
 body.dark :is(.quiz-card, .module-card, .subject-card, .continue-card, .package-card, .university-card):not(.active):not(.current):hover {
   background: var(--card-hover);
-  border-color: var(--primary-line);
+  border-color: var(--ui-border);
   box-shadow: var(--shadow-lg) !important;
 }
 body.dark :is(.overlay-panel, .action-modal-panel, .package-overlay-card, .search-overlay-results) {
@@ -105,9 +106,9 @@ body.dark hr { border-color: var(--ui-border); }
 
 /* scrollbars */
 body.dark * { scrollbar-color: #2A2F3D transparent; }
-body.dark ::-webkit-scrollbar { width: 10px; height: 10px; background: #000; }
-body.dark ::-webkit-scrollbar-thumb { background: #232837; border-radius: 10px; border: 2px solid #000; }
-body.dark ::-webkit-scrollbar-thumb:hover { background: #343B50; }
+body.dark ::-webkit-scrollbar { width: 10px; height: 10px; background: var(--paper); }
+body.dark ::-webkit-scrollbar-thumb { background: #2A2D34; border-radius: 10px; border: 2px solid var(--paper); }
+body.dark ::-webkit-scrollbar-thumb:hover { background: #3A3D45; }
 
 /* keep media from glowing on black */
 body.dark img:not(.keep-bright) { filter: brightness(.92) contrast(1.02); }
