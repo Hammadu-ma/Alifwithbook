@@ -198,3 +198,60 @@ body.dark .bottom-nav { box-shadow: 0 -6px 20px rgba(0, 0, 0, .35); }
   .quiz-grid .quiz-card:hover,
   body.dark .quiz-grid .quiz-card:hover { box-shadow: none !important; }
 }
+
+/* ---- Mobile question/practice page: borderless, continuous, edge to edge ---- */
+@media (max-width: 640px) {
+  /* question cards: drop timeline rail + outline, stack with no gaps */
+  .qcard,
+  body.dark .qcard {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+  .qcard::before, .qcard .node { display: none !important; }
+  .qcard .card-inner,
+  body.dark .qcard .card-inner {
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 20px 16px 22px !important;
+    background: var(--card);
+    position: relative;
+  }
+  .qcard:not(:last-child) .card-inner::after {
+    content: '';
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: 8px;
+    background: var(--paper);          /* quiet section break between questions */
+  }
+  .qcard .card-inner:hover { border-color: transparent !important; }
+
+  /* options: one flush list, no outline/radius/gaps */
+  .options { gap: 0 !important; margin: 0 -16px; }
+  .opt,
+  body.dark .opt {
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 15px 16px !important;
+    position: relative;
+  }
+  .opt:not(:last-child)::after {
+    content: '';
+    position: absolute; left: 16px; right: 0; bottom: 0;
+    height: 1px; background: var(--ui-border); opacity: .6; pointer-events: none;
+  }
+  .opt:not(:disabled):hover { background: var(--primary-soft) !important; }
+  /* answered state without borders: tint + accent bar */
+  .opt.reveal-correct, body.dark .opt.reveal-correct {
+    background: var(--right-soft) !important; box-shadow: inset 3px 0 0 var(--right) !important;
+  }
+  .opt.reveal-wrong, body.dark .opt.reveal-wrong {
+    background: var(--wrong-soft) !important; box-shadow: inset 3px 0 0 var(--wrong) !important;
+  }
+  .opt.selected, .opt[aria-pressed="true"] { background: var(--primary-soft) !important; box-shadow: inset 3px 0 0 var(--primary) !important; }
+}
