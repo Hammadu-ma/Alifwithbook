@@ -190,16 +190,16 @@
     }
 
     body.dark {
-      --paper: #0B1120;
-      --paper-2: #0F1729;
+      --paper: #000000;
+      --paper-2: #0A0A0A;
       --ink: #E8EEF9;
       --ink-soft: rgba(232, 238, 249, .68);
       --ink-faint: rgba(232, 238, 249, .44);
-      --card: #121B2E;
+      --card: #0D0D0F;
       --card-border: rgba(232, 238, 249, .1);
       --shadow: 0 1px 3px rgba(0, 0, 0, .4), 0 12px 32px -16px rgba(0, 0, 0, .7);
       --shadow-lg: 0 24px 48px -16px rgba(0, 0, 0, .7);
-      --backdrop: rgba(11, 17, 32, .14);
+      --backdrop: rgba(0, 0, 0, .14);
       --right: #4ba37a;
       --right-soft: #1e3a2e;
       --wrong: #c94f47;
@@ -232,18 +232,18 @@
       --bg-grad-1: transparent;
       --bg-grad-2: transparent;
       --sidebar-bg: color-mix(in srgb, var(--paper-2) 14%, transparent);
-      --topbar-bg: rgba(11, 17, 32, .14);
+      --topbar-bg: rgba(0, 0, 0, .14);
       --input-bg: var(--paper-2);
       --input-border: var(--card-border);
       --module-active: var(--primary);
       --module-active-text: var(--on-primary);
       --pill-active: var(--primary);
       --pill-active-text: var(--on-primary);
-      --sk-base: #172036;
-      --sk-highlight: #1D2944;
+      --sk-base: #141416;
+      --sk-highlight: #1C1C1F;
       --sk-shimmer: linear-gradient(100deg, var(--sk-base) 30%, var(--sk-highlight) 50%, var(--sk-base) 70%);
-      --explain-bg: #121C30;
-      --explain-bg-accent: #182540;
+      --explain-bg: #0D0D10;
+      --explain-bg-accent: #15151A;
       --explain-text: #DCE7F0;
       --explain-text-body: #9aa8b8;
       --explain-text-soft: rgba(220, 231, 240, .6);
@@ -7092,7 +7092,7 @@
     body.auth-gate-open:has(#gateScreen:not(.hidden)){overflow:hidden!important}
     body.auth-gate-open .sidebar-edge-toggle,body.auth-gate-open .related-sidebar-edge-toggle,body.auth-gate-open .focus-topbar{display:none!important}
     #gateScreen{--auth-photo:url("assets/login-light.jpg");--art-a1:#2563eb;--art-a2:#60a5fa;--art-bokeh:#60a5fa;--auth-fg:#0b2540;--auth-fg-soft:rgba(11,37,64,.68);--auth-card-bg:rgba(255,255,255,.26);--auth-card-bd:rgba(255,255,255,.55);--auth-card-sh:0 40px 90px -30px rgba(15,60,110,.45),0 2px 0 rgba(255,255,255,.7) inset;--auth-bg-1:#eaf4ff;--auth-bg-2:#d9f3ee;--auth-scrim:rgba(255,255,255,.7);--auth-shade:rgba(255,255,255,.3)}
-    body.dark #gateScreen{--auth-photo:url("assets/login-dark.jpg");--art-a1:#5b8def;--art-a2:#93b8ff;--art-bokeh:#3b82f6;--auth-fg:#fff;--auth-fg-soft:rgba(255,255,255,.7);--auth-card-bg:rgba(8,20,34,.28);--auth-card-bd:rgba(255,255,255,.2);--auth-card-sh:0 40px 90px -30px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.1) inset;--auth-bg-1:#06121f;--auth-bg-2:#073a40;--auth-scrim:rgba(3,10,20,.55);--auth-shade:rgba(3,10,20,.5)}
+    body.dark #gateScreen{--auth-photo:url("assets/login-dark.jpg");--art-a1:#5b8def;--art-a2:#93b8ff;--art-bokeh:#3b82f6;--auth-fg:#fff;--auth-fg-soft:rgba(255,255,255,.7);--auth-card-bg:rgba(0,0,0,.28);--auth-card-bd:rgba(255,255,255,.2);--auth-card-sh:0 40px 90px -30px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.1) inset;--auth-bg-1:#000000;--auth-bg-2:#0A0A0C;--auth-scrim:rgba(0,0,0,.55);--auth-shade:rgba(0,0,0,.5)}
     #gateScreen{position:fixed;inset:0;z-index:10000;display:block!important;min-height:0!important;padding:0!important;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--auth-bg-1)}
     #gateScreen.hidden{display:none!important}
     .auth-bg{position:fixed;inset:0;z-index:0;background-color:var(--auth-bg-1);background-image:var(--auth-photo);background-size:cover;background-position:center;background-repeat:no-repeat}
@@ -7158,7 +7158,7 @@
   <script src="/push-config.js" defer></script>
 </head>
 <body>
-<script>!function(){const e=localStorage.getItem("atlas_theme_pref");let t=!1;t="dark"===e||"light"!==e&&window.matchMedia("(prefers-color-scheme: dark)").matches,t&&document.body.classList.add("dark");const o=document.querySelector('meta[name="theme-color"]');o&&o.setAttribute("content",t?"#0B1120":"#F5F7FB")}();</script>
+<script>!function(){const e=localStorage.getItem("atlas_theme_pref");let t=!1;t="dark"===e||"light"!==e&&window.matchMedia("(prefers-color-scheme: dark)").matches,t&&document.body.classList.add("dark");const o=document.querySelector('meta[name="theme-color"]');o&&o.setAttribute("content",t?"#000000":"#F5F7FB")}();</script>
 <!-- ============= BOOT LOADER (avoids gate-screen flash on load) ============= -->
   <div class="boot-loader" id="bootLoader">
     <div class="bl-topbar">

@@ -577,7 +577,7 @@ body:has(#resourcesScreen:not(.hidden)) .desktop-nav { z-index: 330; }
 /* =====================================================================
    Book reader
    ===================================================================== */
-.res-overlay-reader { z-index: 440; align-items: stretch; justify-content: stretch; background: #0A0F1C; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.res-overlay-reader { z-index: 440; align-items: stretch; justify-content: stretch; background: #000000; -webkit-backdrop-filter: none; backdrop-filter: none; }
 .res-overlay-reader > .rd { flex: 1; }
 
 .rd {
@@ -587,7 +587,7 @@ body:has(#resourcesScreen:not(.hidden)) .desktop-nav { z-index: 330; }
   background: var(--rd-bg); color: var(--rd-ink); font-family: inherit;
 }
 .rd[data-theme="sepia"] { --rd-bg: #d9ceb3; --rd-bar: rgba(243,234,213,.93); --rd-ink: #3a2e1b; --rd-soft: #7b6c52; --rd-line: rgba(58,46,27,.14); --rd-card: #f5edd9; --rd-page: #f3e9cd; --rd-filter: sepia(.9) saturate(1.5) hue-rotate(-24deg) contrast(.96) brightness(.95); }
-.rd[data-theme="night"] { --rd-bg: #0A0F1C; --rd-bar: rgba(15,23,41,.93); --rd-ink: #E8EEF9; --rd-soft: #94A3B8; --rd-line: rgba(255,255,255,.1); --rd-card: #131B2E; --rd-page: #111827; --rd-filter: invert(.92) hue-rotate(180deg) contrast(.93) brightness(.94); }
+.rd[data-theme="night"] { --rd-bg: #000000; --rd-bar: rgba(10,10,12,.93); --rd-ink: #E8EEF9; --rd-soft: #94A3B8; --rd-line: rgba(255,255,255,.1); --rd-card: #0D0D0F; --rd-page: #0A0A0A; --rd-filter: invert(.92) hue-rotate(180deg) contrast(.93) brightness(.94); }
 
 /* toolbars */
 .rd-top, .rd-bottom { display: flex; align-items: center; gap: 6px; z-index: 5; background: var(--rd-bar); -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); transition: transform .32s var(--ease), opacity .3s; }
@@ -659,7 +659,7 @@ body:has(#resourcesScreen:not(.hidden)) .desktop-nav { z-index: 330; }
 .rd-seg button svg { width: 16px; height: 16px; }
 .rd-seg button i { width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid rgba(0,0,0,.25); }
 .rd-seg button.on { background: var(--rd-card); color: var(--rd-ink); box-shadow: 0 2px 8px rgba(0,0,0,.18); }
-.rd[data-theme="night"] .rd-seg button.on { background: #1E2A44; }
+.rd[data-theme="night"] .rd-seg button.on { background: #1C1C20; }
 .rd-zoom { display: flex; align-items: center; gap: 8px; }
 .rd-zoom button { width: 40px; height: 38px; border: 0; border-radius: 11px; background: var(--rd-line); color: var(--rd-ink); display: flex; align-items: center; justify-content: center; }
 .rd-zoom button svg { width: 18px; height: 18px; }
