@@ -264,3 +264,43 @@ main, #feed, .qcard, .card-inner { min-width: 0; }
 #feed .cat-divider { height: 0 !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; visibility: hidden; scroll-margin-top: 70px; }
 .vessel-rail::before, .qcard::before, .qcard .node, .cat-divider::before { display: none !important; }
 .qcard { padding-left: 0 !important; }
+
+/* ---- Questions: one continuous card (all widths), thin dividers, rounded only at the very top/bottom ---- */
+#feed .qcard { margin: 0 !important; padding: 0 !important; background: transparent !important; border: 0 !important; box-shadow: none !important; }
+#feed .qcard .card-inner {
+  border-radius: 0 !important;
+  border-top-width: 0 !important; border-bottom-width: 0 !important;
+  margin: 0 !important;
+  position: relative;
+}
+#feed .qcard:not(:last-child) .card-inner::after {
+  content: ''; position: absolute; left: 16px; right: 16px; bottom: 0; height: 1px;
+  background: var(--ui-border); opacity: .8; pointer-events: none;
+}
+#feed > .qcard:first-child .card-inner,
+#feed > .cat-divider:first-child + .qcard .card-inner {
+  border-top-width: 1px !important; border-top-left-radius: 18px !important; border-top-right-radius: 18px !important;
+}
+#feed > .qcard:last-child .card-inner {
+  border-bottom-width: 1px !important; border-bottom-left-radius: 18px !important; border-bottom-right-radius: 18px !important;
+}
+@media (max-width: 640px) {
+  #feed .qcard .card-inner { border-left-width: 0 !important; border-right-width: 0 !important; }
+}
+
+/* ---- Category filter bar (shown when a category is selected) ---- */
+.cat-filter-bar {
+  display: flex; align-items: center; gap: 10px;
+  margin: 0 0 12px; padding: 10px 12px 10px 14px;
+  border-radius: 14px; border: 1px solid var(--card-border); background: var(--card);
+  border-left: 3px solid var(--cf, var(--primary));
+}
+.cat-filter-bar .cf-label { font-weight: 700; font-size: 14px; color: var(--ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat-filter-bar .cf-count { font-size: 12px; color: var(--ink-faint); flex: 1; white-space: nowrap; }
+.cat-filter-bar .cf-clear {
+  border: 0; border-radius: 999px; padding: 7px 12px; font-size: 12.5px; font-weight: 700;
+  background: var(--primary-soft); color: var(--primary); cursor: pointer;
+}
+@media (max-width: 640px) { .cat-filter-bar { margin: 0 12px 12px; } }
+#catList .cat-item.cat-active .cat-item-head { color: var(--primary); }
+#catList .cat-item.cat-active { box-shadow: inset 3px 0 0 var(--primary); }
