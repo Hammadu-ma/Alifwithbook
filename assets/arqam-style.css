@@ -304,3 +304,9 @@ main, #feed, .qcard, .card-inner { min-width: 0; }
 @media (max-width: 640px) { .cat-filter-bar { margin: 0 12px 12px; } }
 #catList .cat-item.cat-active .cat-item-head { color: var(--primary); }
 #catList .cat-item.cat-active { box-shadow: inset 3px 0 0 var(--primary); }
+
+/* ---- Mobile: explanation panel bleeds exactly to the card edges (card side padding is 16px) ---- */
+@media (max-width: 640px) {
+  #feed .qcard .panel { margin-left: -16px !important; margin-right: -16px !important; width: auto; max-width: none !important; }
+  #feed .qcard .result-line, #feed .qcard .toggles { margin-left: 0; margin-right: 0; }
+}
