@@ -234,7 +234,9 @@ body.dark .res-icon-btn { background: var(--card) !important; }
 
 /* ---- Question page: expanded explanations must never widen/shift the page ---- */
 html, body { overflow-x: clip; max-width: 100%; }
-main, #feed, .qcard, .card-inner { min-width: 0; max-width: 100%; }
+main, #feed, .qcard, .card-inner { min-width: 0; }
+.qcard, .card-inner { max-width: 100%; }
+@media (max-width: 640px) { #feed { max-width: none !important; } }
 .panel, .panel .markdown-body, .exm-markdown-body {
   min-width: 0; max-width: 100%;
   overflow-wrap: anywhere; word-break: break-word;
