@@ -24,14 +24,45 @@ function hasLegacyCandidate() {   // same rule as legacy-migration.getLegacyCand
 }
 const openLegacyMigrationModal = async candidate => (await loadLegacy()).openLegacyMigrationModal(candidate);
 
-async function startStudent(student) {
+async function startStudent(student, { deferHeartbeat = false } = {}) {
   storeStudent(student);
   replaceAppState('home');
   showHome({ skipHistory: true });
   if (!student.guest) {
     startAccessSubscription(student.uid);
-    startHeartbeat();
+    if (!deferHeartbeat) startHeartbeat();
     startUnreadTracking();
+  }
+}
+
+/* Fast refresh: a returning student with a saved profile sees the home screen immediately.
+   The slow, network-bound checks (profile reload, account status, device lock) run right after
+   in the background; if any of them fails we apply exactly the same outcome as the normal path. */
+async function verifyInBackground(authUser, legacyCandidate) {
+  try {
+    let student = await loadStudentForUser(authUser);
+    if ((!student || student.migrationState === 'in_progress') && legacyCandidate) {
+      student = await openLegacyMigrationModal(legacyCandidate);
+    }
+    if (!student) {
+      clearStudent();
+      await openAuthGate('login', 'account-not-ready');
+      return;
+    }
+    try {
+      await assertDeviceAllowed(student);
+    } catch (e) {
+      if (e?.blocked) { holdBlockedDevice(student, e, () => { startAccessSubscription(student.uid); startUnreadTracking(); }); return; }
+      if (e?.name === 'DeviceLockError') await signOutStudent().catch(() => {}); else clearStudent();
+      await openAuthGate('login', e?.message || 'This device is not allowed for this account.');
+      return;
+    }
+    storeStudent(student);
+    startHeartbeat();
+  } catch (e) {
+    console.error('[boot] background verification failed', e);
+    clearStudent();
+    await openAuthGate('login', 'Could not restore your account session. Please sign in again.');
   }
 }
 
@@ -49,6 +80,16 @@ async function startStudent(student) {
     if (hasLegacyCandidate()) legacyCandidate = (await loadLegacy()).getLegacyMigrationCandidate();
 
     if (authUser) {
+      const saved = getStoredStudent();
+      const canFastStart = saved && !saved.guest && saved.uid === authUser.uid
+        && saved.migrationState !== 'in_progress' && !legacyCandidate
+        && !(typeof navigator !== 'undefined' && navigator.onLine === false);
+      if (canFastStart) {
+        await startStudent(saved, { deferHeartbeat: true });
+        document.getElementById('bootLoader')?.remove();
+        verifyInBackground(authUser, legacyCandidate);   // intentionally not awaited
+        return;
+      }
       let student = await loadStudentForUser(authUser);
       if ((!student || student.migrationState === 'in_progress') && legacyCandidate) {
         student = await openLegacyMigrationModal(legacyCandidate);
