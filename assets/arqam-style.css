@@ -248,3 +248,19 @@ main, #feed, .qcard, .card-inner { min-width: 0; }
 .panel pre { white-space: pre-wrap; overflow-x: auto; }
 .panel table { display: block; width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .panel p, .panel li { white-space: normal !important; }
+
+/* ---- Question page header: minimal breadcrumb, no plates, no timeline line ---- */
+.hero { margin-bottom: 14px !important; }
+.hero h1, .hero p { display: none !important; }
+.hero .eyebrow.crumb, .hero #heroEyebrow {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  font-family: 'Inter', system-ui, sans-serif !important;
+  font-size: 12.5px !important; font-weight: 500; letter-spacing: 0 !important; text-transform: none !important;
+  color: var(--ink-faint) !important;
+}
+.hero .crumb-sep { font-style: normal; opacity: .55; font-size: 14px; line-height: 1; }
+.hero .crumb-cur { color: var(--ink); font-weight: 700; }
+/* hide plate / category headings but keep them as zero-height scroll anchors for the sidebar jump list */
+#feed .cat-divider { height: 0 !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; visibility: hidden; scroll-margin-top: 70px; }
+.vessel-rail::before, .qcard::before, .qcard .node, .cat-divider::before { display: none !important; }
+.qcard { padding-left: 0 !important; }
