@@ -168,35 +168,6 @@ body.dark .bottom-nav { box-shadow: 0 -6px 20px rgba(0, 0, 0, .35); }
 /* ---- 11. progress ---- */
 .bar-track, .ts-track { border-radius: 999px; background: color-mix(in srgb, var(--primary) 12%, var(--card)); }
 
-/* ---- Cards: no gray outline (depth comes from surface colour + soft shadow) ---- */
-:is(.screen-card, .card-inner, .quiz-card, .module-card, .subject-card, .overlay-panel, .action-modal-panel,
-  .package-card, .package-overlay-card, .university-card, .reco-card, .live-card, .pg-section, .sp-section,
-  .continue-card, .dash-continue-card, .learn-celebrate-card, .learn-complete-card, .chat-notify-card,
-  .pf-card, .skeleton-card, .res-mod, .res-book, .res-vid, .res-sheet-card, .bnm-panel):not(:hover):not(.active):not(.current),
-body.dark :is(.screen-card, .card-inner, .quiz-card, .module-card, .subject-card, .overlay-panel, .action-modal-panel,
-  .package-card, .package-overlay-card, .university-card, .reco-card, .live-card, .pg-section, .sp-section,
-  .continue-card, .dash-continue-card, .learn-celebrate-card, .learn-complete-card, .chat-notify-card,
-  .pf-card, .skeleton-card, .res-mod, .res-book, .res-vid, .res-sheet-card, .bnm-panel):not(:hover):not(.active):not(.current) {
-  border-top-color: transparent !important;
-  border-right-color: transparent !important;
-  border-bottom-color: transparent !important;
-}
-/* left edge too, except cards that use it as a coloured accent bar */
-:is(.screen-card, .card-inner, .module-card, .subject-card, .overlay-panel, .action-modal-panel,
-  .package-card, .package-overlay-card, .university-card, .reco-card, .live-card, .pg-section, .sp-section,
-  .continue-card, .learn-celebrate-card, .pf-card, .res-mod, .res-book, .res-vid, .res-sheet-card):not(:hover):not(.active):not(.current),
-body.dark :is(.screen-card, .card-inner, .module-card, .subject-card, .overlay-panel, .action-modal-panel,
-  .package-card, .package-overlay-card, .university-card, .reco-card, .live-card, .pg-section, .sp-section,
-  .continue-card, .learn-celebrate-card, .pf-card, .res-mod, .res-book, .res-vid, .res-sheet-card):not(:hover):not(.active):not(.current) {
-  border-left-color: transparent !important;
-}
-/* a touch more lift in light mode now that the outline is gone */
-body:not(.dark) :is(.quiz-card, .module-card, .subject-card, .continue-card, .package-card, .university-card, .pf-card, .res-mod, .res-book, .res-vid) {
-  box-shadow: 0 1px 2px rgba(14, 33, 88, .06), 0 8px 22px -10px rgba(14, 33, 88, .12);
-}
-/* quiz-card's left edge too (its mobile accent bar is overridden by the base border anyway) */
-.quiz-card:not(:hover), body.dark .quiz-card:not(:hover) { border-left-color: transparent !important; }
-
 /* ---- Question page: .qcard is only a wrapper; .card-inner is the visible card (no double card) ---- */
 .qcard, body.dark .qcard {
   background: transparent !important;

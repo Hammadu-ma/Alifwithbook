@@ -77,7 +77,7 @@ body.dark :is(.screen-card, .card-inner, .quiz-card, .module-card, .subject-card
   .pg-section, .sp-section, .continue-card, .learn-celebrate-card, .qcard) {
   background-color: var(--card);
   background-image: none;
-  border: 1px solid transparent;
+  border: 1px solid var(--card-border);
   box-shadow: none !important;
 }
 body.dark :is(.quiz-card, .module-card, .subject-card, .continue-card, .package-card, .university-card):not(.active):not(.current):hover {
