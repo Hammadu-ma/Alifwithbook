@@ -260,3 +260,18 @@ body:not(.dark) :is(.quiz-card, .module-card, .subject-card, .continue-card, .pa
 }
 body.dark .res-icon-btn { background: var(--card) !important; }
 .res-tab.active { color: var(--primary); }
+
+/* ---- Question page: expanded explanations must never widen/shift the page ---- */
+html, body { overflow-x: clip; max-width: 100%; }
+main, #feed, .qcard, .card-inner { min-width: 0; max-width: 100%; }
+.panel, .panel .markdown-body, .exm-markdown-body {
+  min-width: 0; max-width: 100%;
+  overflow-wrap: anywhere; word-break: break-word;
+}
+.panel { overflow-x: hidden; }
+.panel * { max-width: 100%; box-sizing: border-box; }
+.panel img, .panel video, .panel iframe, .panel svg, .panel canvas { max-width: 100%; height: auto; }
+.panel iframe { aspect-ratio: 16 / 9; width: 100%; }
+.panel pre { white-space: pre-wrap; overflow-x: auto; }
+.panel table { display: block; width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.panel p, .panel li { white-space: normal !important; }
