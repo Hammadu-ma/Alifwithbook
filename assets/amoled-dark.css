@@ -133,3 +133,13 @@ body.dark .qcard, body.dark .qcard .card-inner { background-image: none !importa
 body.dark #feed .qcard .card-inner { background-color: #000000 !important; }
 body.dark .opt { background: #14161A !important; }
 body.dark .opt:not(:disabled):hover { background: #1B1E24 !important; }
+
+/* explanation section: deep black like the question card */
+body.dark .panel,
+body.dark #feed .qcard .panel {
+  background: #000000 !important;
+  --explain-bg: #000000;
+  --explain-bg-accent: #07080B;
+}
+body.dark .panel code { background: #0E1014; }
+body.dark .panel blockquote { background: #07080B; }
