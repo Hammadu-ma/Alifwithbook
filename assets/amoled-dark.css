@@ -128,3 +128,8 @@ body.dark .opt.reveal-wrong { background: var(--wrong-soft) !important; }
 
 /* question cards: flat, no gradient */
 body.dark .qcard, body.dark .qcard .card-inner { background-image: none !important; }
+
+/* question cards: deep black; answer options stay a lighter black */
+body.dark #feed .qcard .card-inner { background-color: #000000 !important; }
+body.dark .opt { background: #14161A !important; }
+body.dark .opt:not(:disabled):hover { background: #1B1E24 !important; }
