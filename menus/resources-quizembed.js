@@ -83,9 +83,9 @@ export function mountEmbeddedQuiz(host, payload, { onBack, onFull } = {}) {
     /* leave the quiz running and hand the screen back to the app (full-screen quiz) */
     release() {
       if (released || destroyed) return;
-      released = true; mo.disconnect(); host.removeEventListener('click', onClick);
-      restoreDom();
-      document.getElementById('resourcesScreen')?.classList.add('hidden');     // the quiz screen is now the one visible screen
+      released = true; mo.disconnect(); host.removeEventListener('click', onClick); restoreDom();
+      document.getElementById('resourcesScreen')?.classList.add('hidden');     // the quiz is now the app's main screen
+      document.getElementById('bottomNav')?.classList.add('hidden');
     },
     destroy() {
       if (released || destroyed) return;
