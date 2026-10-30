@@ -535,7 +535,7 @@ function swipeTabs() {
   let t0 = null, lock = null, sw = null, dx = 0;
   const target = () => (dx < 0 ? 1 : -1);
   const inRange = () => { const i = sw.keys.indexOf(sw.cur) + target(); return i >= 0 && i < sw.keys.length; };
-  const reset = () => { elMain.style.transition = ''; elMain.style.transform = ''; elMain.style.opacity = ''; };
+  const reset = () => { elMain.style.transition = ''; elMain.style.transform = '';  };
 
   screen.addEventListener('touchstart', e => {
     if (e.touches.length !== 1 || e.target.closest('#resHead, .res-head, .res-sheet, .res-player, [role="dialog"], input, textarea, select')) { t0 = null; return; }
@@ -558,7 +558,6 @@ function swipeTabs() {
     const resist = inRange() ? 1 : 0.22;          // rubber-band at the first / last tab
     const w = elMain.clientWidth || 360;
     elMain.style.transform = `translate3d(${dx * resist}px,0,0)`;
-    elMain.style.opacity = String(1 - Math.min(Math.abs(dx) / w, 1) * 0.4);
   }, { passive: true });
 
   const finish = () => {
@@ -568,27 +567,25 @@ function swipeTabs() {
     const dir = target(), ok = inRange() && (far || fast) && Math.abs(dx) > 24;
     t0 = null;
     if (!ok || reduce()) {
-      elMain.style.transition = 'transform .2s cubic-bezier(.2,.9,.3,1), opacity .2s';
-      elMain.style.transform = 'translate3d(0,0,0)'; elMain.style.opacity = '1';
+      elMain.style.transition = 'transform .2s cubic-bezier(.2,.9,.3,1)';
+      elMain.style.transform = 'translate3d(0,0,0)';
       if (ok) sw.set(sw.keys[sw.keys.indexOf(sw.cur) + dir]);
       setTimeout(reset, 220);
       return;
     }
     const key = sw.keys[sw.keys.indexOf(sw.cur) + dir];
-    elMain.style.transition = 'transform .1s cubic-bezier(.4,0,1,1), opacity .1s linear';
-    elMain.style.transform = `translate3d(${dir > 0 ? -w * 0.22 : w * 0.22}px,0,0)`;
-    elMain.style.opacity = '0';
+    elMain.style.transition = 'transform .13s cubic-bezier(.3,0,.8,.6)';
+    elMain.style.transform = `translate3d(${dir > 0 ? -w : w}px,0,0)`;
     setTimeout(() => {
       screen.classList.add('res-swiping');
       sw.set(key);
       elMain.style.transition = 'none';
-      elMain.style.transform = `translate3d(${dir > 0 ? w * 0.22 : -w * 0.22}px,0,0)`;
-      elMain.style.opacity = '0';
+      elMain.style.transform = `translate3d(${dir > 0 ? w : -w}px,0,0)`;
       void elMain.offsetWidth;
-      elMain.style.transition = 'transform .24s cubic-bezier(.2,.9,.3,1), opacity .16s ease-out';
-      elMain.style.transform = 'translate3d(0,0,0)'; elMain.style.opacity = '1';
+      elMain.style.transition = 'transform .26s cubic-bezier(.22,1,.36,1)';
+      elMain.style.transform = 'translate3d(0,0,0)';
       setTimeout(() => { reset(); screen.classList.remove('res-swiping'); }, 250);
-    }, 100);
+    }, 130);
   };
   screen.addEventListener('touchend', finish, { passive: true });
   screen.addEventListener('touchcancel', () => { t0 = null; reset(); }, { passive: true });

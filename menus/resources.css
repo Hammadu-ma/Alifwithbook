@@ -824,3 +824,4 @@ body.rq-embedded .jump-fab { z-index: 440; }
 #resMain { will-change: transform, opacity; }
 /* no staggered card entrance while swiping between tabs (the slide is the animation) */
 .res-swiping .res-mod, .res-swiping .res-book, .res-swiping .res-vid, .res-swiping .res-sk { animation: none !important; opacity: 1 !important; }
+.res-screen { overflow-x: hidden; }
