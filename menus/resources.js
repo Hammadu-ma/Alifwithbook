@@ -606,7 +606,8 @@ const playerCtx = {
   student: () => getStoredStudent(),
   subjectName, initials, accent: accentFor,
   lock: (el, msg) => triggerLockResponse(el, msg),
-  close: () => closePlayer()
+  close: () => closePlayer(),
+  fullQuizState: () => pushAppState('quiz')
 };
 function openVideo(v) {
   if (playerHandle) { playerHandle.destroy(); playerHandle = null; }

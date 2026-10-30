@@ -31,6 +31,7 @@ const hide = k => { const el = $(ids[k]); if (el && !el.classList.contains('hidd
 function enforce(winner) {
   if (!winner || hidden(winner)) return;
   const keep = new Set([winner, ...(KEEP[winner] || [])]);
+  if (winner === 'app' && window.__alifEmbedQuiz) keep.add('resources');   // quiz embedded in the video panel
   ALL.forEach(k => { if (!keep.has(k)) hide(k); });
 }
 

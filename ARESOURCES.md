@@ -45,5 +45,6 @@ Files: `menus/resources.js|css` (student), `admin/resources-admin.js` (admin), `
   - Quiz links: a **specific quiz** (e.g. a year's paper), **every quiz of a subject**, **every quiz of a module**, or a **question category** (mixed practice from that subject's quizzes).
   - If no related videos are linked, the app suggests videos from the same subject/module.
 - **Resizable**: a grip handle between the video and the tabs/panel can be dragged (up/down on phones, left/right on desktop) or moved with arrow keys; double-tap/click resets it. The size is remembered. Books and quizzes in the panel adapt, and the video keeps playing.
-- Inline quizzes give instant feedback + explanations, a score summary and "retry mistakes". They respect quiz locks. They are practice only: results are not written to the Exams progress/ranking.
+- **Quizzes use the app's real quiz screen**, embedded under the video without its sidebar (no second quiz implementation). A slim bar gives search, categories, bookmarks, submit and **Open in full-screen quiz** (hands the same running quiz to the normal quiz screen). Progress, bookmarks and results are saved exactly as for a quiz started from Exams, and quiz locks are respected.
+- *Question category* links have no real quiz behind them, so they use a small built-in practice runner (instant feedback, score, retry mistakes) that does not record results.
 - Data: `videos.related = { videos:[id], books:[id], quizzes:[{type:'quiz'|'subject'|'module'|'category', ...}] }`, `books.linkedVideoIds:[id]`.

@@ -11,6 +11,7 @@
    * Under the video: tabs for Related videos / books / quizzes. A book or a
      quiz opens right there in the panel while the video keeps playing.
    ======================================================================== */
+import { mountEmbeddedQuiz } from './resources-quizembed.js';
 import { mountReader, SANDBOX } from './resources-reader.js';
 import { loadCategoryQuestions, loadQuizQuestions, lockMessage, mountQuiz, resolveQuizLinks } from './resources-quiz.js';
 import { driveId, esc, plural, safeUrl, thumbSrc, videoThumb, vimeoParts, ytId, fileExt } from './resources-util.js';
@@ -522,7 +523,22 @@ export function mountPlayer(host, first, ctx) {
         : await loadQuizQuestions(item);
       if (dead || video !== my) return;
       if (!qs.length) throw new Error('empty');
-      panelHandle = mountQuiz(panel, { title: item.kind === 'category' ? `Practice: ${item.category}` : item.quiz.name, sub: item.subjectName, questions: qs }, { onBack: () => { panelHandle && panelHandle.destroy(); panelHandle = null; toList(); } });
+      const back = () => { panelHandle && panelHandle.destroy(); panelHandle = null; toList(); };
+      if (item.kind === 'quiz') {
+        // the app's real quiz screen, embedded here without its sidebar
+        panelHandle = mountEmbeddedQuiz(panel, { subjectId: item.subjectId, quizId: item.quiz.id, subjectName: item.subjectName, quizName: item.quiz.name, questions: qs }, {
+          onBack: back,
+          onFull: () => {            // continue the same quiz in the normal full-screen quiz screen
+            const h = panelHandle; panelHandle = null;
+            if (h) h.release();
+            ctx.close();
+            setTimeout(() => ctx.fullQuizState && ctx.fullQuizState(), 180);
+          }
+        });
+      } else {
+        // category practice has no quiz of its own: mixed questions in the light runner
+        panelHandle = mountQuiz(panel, { title: `Practice: ${item.category}`, sub: item.subjectName, questions: qs }, { onBack: back });
+      }
     } catch (e) {
       if (dead || video !== my) return;
       const denied = /permission|insufficient/i.test(String(e && (e.code || e.message)));
