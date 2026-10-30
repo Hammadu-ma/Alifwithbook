@@ -39,7 +39,7 @@ const CSS = `
 
 /* ---------- Exam-only tag ---------- */
 .exm-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
-  color:#fff;background:linear-gradient(135deg,var(--vein,#E85A3B),var(--portal,#C6890C));box-shadow:0 4px 12px -4px color-mix(in srgb,var(--vein,#E85A3B) 70%,transparent)}
+  color:#fff;background: var(--vein,#E85A3B);box-shadow:0 4px 12px -4px color-mix(in srgb,var(--vein,#E85A3B) 70%,transparent)}
 .exm-tag i{font-size:9.5px}
 
 /* ---------- PC hover chooser ---------- */
@@ -73,7 +73,7 @@ const CSS = `
   /* Exam side: same glass-tint recipe as Quiz, but in the brand coral so the two halves read as a pair */
   .exm-opt-exam{--exm-c:var(--vein,#E85A3B);color:var(--ink);background:color-mix(in srgb,var(--exm-c) 13%,var(--card));
     border:1px solid color-mix(in srgb,var(--exm-c) 38%,transparent)}
-  .exm-opt-exam::after{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,color-mix(in srgb,var(--exm-c) 22%,transparent) 50%,transparent 70%);
+  .exm-opt-exam::after{content:'';position:absolute;inset:0;background:none;
     transform:translateX(-120%);transition:transform .7s var(--ease,ease);pointer-events:none}
   .exm-opt-exam:hover::after{transform:translateX(120%)}
   .exm-opt-exam .exm-ic{background:color-mix(in srgb,var(--exm-c) 22%,transparent);color:var(--exm-c)}
@@ -84,7 +84,7 @@ const CSS = `
 
 /* ---------- Mobile swipe-right-for-exam lane ---------- */
 .quiz-card .exm-lane{position:absolute;left:0;top:0;bottom:0;width:0;z-index:3;overflow:hidden;pointer-events:none;border-radius:inherit;
-  background:linear-gradient(100deg,var(--vein,#E85A3B),color-mix(in srgb,var(--vein,#E85A3B) 62%,var(--portal,#C6890C)))}
+  background: var(--vein,#E85A3B)}
 .quiz-card .exm-lane-in{position:absolute;left:22px;top:50%;width:150px;display:flex;align-items:center;gap:12px;color:#fff;transform:translateY(-50%);white-space:nowrap}
 .quiz-card .exm-lane-ic{width:44px;height:44px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:19px;
   background:rgba(255,255,255,.2);transform:scale(var(--exm-p,.6));transition:background .2s ease,box-shadow .2s ease}

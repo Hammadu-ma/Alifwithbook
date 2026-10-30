@@ -1,0 +1,262 @@
+/* =========================================================================
+   ALIF Med x Arqam Clerk style
+   Keeps the ALIF brand colours (sky / deep blue / navy) and gives the app the
+   Arqam Clerk look: a softly tinted page, white cards with a hairline border and
+   a light shadow, 17px / 10-12px corners, two-tone gradient buttons, tinted
+   focus rings and one sans-serif typeface (Inter).
+   Colours come from the existing tokens (--primary, --brand-navy ...), so light and
+   dark mode both keep working. To go back to the old look, remove the
+   <link> to this file in index.html.
+   ========================================================================= */
+
+/* ---- 1. tokens (light mode; body.dark in index.html still overrides these) ---- */
+html:root {
+  --paper: #F6F8FC;                       /* tinted page, like Arqam's #f5f8f7 */
+  --paper-2: #EDF1F9;
+  --card: #ffffff;
+  --card-border: #E3E9F5;
+  --ink: #0B1530;                         /* navy-tinted text, like Arqam's green-tinted ink */
+  --ink-soft: rgba(11, 21, 48, .68);
+  --ink-faint: rgba(11, 21, 48, .46);
+  --shadow: 0 5px 20px rgba(14, 33, 88, .05);
+  --shadow-lg: 0 16px 38px rgba(14, 33, 88, .12);
+  --brand-grad: linear-gradient(145deg, #2A62FF 0%, #1B3FD6 48%, #0E1F6B 100%);   /* welcome-card palette */
+  --brand-glow: 0 10px 22px -10px rgba(42, 98, 255, .55);
+  --primary-soft: color-mix(in srgb, var(--primary) 9%, #ffffff);
+  --primary-line: color-mix(in srgb, var(--primary) 28%, transparent);
+  --topbar-bg: #FFFFFF;
+  --input-bg: #ffffff;
+  --input-border: #DCE3F2;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --ui-border: var(--card-border);
+  --ui-shadow: var(--shadow);
+  --ui-shadow-strong: var(--shadow-lg);
+  --ac-ring: rgba(var(--primary-rgb), .24);
+}
+body.dark {
+  --ui-border: rgba(255, 255, 255, .10);
+  --ac-ring: rgba(var(--primary-rgb), .38);
+}
+
+/* ---- 2. type ---- */
+body {
+  font-feature-settings: 'calt', 'kern';
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+h1, h2, h3, h4 { letter-spacing: -.012em; text-wrap: balance; }
+p { text-wrap: pretty; }
+h1, h2, h3, .res-title, .pf-topbar-title { font-weight: 700; }
+
+/* ---- 3. focus + selection ---- */
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
+  outline: 3px solid var(--ac-ring);
+  outline-offset: 2px;
+}
+::selection { background: rgba(var(--primary-rgb), .2); }
+
+/* ---- 4. surfaces: white cards, hairline border, soft shadow, 17px corners ---- */
+.screen-card, .card-inner, .quiz-card, .module-card, .subject-card, .overlay-panel, .action-modal-panel,
+.package-card, .package-overlay-card, .university-card, .reco-card, .live-card, .pg-section, .sp-section,
+.continue-card, .learn-celebrate-card, .qcard {
+  border: 1px solid var(--card-border);
+  border-radius: 17px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.quiz-card, .module-card, .subject-card, .continue-card, .package-card, .university-card {
+  transition: transform .15s, border-color .15s, box-shadow .15s, background .15s;
+}
+.quiz-card:hover, .module-card:hover, .subject-card:hover, .continue-card:hover, .package-card:hover, .university-card:hover {
+  border-color: var(--primary-line);
+  box-shadow: 0 12px 28px rgba(14, 33, 88, .09);
+}
+body.dark .quiz-card:hover, body.dark .module-card:hover, body.dark .subject-card:hover,
+body.dark .continue-card:hover, body.dark .package-card:hover, body.dark .university-card:hover { box-shadow: 0 12px 28px rgba(0, 0, 0, .35); }
+
+/* ---- 5. buttons: Arqam two-tone gradient, 12px corners, soft coloured shadow ---- */
+.primary-btn, .submit-btn, .pill-btn.primary, .action-modal-actions button.primary, .student-chip .guest-signup-btn,
+.guest-signup-btn, .ai-explain-btn, .home-hero-cta, .pkd-cta-btn, .bf-btn.primary, .quick-action-btn.primary {
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: var(--brand-grad);
+  color: var(--on-primary);
+  font-weight: 700;
+  box-shadow: 0 5px 12px rgba(var(--primary-rgb), .18);
+  transition: transform .15s, filter .15s, box-shadow .15s;
+}
+.primary-btn:hover, .submit-btn:hover, .pill-btn.primary:hover, .action-modal-actions button.primary:hover,
+.guest-signup-btn:hover, .ai-explain-btn:hover, .home-hero-cta:hover, .pkd-cta-btn:hover, .bf-btn.primary:hover, .quick-action-btn.primary:hover {
+  background: var(--brand-grad);
+  filter: brightness(1.07);
+  box-shadow: 0 8px 16px rgba(var(--primary-rgb), .24);
+  transform: translateY(-1px);
+}
+.primary-btn:active, .submit-btn:active, .pill-btn.primary:active, .action-modal-actions button.primary:active { transform: none; filter: brightness(.96); }
+/* secondary buttons: white, hairline border, tinted hover (Arqam "btn-outline") */
+.pill-btn:not(.primary), .action-modal-actions button:not(.primary), .bf-btn:not(.primary), .quick-action-btn:not(.primary) {
+  border-radius: 12px;
+  border: 1px solid var(--input-border);
+  background: var(--card);
+  color: var(--ink-soft);
+  font-weight: 650;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.pill-btn:not(.primary):hover, .action-modal-actions button:not(.primary):hover, .bf-btn:not(.primary):hover, .quick-action-btn:not(.primary):hover {
+  border-color: var(--primary-line);
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+
+/* ---- 6. inputs ---- */
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), textarea, select {
+  border-radius: 10px;
+}
+.text-input, .picker-search input, .search-box input, input[type=text], input[type=search], input[type=email], input[type=password], input[type=number], textarea, select {
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+}
+.text-input:focus, .picker-search input:focus, .search-box input:focus, input:focus, textarea:focus, select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--ac-ring);
+  outline: none;
+}
+
+/* ---- 7. navigation: white bars with a hairline, soft-tinted active item ---- */
+.topbar, .res-head, .pf-topbar {
+  background: var(--card);
+  border-bottom: 1px solid var(--card-border);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.bottom-nav {
+  background: var(--card);
+  border-top: 1px solid var(--card-border);
+  box-shadow: 0 -6px 20px rgba(14, 33, 88, .06);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+body.dark .bottom-nav { box-shadow: 0 -6px 20px rgba(0, 0, 0, .35); }
+.bn-item { border-radius: 12px; font-weight: 650; }
+.bn-item.active { background: var(--primary-soft); color: var(--primary); }
+.bn-item.active i, .bn-item.active svg { color: var(--primary); }
+.sidebar { border-right: 1px solid var(--card-border); }
+.module-active, .module-pill.active, .cat-item.active { border-radius: 12px; }
+
+/* ---- 8. chips and small labels ---- */
+.student-chip, .pill { border-radius: 999px; }
+.pill:not(.active):not(.locked) { border: 1px solid var(--input-border); background: var(--card); color: var(--ink-soft); font-weight: 650; }
+.eyebrow, .atlas-kicker {
+  color: var(--primary);
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+/* ---- 9. quiz options + toggles ---- */
+.opt { border-radius: 12px; border: 1px solid var(--card-border); box-shadow: none; }
+.opt:not(.answered):hover { border-color: var(--primary-line); background: var(--primary-soft); }
+.toggle-switch { border-radius: 999px; }
+
+/* ---- 10. dialogs: dimmed navy backdrop, like Arqam's dialogs ---- */
+.action-modal, .package-overlay { background: rgba(8, 28, 48, .55); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+.action-modal-panel, .package-overlay-card { border-radius: 20px; box-shadow: var(--shadow-lg); }
+
+/* ---- 11. progress ---- */
+.bar-track, .ts-track { border-radius: 999px; background: color-mix(in srgb, var(--primary) 12%, var(--card)); }
+
+/* ---- Cards: no gray outline (depth comes from surface colour + soft shadow) ---- */
+:is(.screen-card, .card-inner, .quiz-card, .module-card, .subject-card, .overlay-panel, .action-modal-panel,
+  .package-card, .package-overlay-card, .university-card, .reco-card, .live-card, .pg-section, .sp-section,
+  .continue-card, .dash-continue-card, .learn-celebrate-card, .learn-complete-card, .chat-notify-card,
+  .pf-card, .skeleton-card, .res-mod, .res-book, .res-vid, .res-sheet-card, .bnm-panel):not(:hover):not(.active):not(.current),
+body.dark :is(.screen-card, .card-inner, .quiz-card, .module-card, .subject-card, .overlay-panel, .action-modal-panel,
+  .package-card, .package-overlay-card, .university-card, .reco-card, .live-card, .pg-section, .sp-section,
+  .continue-card, .dash-continue-card, .learn-celebrate-card, .learn-complete-card, .chat-notify-card,
+  .pf-card, .skeleton-card, .res-mod, .res-book, .res-vid, .res-sheet-card, .bnm-panel):not(:hover):not(.active):not(.current) {
+  border-top-color: transparent !important;
+  border-right-color: transparent !important;
+  border-bottom-color: transparent !important;
+}
+/* left edge too, except cards that use it as a coloured accent bar */
+:is(.screen-card, .card-inner, .module-card, .subject-card, .overlay-panel, .action-modal-panel,
+  .package-card, .package-overlay-card, .university-card, .reco-card, .live-card, .pg-section, .sp-section,
+  .continue-card, .learn-celebrate-card, .pf-card, .res-mod, .res-book, .res-vid, .res-sheet-card):not(:hover):not(.active):not(.current),
+body.dark :is(.screen-card, .card-inner, .module-card, .subject-card, .overlay-panel, .action-modal-panel,
+  .package-card, .package-overlay-card, .university-card, .reco-card, .live-card, .pg-section, .sp-section,
+  .continue-card, .learn-celebrate-card, .pf-card, .res-mod, .res-book, .res-vid, .res-sheet-card):not(:hover):not(.active):not(.current) {
+  border-left-color: transparent !important;
+}
+/* a touch more lift in light mode now that the outline is gone */
+body:not(.dark) :is(.quiz-card, .module-card, .subject-card, .continue-card, .package-card, .university-card, .pf-card, .res-mod, .res-book, .res-vid) {
+  box-shadow: 0 1px 2px rgba(14, 33, 88, .06), 0 8px 22px -10px rgba(14, 33, 88, .12);
+}
+/* quiz-card's left edge too (its mobile accent bar is overridden by the base border anyway) */
+.quiz-card:not(:hover), body.dark .quiz-card:not(:hover) { border-left-color: transparent !important; }
+
+/* ---- Question page: .qcard is only a wrapper; .card-inner is the visible card (no double card) ---- */
+.qcard, body.dark .qcard {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* ---- Mobile: questions form one long full-width card (no timeline gutter, no gaps) ---- */
+@media (max-width: 640px) {
+  .qcard, body.dark .qcard { margin: 0 !important; padding: 0 !important; }
+  .qcard::before, .qcard .node { display: none !important; }
+  .qcard .card-inner, body.dark .qcard .card-inner {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    width: 100%;
+    padding: 20px 16px 22px !important;
+    position: relative;
+  }
+  .qcard:not(:last-child) .card-inner::after {
+    content: ''; position: absolute; left: 16px; right: 16px; bottom: 0;
+    height: 1px; background: var(--ui-border); opacity: .7; pointer-events: none;
+  }
+  .qcard:first-of-type .card-inner { border-top-left-radius: 18px !important; border-top-right-radius: 18px !important; }
+  .qcard:last-of-type .card-inner { border-bottom-left-radius: 18px !important; border-bottom-right-radius: 18px !important; }
+}
+
+/* ---- Mobile: question feed breaks out of <main>'s side padding so the long card spans the full width ---- */
+@media (max-width: 640px) {
+  #feed { margin-left: -12px !important; margin-right: -12px !important; }  /* main has 12px side padding on phones */
+  #feed .cat-divider { padding-left: 16px !important; padding-right: 16px !important; }
+  #feed .qcard .card-inner { border-radius: 0 !important; }
+  #feed .qcard:first-of-type .card-inner,
+  #feed .cat-divider + .qcard .card-inner { border-top-left-radius: 18px !important; border-top-right-radius: 18px !important; }
+  #feed .qcard:last-of-type .card-inner,
+  #feed .qcard:has(+ .cat-divider) .card-inner { border-bottom-left-radius: 18px !important; border-bottom-right-radius: 18px !important; }
+}
+
+/* ---- Resources page header: solid, clean, on-brand ---- */
+.res-head {
+  background: var(--paper) !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  border-bottom: 1px solid var(--ui-border) !important;
+}
+.res-brand-ico {
+  background: var(--brand-grad) !important;
+  box-shadow: var(--brand-glow) !important;
+  border-radius: 14px;
+}
+.res-title {
+  font-family: 'Inter', system-ui, sans-serif !important;
+  font-weight: 800 !important;
+  font-size: 20px !important;
+  letter-spacing: -.02em !important;
+}
+.res-sub { font-weight: 500; }
+.res-icon-btn {
+  border-color: transparent !important;
+  background: var(--paper-2) !important;
+}
+body.dark .res-icon-btn { background: var(--card) !important; }
+.res-tab.active { color: var(--primary); }

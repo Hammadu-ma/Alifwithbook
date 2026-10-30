@@ -1,0 +1,130 @@
+/* =========================================================================
+   ALIF Med — Deep AMOLED dark theme (loaded last; only affects body.dark)
+   - True #000 page so OLED pixels switch off
+   - Surfaces separated by hairline borders + subtle elevation steps
+     (shadows vanish on black, so borders carry the hierarchy)
+   - Text tuned for contrast: ink >= 15:1, soft >= 9:1, faint >= 5:1 on #000
+   - Semantic colours lifted to stay readable on black
+   ========================================================================= */
+body.dark {
+  color-scheme: dark;
+
+  /* surfaces — elevation 0 → 3 */
+  /* black page; cards are one soft step lighter (no borders/gradients);
+     answer options and inputs are one step lighter again */
+  --paper: #000000;
+  --paper-2: #000000;
+  --card: #0F1115;
+  --card-raised: #14171C;
+  --card-hover: #14171C;
+  --charcoal: #1A1D23;
+  --charcoal-hover: #21252D;
+  --card-sheen: none;
+  --card-edge: 0 0 0 0 transparent;
+  --card-border: rgba(255, 255, 255, .07);
+  --ui-border: rgba(255, 255, 255, .07);
+  --input-bg: var(--charcoal);
+  --input-border: rgba(255, 255, 255, .14);
+  --topbar-bg: #000000;
+  --backdrop: rgba(0, 0, 0, .72);
+
+  /* text */
+  --ink: #F3F6FC;
+  --ink-soft: rgba(243, 246, 252, .76);
+  --ink-faint: rgba(243, 246, 252, .56);
+
+  /* depth: soft, tight, black-on-black plus a 1px top highlight */
+  --shadow: none;
+  --shadow-lg: 0 18px 44px -20px rgba(0, 0, 0, .9);
+  --ui-shadow: var(--shadow);
+  --ui-shadow-strong: var(--shadow-lg);
+
+  /* brand on black — lighter tints for text/links, solid blue for fills */
+  --brand-navy: #A9C0FF;
+  --brand-sky: #8DAEFF;
+  --primary-soft: color-mix(in srgb, var(--primary) 14%, #000);
+  --primary-line: color-mix(in srgb, var(--primary) 55%, transparent);
+  --ac-ring: rgba(var(--primary-rgb), .55);
+
+  /* semantic colours with readable contrast on black */
+  --right: #5FD39B;
+  --right-soft: #07241A;
+  --wrong: #FF7B72;
+  --wrong-soft: #2A0F0E;
+  --gold: #F6C453;
+  --lock: #D4AE5A;
+  --lock-soft: #1E1708;
+
+  --sk-base: #0F1115;
+  --sk-highlight: #1A1D23;
+}
+
+/* page + chrome */
+body.dark, body.dark html { background: var(--paper) !important; }
+body.dark .topbar, body.dark .picker-topbar, body.dark .atlas-topbar {
+  background: var(--paper) !important;
+  border-bottom: 1px solid var(--ui-border) !important;
+}
+body.dark .bottom-nav, body.dark .desktop-nav, body.dark .sidebar {
+  background: var(--paper) !important;
+  border-color: var(--ui-border) !important;
+  box-shadow: none !important;
+}
+
+/* surfaces */
+body.dark :is(.screen-card, .card-inner, .quiz-card, .module-card, .subject-card, .overlay-panel,
+  .action-modal-panel, .package-card, .package-overlay-card, .university-card, .reco-card, .live-card,
+  .pg-section, .sp-section, .continue-card, .learn-celebrate-card, .qcard) {
+  background-color: var(--card);
+  background-image: none;
+  border: 1px solid transparent;
+  box-shadow: none !important;
+}
+body.dark :is(.quiz-card, .module-card, .subject-card, .continue-card, .package-card, .university-card):not(.active):not(.current):hover {
+  background-color: var(--card-hover);
+  box-shadow: none !important;
+}
+body.dark :is(.overlay-panel, .action-modal-panel, .package-overlay-card, .search-overlay-results) {
+  background-color: var(--card-raised);
+  box-shadow: 0 -20px 60px rgba(0,0,0,.9) !important;
+}
+
+/* text + links readable */
+body.dark :is(h1, h2, h3, h4, .res-title, .pf-topbar-title) { color: var(--ink); }
+body.dark a:not([class]) { color: var(--brand-sky); }
+body.dark ::placeholder { color: var(--ink-faint); opacity: 1; }
+body.dark ::selection { background: rgba(var(--primary-rgb), .45); color: #fff; }
+
+/* inputs */
+body.dark :is(input, textarea, select):not([type=checkbox]):not([type=radio]):not([type=range]) {
+  background: var(--input-bg);
+  color: var(--ink);
+  border: 1px solid var(--input-border);
+}
+body.dark :is(input, textarea, select):focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--ac-ring);
+  outline: none;
+}
+
+/* hairlines & dividers */
+body.dark hr { border-color: var(--ui-border); }
+
+/* scrollbars */
+body.dark * { scrollbar-color: #2A2F3D transparent; }
+body.dark ::-webkit-scrollbar { width: 10px; height: 10px; background: var(--paper); }
+body.dark ::-webkit-scrollbar-thumb { background: #2A2D34; border-radius: 10px; border: 2px solid var(--paper); }
+body.dark ::-webkit-scrollbar-thumb:hover { background: #3A3D45; }
+
+/* keep media from glowing on black */
+body.dark img:not(.keep-bright) { filter: brightness(.92) contrast(1.02); }
+body.dark .home-hero-card img, body.dark .logo, body.dark [class*="avatar"] img { filter: none; }
+
+/* charcoal only where it earns its place: answer options + inputs */
+body.dark .opt { background: var(--charcoal) !important; }
+body.dark .opt:not(:disabled):hover { background: var(--charcoal-hover) !important; }
+body.dark .opt.reveal-correct { background: var(--right-soft) !important; }
+body.dark .opt.reveal-wrong { background: var(--wrong-soft) !important; }
+
+/* question cards: flat, no gradient */
+body.dark .qcard, body.dark .qcard .card-inner { background-image: none !important; }

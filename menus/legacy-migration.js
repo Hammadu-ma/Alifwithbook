@@ -329,18 +329,18 @@ function ensureStyles() {
     /* ===== Clean glass — same language as the payment sheet ===== */
     .lm-overlay{--acc-hi:color-mix(in srgb,var(--artery) 55%,#fff);--g-line:rgba(255,255,255,.55);--g-line-soft:rgba(255,255,255,.22);
       position:fixed;inset:0;z-index:9000;display:flex;align-items:flex-end;justify-content:center;
-      background:radial-gradient(520px 360px at 12% 6%,color-mix(in srgb,var(--artery) 15%,transparent),transparent 70%),radial-gradient(560px 420px at 92% 96%,color-mix(in srgb,var(--artery) 13%,transparent),transparent 70%),rgba(255,255,255,.10);
+      background: rgba(255,255,255,.10);
       -webkit-backdrop-filter:blur(22px) saturate(140%);backdrop-filter:blur(22px) saturate(140%);animation:lmFade .3s ease both}
     body.dark .lm-overlay{--acc-hi:color-mix(in srgb,var(--artery) 70%,#fff);--g-line:rgba(255,255,255,.18);--g-line-soft:rgba(255,255,255,.06);
-      background:radial-gradient(520px 360px at 12% 6%,color-mix(in srgb,var(--artery) 10%,transparent),transparent 70%),radial-gradient(560px 420px at 92% 96%,color-mix(in srgb,var(--artery) 12%,transparent),transparent 70%),rgba(0,0,0,.34)}
+      background: rgba(0,0,0,.34)}
     .lm-overlay,.lm-overlay *{box-sizing:border-box}
     .lm-panel{position:relative;width:100%;max-width:456px;max-height:94vh;overflow:auto;color:var(--ink);padding:26px 22px calc(24px + env(safe-area-inset-bottom,0px));
-      background:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.08) 100%);
+      background: rgba(255,255,255,.26);
       -webkit-backdrop-filter:blur(40px) saturate(160%);backdrop-filter:blur(40px) saturate(160%);
       border:1px solid var(--g-line);border-bottom:none;border-radius:30px 30px 0 0;
       box-shadow:0 30px 80px -30px rgba(0,0,0,.30),0 0 60px -30px color-mix(in srgb,var(--artery) 40%,transparent),inset 0 1.5px 0 color-mix(in srgb,var(--acc-hi) 75%,transparent),inset 0 -1px 0 rgba(255,255,255,.14);
       animation:lmRise .55s cubic-bezier(.2,1.1,.3,1) both;scrollbar-width:thin;scrollbar-color:rgba(128,128,128,.35) transparent}
-    body.dark .lm-panel{background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,.02) 100%);
+    body.dark .lm-panel{background: rgba(255,255,255,.08);
       box-shadow:0 30px 80px -30px rgba(0,0,0,.65),0 0 60px -30px color-mix(in srgb,var(--artery) 28%,transparent),inset 0 1.5px 0 color-mix(in srgb,var(--acc-hi) 40%,transparent),inset 0 -1px 0 rgba(255,255,255,.04)}
     @media(min-width:640px){.lm-overlay{align-items:center;padding:18px}.lm-panel{border-radius:30px;border-bottom:1px solid var(--g-line-soft);padding:30px 28px 28px}}
 
@@ -352,14 +352,14 @@ function ensureStyles() {
     .lm-icon{width:48px;height:48px;flex:none;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:19px;color:var(--artery);border-color:color-mix(in srgb,var(--artery) 55%,transparent)}
     .lm-kicker{font:700 10px/1.2 'JetBrains Mono',monospace;letter-spacing:.14em;color:var(--artery)}
     .lm-title{font:700 26px/1.1 'Fraunces',Georgia,serif;letter-spacing:-.01em;color:var(--ink);margin:6px 0 0}
-    .lm-title::after{content:'';display:block;width:36px;height:2px;margin-top:9px;border-radius:2px;background:linear-gradient(90deg,color-mix(in srgb,var(--artery) 90%,transparent),color-mix(in srgb,var(--acc-hi) 10%,transparent))}
+    .lm-title::after{content:'';display:block;width:36px;height:2px;margin-top:9px;border-radius:2px;background:var(--artery)}
     .lm-sub{font-size:13px;line-height:1.55;color:var(--ink-soft);margin:10px 0 0}
     .lm-close{margin-left:auto;flex:none;width:34px;height:34px;border-radius:50%;color:var(--ink-soft);cursor:pointer;display:flex;align-items:center;justify-content:center}
     .lm-welcome{display:flex;gap:12px;align-items:center;margin-top:20px;padding:12px 14px;border-radius:18px}
-    .lm-avatar{width:40px;height:40px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;background:linear-gradient(135deg,var(--acc-hi),var(--artery));box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 6px 14px -8px color-mix(in srgb,var(--artery) 60%,transparent)}
+    .lm-avatar{width:40px;height:40px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;background: var(--acc-hi);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 6px 14px -8px color-mix(in srgb,var(--artery) 60%,transparent)}
     .lm-welcome b{font-size:13.5px;color:var(--ink)}.lm-welcome span{display:block;font-size:11px;color:var(--ink-faint);margin-top:2px}
-    .lm-access{margin-top:12px;border-radius:18px;padding:14px;background:radial-gradient(90% 150% at 0% 0%,color-mix(in srgb,var(--artery) 12%,transparent),transparent 62%),rgba(255,255,255,.14);border-top-color:color-mix(in srgb,var(--acc-hi) 70%,transparent)}
-    body.dark .lm-access{background:radial-gradient(90% 150% at 0% 0%,color-mix(in srgb,var(--artery) 10%,transparent),transparent 62%),rgba(255,255,255,.045);border-top-color:color-mix(in srgb,var(--acc-hi) 30%,transparent)}
+    .lm-access{margin-top:12px;border-radius:18px;padding:14px;background: rgba(255,255,255,.14);border-top-color:color-mix(in srgb,var(--acc-hi) 70%,transparent)}
+    body.dark .lm-access{background: rgba(255,255,255,.045);border-top-color:color-mix(in srgb,var(--acc-hi) 30%,transparent)}
     .lm-access-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.lm-access-head strong{font-size:12px;color:var(--ink)}
     .lm-count{font:700 10px 'JetBrains Mono',monospace;letter-spacing:.04em;color:var(--artery);background:color-mix(in srgb,var(--artery) 12%,transparent);padding:4px 9px;border-radius:999px;white-space:nowrap}
     .lm-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
@@ -380,11 +380,11 @@ function ensureStyles() {
     .lm-primary{position:relative;overflow:hidden;height:50px;border-radius:16px;cursor:pointer;font:800 14px inherit;color:var(--ink);background:rgba(255,255,255,.34);border:1px solid color-mix(in srgb,var(--artery) 80%,transparent);
       box-shadow:inset 0 1.5px 0 rgba(255,255,255,.85),0 14px 30px -16px color-mix(in srgb,var(--artery) 34%,transparent),0 8px 18px -14px rgba(0,0,0,.30);transition:transform .15s ease,opacity .2s}
     body.dark .lm-primary{background:rgba(255,255,255,.08);border-color:color-mix(in srgb,var(--artery) 55%,transparent);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 14px 30px -16px color-mix(in srgb,var(--artery) 24%,transparent)}
-    .lm-primary::after{content:'';position:absolute;inset:0;transform:translateX(-120%);background:linear-gradient(100deg,transparent,color-mix(in srgb,var(--acc-hi) 45%,transparent),transparent);animation:lmSweep 3.6s ease-in-out infinite;pointer-events:none}
+    .lm-primary::after{content:'';position:absolute;inset:0;transform:translateX(-120%);background:none;pointer-events:none}
     .lm-primary:active{transform:scale(.985)}.lm-primary:disabled{opacity:.75;cursor:default}.lm-primary:disabled::after{animation:none;opacity:0}
     .lm-secondary{height:42px;border-radius:14px;cursor:pointer;font:700 12.5px inherit;color:var(--ink-soft)}
     .lm-note{font-size:10.5px;line-height:1.55;color:var(--ink-faint);margin-top:14px;text-align:center}
-    .lm-success{display:flex;align-items:flex-start;gap:12px;padding:15px;border-radius:18px;font-size:12.5px;line-height:1.55;color:var(--ink);background:radial-gradient(90% 150% at 0% 0%,color-mix(in srgb,var(--artery) 14%,transparent),transparent 62%),rgba(255,255,255,.14);border:1px solid color-mix(in srgb,var(--artery) 45%,transparent);margin-top:16px}
+    .lm-success{display:flex;align-items:flex-start;gap:12px;padding:15px;border-radius:18px;font-size:12.5px;line-height:1.55;color:var(--ink);background: rgba(255,255,255,.14);border:1px solid color-mix(in srgb,var(--artery) 45%,transparent);margin-top:16px}
     .lm-success i{margin-top:2px;font-size:18px;color:var(--artery);filter:drop-shadow(0 4px 10px color-mix(in srgb,var(--artery) 35%,transparent))}
     .lm-spin{display:inline-block;width:14px;height:14px;border:2px solid color-mix(in srgb,var(--ink) 22%,transparent);border-top-color:var(--ink);border-radius:50%;animation:lmSpin .7s linear infinite;vertical-align:-2px;margin-right:8px}
     @keyframes lmSpin{to{transform:rotate(360deg)}}

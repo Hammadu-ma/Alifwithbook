@@ -5,13 +5,13 @@
   --ui-max:1120px;
   --ui-gutter:clamp(16px,3vw,28px);
   --ui-border:color-mix(in srgb,var(--ink) 9%,transparent);
-  --ui-shadow:0 6px 24px rgba(11,32,27,.06);
-  --ui-shadow-strong:0 16px 40px rgba(11,32,27,.10);
+  --ui-shadow:0 6px 24px rgba(11, 21, 48,.06);
+  --ui-shadow-strong:0 16px 40px rgba(11, 21, 48,.10);
   --ui-fast:150ms cubic-bezier(.2,.8,.2,1);
   --ui-smooth:220ms cubic-bezier(.16,1,.3,1);
 }
 body.dark{
-  --ui-border:rgba(237,242,239,.10);
+  --ui-border:rgba(140,165,255,.12);
   --ui-shadow:0 8px 28px rgba(0,0,0,.22);
   --ui-shadow-strong:0 18px 44px rgba(0,0,0,.34);
 }
@@ -133,3 +133,273 @@ body{background:var(--paper);}
     backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);
     border-color:color-mix(in srgb,var(--ink) 10%,transparent)!important;}
 }
+
+/* =====================================================================
+   ALIF — elite accent system
+   Canvas stays pure: #FFFFFF in light, #000000 (AMOLED) in dark. The brand
+   blue is never a background wash — it appears only on things you touch or
+   that mean something: primary actions, the active item, focus, progress,
+   and a signature ECG line taken from the logo.
+   ===================================================================== */
+/* primary actions: gradient, crisp edge, top highlight, coloured glow */
+.home-hero-cta, .pill-btn.primary, .primary-btn, .submit-btn, .pkd-cta-btn, .tour-next-btn,
+.bf-btn.primary, .chat-send-btn, .action-modal-actions button.primary, .student-chip .guest-signup-btn,
+.profile-btn.signup-btn, .learn-celebrate-card .lc-btn {
+  background-image: var(--brand-grad);
+  background-color: var(--primary);
+  color: var(--on-primary);
+  border: 0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.30), inset 0 -1px 0 rgba(0,0,0,.14), 0 0 0 1px rgba(5, 70, 118, .55), var(--brand-glow);
+  text-shadow: 0 1px 0 rgba(0,0,0,.12);
+}
+body.dark .home-hero-cta, body.dark .pill-btn.primary, body.dark .primary-btn, body.dark .submit-btn,
+body.dark .pkd-cta-btn, body.dark .tour-next-btn, body.dark .bf-btn.primary, body.dark .chat-send-btn,
+body.dark .action-modal-actions button.primary {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.28), inset 0 -1px 0 rgba(0,0,0,.25), 0 0 0 1px rgba(91, 140, 255, .35), var(--brand-glow);
+}
+.home-hero-cta:hover, .pill-btn.primary:hover, .primary-btn:hover, .submit-btn:hover, .pkd-cta-btn:hover,
+.bf-btn.primary:hover, .action-modal-actions button.primary:hover, .student-chip .guest-signup-btn:hover { filter: brightness(1.08) saturate(1.08); }
+
+/* focus: one clear, accessible ring everywhere */
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline: none; }
+
+/* active nav: sharp indicator bar + brand icon, no tinted chip */
+.bn-item { position: relative; }
+.bn-item.active { color: var(--primary) !important; background: transparent !important; }
+.bn-item.active i { filter: drop-shadow(0 2px 6px rgba(var(--primary-rgb), .45)); }
+.bn-item.active::before {
+  content: ''; position: absolute; top: -7px; left: 50%; width: 22px; height: 3px; margin-left: -11px; border-radius: 0 0 4px 4px;
+  background: var(--brand-grad); box-shadow: 0 2px 10px rgba(var(--primary-rgb), .7);
+}
+.dn-item.active { color: var(--primary); background: var(--primary-soft); box-shadow: inset 0 0 0 1px var(--primary-line); }
+
+/* selected cards: neutral surface, crisp brand outline + glow (no colour slab) */
+.module-card.active, .subject-card.active, .university-card.current {
+  background: var(--card) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 1px var(--primary), var(--brand-glow) !important;
+}
+.module-card.active .module-icon, .subject-card.active .subject-icon { background: var(--primary-soft) !important; color: var(--primary) !important; }
+.module-card.active .module-name, .subject-card.active .subject-name, .university-card.current .module-name { color: var(--ink) !important; }
+.module-card.active .module-count, .subject-card.active .subject-count, .university-card.current .module-count { color: var(--ink-soft) !important; opacity: 1 !important; }
+.university-card.current .uni-active-badge { color: var(--primary); opacity: 1; }
+
+/* pills: selected = brand gradient, unselected stay neutral */
+.pill.active { background-image: var(--brand-grad); border-color: transparent; color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.28), var(--brand-glow); }
+
+/* tinted icon wells: hairline-defined instead of filled */
+.hero-icon-badge, .quick-action-btn .qa-icon, .continue-card .cc-icon, .package-card .pk-icon,
+.reco-card .rc-icon, .quiz-card .qc-icon, .package-overlay-icon, .pkg-filter-icon {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent, var(--artery)) 28%, transparent);
+}
+
+/* home hero: clean card + the logo's ECG line as a signature */
+.home-hero-inner .eyebrow { color: var(--primary); }
+body.dark .home-hero-inner .eyebrow { color: var(--brand-sky); }
+body.dark .hero-icon-badge { background: var(--primary-soft); color: var(--brand-sky); box-shadow: inset 0 0 0 1px var(--primary-line); }
+.home-hero-visual { display: none; }
+.home-hero-inner::after {
+  content: ''; position: absolute; z-index: 0; top: 22px; right: 22px; width: 132px; height: 38px; pointer-events: none;
+  background: no-repeat center / contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 132 38' fill='none'%3E%3Cpath d='M0 22h30l6-14 8 26 8-34 8 22h14l5-8 5 8h48' stroke='%232DB6F5' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  filter: drop-shadow(0 0 6px rgba(91, 140, 255, .55)); opacity: .95;
+}
+@media (max-width: 640px) { .home-hero-inner::after { width: 92px; height: 28px; top: 20px; right: 18px; } }
+
+/* inputs & selection */
+.text-input:focus, .picker-search input:focus, .search-box input:focus {
+  border-color: var(--primary); box-shadow: 0 0 0 3px rgba(var(--primary-rgb), .18);
+}
+::selection { background: rgba(var(--primary-rgb), .28); }
+
+/* =====================================================================
+   ALIF — sharp & shiny finish
+   Glass highlight on the top half, a specular edge, and a light sweep on
+   hover. Effects live on the accent elements only; canvas stays pure.
+   ===================================================================== */
+:root {
+  --gloss: linear-gradient(180deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 60%);
+  --sheen: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.22) 50%, transparent 60%);
+  --spec: inset 0 1px 0 rgba(255,255,255,.16);
+}
+.home-hero-cta, .pill-btn.primary, .primary-btn, .submit-btn, .pkd-cta-btn, .tour-next-btn,
+.bf-btn.primary, .chat-send-btn, .action-modal-actions button.primary, .student-chip .guest-signup-btn,
+.profile-btn.signup-btn, .learn-celebrate-card .lc-btn,
+body.dark .home-hero-cta,
+body.dark .pill-btn.primary,
+body.dark .primary-btn,
+body.dark .submit-btn,
+body.dark .pkd-cta-btn,
+body.dark .tour-next-btn,
+body.dark .bf-btn.primary,
+body.dark .chat-send-btn,
+body.dark .action-modal-actions button.primary,
+body.dark .student-chip .guest-signup-btn,
+body.dark .profile-btn.signup-btn,
+body.dark .learn-celebrate-card .lc-btn {
+  background-image: var(--sheen), var(--gloss), var(--brand-grad) !important;
+  background-size: 260% 100%, 100% 100%, 100% 100% !important;
+  background-position: 100% 0, 0 0, 0 0 !important;
+  background-repeat: no-repeat !important;
+  background-color: var(--primary) !important;
+  box-shadow: var(--spec), 0 0 0 1px rgba(4, 62, 108, .60), var(--brand-glow) !important;
+  transition: background-position .9s var(--ease), transform .2s var(--ease), box-shadow .2s, filter .2s !important;
+}
+body.dark :is(.home-hero-cta, .pill-btn.primary, .primary-btn, .submit-btn, .pkd-cta-btn, .tour-next-btn, .bf-btn.primary, .chat-send-btn, .action-modal-actions button.primary, .student-chip .guest-signup-btn, .profile-btn.signup-btn, .learn-celebrate-card .lc-btn) {
+  box-shadow: var(--spec), 0 0 0 1px rgba(80, 200, 255, .45), var(--brand-glow) !important;
+}
+.home-hero-cta:hover, .pill-btn.primary:hover, .primary-btn:hover, .submit-btn:hover, .pkd-cta-btn:hover, .tour-next-btn:hover,
+.bf-btn.primary:hover, .chat-send-btn:hover, .action-modal-actions button.primary:hover, .student-chip .guest-signup-btn:hover,
+.profile-btn.signup-btn:hover, .learn-celebrate-card .lc-btn:hover,
+body.dark .home-hero-cta:hover,
+body.dark .pill-btn.primary:hover,
+body.dark .primary-btn:hover,
+body.dark .submit-btn:hover,
+body.dark .pkd-cta-btn:hover,
+body.dark .tour-next-btn:hover,
+body.dark .bf-btn.primary:hover,
+body.dark .chat-send-btn:hover,
+body.dark .action-modal-actions button.primary:hover,
+body.dark .student-chip .guest-signup-btn:hover,
+body.dark .profile-btn.signup-btn:hover,
+body.dark .learn-celebrate-card .lc-btn:hover {
+  background-position: 0% 0, 0 0, 0 0 !important;
+  filter: brightness(1.07) saturate(1.1);
+}
+@keyframes alif-shine { 0%, 62% { background-position: 100% 0, 0 0, 0 0; } 100% { background-position: 0% 0, 0 0, 0 0; } }
+.home-hero-cta, body.dark .home-hero-cta { animation: alif-shine 5.5s ease-in-out 1.2s infinite; }
+.home-hero-cta:hover, body.dark .home-hero-cta:hover { animation: none; }
+
+/* glossy brand chips (avatar, logo medal, selected toggles) */
+.atlas-topbar--modules .brand-icon-medal, .student-chip .avatar, .profile-btn:not(.signup-btn),
+.logo-fallback, .toggle-section-btn.open, .university-card .uni-badge-fallback {
+  background-image: var(--gloss), var(--brand-grad) !important;
+  background-color: var(--primary) !important;
+  box-shadow: var(--spec), 0 6px 16px -6px rgba(var(--primary-rgb), .7);
+}
+.pill.active {
+  background-image: var(--gloss), var(--brand-grad) !important;
+  box-shadow: var(--spec), 0 0 0 1px rgba(4, 62, 108, .5), var(--brand-glow) !important;
+}
+
+/* selected cards: inner glow + glass edge */
+.module-card.active, .subject-card.active, .university-card.current {
+  box-shadow: 0 0 0 1px var(--primary), inset 0 0 26px rgba(var(--primary-rgb), .10), var(--brand-glow) !important;
+}
+body.dark .module-card.active, body.dark .subject-card.active, body.dark .university-card.current {
+  box-shadow: 0 0 0 1px var(--primary), inset 0 1px 0 rgba(120, 214, 255, .40), inset 0 0 28px rgba(var(--primary-rgb), .16), var(--brand-glow) !important;
+}
+
+/* hero card: crisp edge light */
+.home-hero-inner { box-shadow: 0 0 0 1px rgba(10, 10, 12, .05), var(--ui-shadow) !important; }
+body.dark .home-hero-inner { box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 0 0 1px rgba(255,255,255,.04), var(--ui-shadow) !important; }
+body.dark .module-card, body.dark .subject-card, body.dark .quiz-card { box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
+
+/* progress: lit bars */
+.continue-card .cc-bar-fill {
+  background-image: linear-gradient(180deg, rgba(255,255,255,.45), rgba(255,255,255,0) 62%) !important;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent, var(--artery)) 65%, transparent);
+}
+
+/* quieter motion for people who ask for it */
+@media (prefers-reduced-motion: reduce) {
+  .home-hero-cta, body.dark .home-hero-cta { animation: none !important; }
+  .home-hero-cta, .pill-btn.primary, .primary-btn, .submit-btn, .pkd-cta-btn, .tour-next-btn,
+.bf-btn.primary, .chat-send-btn, .action-modal-actions button.primary, .student-chip .guest-signup-btn,
+.profile-btn.signup-btn, .learn-celebrate-card .lc-btn, body.dark .home-hero-cta,
+body.dark .pill-btn.primary,
+body.dark .primary-btn,
+body.dark .submit-btn,
+body.dark .pkd-cta-btn,
+body.dark .tour-next-btn,
+body.dark .bf-btn.primary,
+body.dark .chat-send-btn,
+body.dark .action-modal-actions button.primary,
+body.dark .student-chip .guest-signup-btn,
+body.dark .profile-btn.signup-btn,
+body.dark .learn-celebrate-card .lc-btn { transition: transform .2s var(--ease), box-shadow .2s !important; }
+}
+
+/* =====================================================================
+   Home welcome card — electric blue → midnight navy gradient (both themes)
+   ===================================================================== */
+.home-hero-card .home-hero-inner,
+body.dark .home-hero-card .home-hero-inner {
+  background: var(--hero-grad) !important;
+  border: 1px solid rgba(140, 175, 255, .28) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 24px 48px -22px rgba(42, 98, 255, .60), 0 2px 8px rgba(6, 11, 30, .30) !important;
+}
+.home-hero-card .home-hero-inner h1 { color: #FFFFFF !important; }
+.home-hero-card .home-hero-inner p.sub { color: rgba(255, 255, 255, .80) !important; }
+.home-hero-card .home-hero-inner .eyebrow { color: #C3D5FF !important; }
+.home-hero-card .home-hero-visual { color: #FFFFFF !important; opacity: .08 !important; }
+.home-hero-card .hero-icon-badge {
+  background: rgba(255, 255, 255, .14) !important;
+  color: #FFFFFF !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .28) !important;
+}
+/* primary: solid white pill so it pops on the blue */
+.home-hero-card .home-hero-cta,
+body.dark .home-hero-card .home-hero-cta {
+  background: #FFFFFF !important;
+  background-image: none !important;
+  color: var(--primary-press) !important;
+  text-shadow: none !important;
+  box-shadow: 0 12px 24px -12px rgba(2, 8, 40, .65) !important;
+}
+.home-hero-card .home-hero-cta:hover,
+body.dark .home-hero-card .home-hero-cta:hover { background: #EAF0FF !important; filter: none !important; }
+/* secondary: frosted outline */
+.home-hero-card .home-hero-cta-ghost,
+body.dark .home-hero-card .home-hero-cta-ghost {
+  background: rgba(255, 255, 255, .12) !important;
+  border: 1px solid rgba(255, 255, 255, .34) !important;
+  color: #FFFFFF !important;
+}
+.home-hero-card .home-hero-cta-ghost:hover,
+body.dark .home-hero-card .home-hero-cta-ghost:hover { background: rgba(255, 255, 255, .20) !important; }
+
+/* AMOLED: the welcome card fades into true black so it melts into the page */
+body.dark .home-hero-card .home-hero-inner {
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgba(90, 140, 255, .50) 0%, rgba(90, 140, 255, 0) 58%),
+    linear-gradient(145deg, #2A62FF 0%, #1B3FD6 28%, #0A1650 62%, #000000 100%) !important;
+  border: 1px solid rgba(140, 175, 255, .20) !important;
+  box-shadow: 0 24px 54px -24px rgba(42, 98, 255, .55), 0 0 0 1px rgba(0, 0, 0, .6) !important;
+}
+
+/* =====================================================================
+   Selected module / subject / university cards — gradient highlight
+   (electric blue → midnight), no outline ring, soft glow only
+   ===================================================================== */
+.module-card.active, .subject-card.active, .university-card.current {
+  background:
+    radial-gradient(130% 100% at 100% 0%, rgba(110, 160, 255, .50) 0%, rgba(110, 160, 255, 0) 60%),
+    linear-gradient(150deg, #2A62FF 0%, #1B3FD6 30%, #0E1F6B 68%, #060B1E 100%) !important;
+  background-origin: border-box !important;
+  border-color: transparent !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 18px 34px -18px rgba(42, 98, 255, .70) !important;
+}
+body.dark .module-card.active, body.dark .subject-card.active, body.dark .university-card.current {
+  background:
+    radial-gradient(130% 100% at 100% 0%, rgba(90, 140, 255, .46) 0%, rgba(90, 140, 255, 0) 60%),
+    linear-gradient(150deg, #2A62FF 0%, #1B3FD6 26%, #0A1650 64%, #000000 100%) !important;
+  background-origin: border-box !important;
+  box-shadow: 0 18px 38px -20px rgba(42, 98, 255, .62) !important;
+}
+/* drop the colour bar / spine / folded corner on the selected card */
+.module-card.active::before, .subject-card.active::before { opacity: 0 !important; }
+.subject-card.active::after { opacity: 0 !important; }
+/* frosted icon well, white text */
+.module-card.active .module-icon, .subject-card.active .subject-icon {
+  background: rgba(255, 255, 255, .16) !important;
+  color: #FFFFFF !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .24) !important;
+}
+.module-card.active .module-icon i, .subject-card.active .subject-icon i { color: #FFFFFF !important; }
+.module-card.active .module-name, .subject-card.active .subject-name, .university-card.current .module-name { color: #FFFFFF !important; }
+.module-card.active .module-count, .subject-card.active .subject-count, .university-card.current .module-count { color: rgba(255, 255, 255, .72) !important; opacity: 1 !important; }
+.university-card.current .uni-active-badge { color: #FFFFFF !important; opacity: .9 !important; }
+.module-card.active .ring-wrap .ring-inner, .subject-card.active .ring-wrap .ring-inner { background: rgba(6, 11, 40, .55) !important; color: #FFFFFF !important; }

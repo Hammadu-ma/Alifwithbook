@@ -17,9 +17,11 @@
 
    Firestore / Auth / push-API traffic is never touched by this worker.
    ========================================================================= */
-const BUILD = '3fa4749fe477';
+const BUILD = '871e9b5d9e3d';
 /*SHELL_START*/
 const SHELL = [
+  "/assets/amoled-dark.css",
+  "/assets/arqam-style.css",
   "/assets/ui-fonts.css",
   "/index.html",
   "/manifest.webmanifest",
@@ -76,20 +78,10 @@ const SHELL = [
   "/push-config.js"
 ];
 const SOFT = [
-  "/assets/fonts/fa-brands-subset.woff2",
-  "/assets/fonts/fa-regular-400.woff2",
-  "/assets/fonts/fa-solid-subset.woff2",
-  "/assets/fonts/fraunces-400.woff2",
-  "/assets/fonts/fraunces-500.woff2",
-  "/assets/fonts/fraunces-600.woff2",
-  "/assets/fonts/fraunces-700.woff2",
+  "/assets/fonts/inter-latin-wght-normal.woff2",
   "/assets/fonts/jetbrains-mono-400.woff2",
   "/assets/fonts/jetbrains-mono-500.woff2",
   "/assets/fonts/jetbrains-mono-600.woff2",
-  "/assets/fonts/source-sans-3-400.woff2",
-  "/assets/fonts/source-sans-3-500.woff2",
-  "/assets/fonts/source-sans-3-600.woff2",
-  "/assets/fonts/source-sans-3-700.woff2",
   "/icon.ico",
   "/logo-360.webp",
   "/logo.png",
@@ -119,7 +111,7 @@ const SHELL_ENTRY = '/index.html';
 const OFFLINE_HTML = '<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">' +
   '<title>Alif Med — offline</title><body style="font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;background:#F4F7F5;color:#0f2a22;text-align:center;padding:24px">' +
   '<div><h2 style="margin:0 0 8px">You\'re offline</h2><p style="margin:0 0 18px;opacity:.75">Connect once so Alif Med can save itself to this device, then it will open without internet.</p>' +
-  '<button onclick="location.reload()" style="padding:12px 22px;border:0;border-radius:12px;background:#1E3A8A;color:#fff;font-weight:700;font-size:15px">Try again</button></div></body>';
+  '<button onclick="location.reload()" style="padding:12px 22px;border:0;border-radius:12px;background:#1E4FD8;color:#fff;font-weight:700;font-size:15px">Try again</button></div></body>';
 
 /* ------------------------------------------------------------------ install */
 self.addEventListener('install', event => {

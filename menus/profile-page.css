@@ -70,7 +70,7 @@
   color: #fff;
   border-radius: var(--radius-lg);
   padding: 34px 20px 28px;
-  background: linear-gradient(135deg, var(--artery) 0%, color-mix(in srgb, var(--artery) 52%, #06120f) 100%);
+  background: var(--brand-grad, var(--artery));
   box-shadow: var(--shadow-lg);
 }
 .pf-hero::before, .pf-hero::after {
