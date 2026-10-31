@@ -825,3 +825,23 @@ body.rq-embedded .jump-fab { z-index: 440; }
 /* no staggered card entrance while swiping between tabs (the slide is the animation) */
 .res-swiping .res-mod, .res-swiping .res-book, .res-swiping .res-vid, .res-swiping .res-sk { animation: none !important; opacity: 1 !important; }
 .res-screen { overflow-x: hidden; }
+
+/* ---- video loading ring: spins + shows progress from open until the video plays ---- */
+.res-pl-stage .pl-spin { display: none; flex-direction: column; gap: 10px; background: radial-gradient(60% 60% at 50% 50%, rgba(0, 0, 0, .35), rgba(0, 0, 0, 0) 100%); }
+.res-pl-stage.is-starting .pl-spin, .res-pl-stage.is-buffering .pl-spin { display: flex; animation: plIn .25s ease-out both; }
+.res-pl-stage.is-starting .pl-mid, .res-pl-stage.is-buffering .pl-mid { opacity: 0; pointer-events: none; transition: opacity .2s; }
+.pl-ring { position: relative; width: 76px; height: 76px; display: grid; place-items: center; filter: drop-shadow(0 6px 18px rgba(0, 112, 243, .45)); }
+.pl-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.pl-ring circle { fill: none; stroke-linecap: round; stroke-width: 4.5; }
+.pl-trk { stroke: rgba(255, 255, 255, .22); }
+.pl-prog { stroke: #fff; stroke-opacity: .9; stroke-dasharray: 100; stroke-dashoffset: calc(100 - var(--p, 0)); transition: stroke-dashoffset .15s linear; }
+.pl-rot { transform-origin: 40px 40px; animation: plSpin 1s linear infinite; }
+.pl-arc { stroke: url(#plg); stroke-dasharray: 22 78; }
+.pl-glyph { width: 30px; height: 30px; color: #fff; display: grid; place-items: center; animation: plPulse 1.3s ease-in-out infinite; }
+.pl-glyph svg { position: static; width: 100%; height: 100%; transform: none; }
+.pl-lbl { display: flex; align-items: baseline; gap: 8px; font: 700 12px 'Inter', system-ui, sans-serif; letter-spacing: .02em; color: rgba(255, 255, 255, .9); text-shadow: 0 1px 8px rgba(0, 0, 0, .6); }
+.pl-lbl b { font: 800 13px 'JetBrains Mono', monospace; color: #fff; min-width: 3ch; text-align: right; }
+@keyframes plSpin { to { transform: rotate(360deg); } }
+@keyframes plPulse { 0%, 100% { transform: scale(.92); opacity: .85; } 50% { transform: scale(1.08); opacity: 1; } }
+@keyframes plIn { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .pl-rot, .pl-glyph { animation-duration: 3s; } }

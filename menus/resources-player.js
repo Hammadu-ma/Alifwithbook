@@ -67,6 +67,42 @@ const loadOnce = (() => {
   }));
 })();
 
+
+/* ---- loading ring: spins and shows progress from open until the video really plays ---- */
+function startRing(stage) {
+  stage.classList.add('is-starting');
+  stage._ring = { t0: Date.now(), p: 0, id: setInterval(() => ringTick(stage), 90) };
+  stage._ring.kill = setTimeout(() => endRing(stage, true), 9000);   // autoplay blocked: hand control back to the user
+  ringTick(stage);
+}
+function ringTick(stage) {
+  const el = stage.querySelector('.pl-spin'); if (!el) return;
+  if (!stage.isConnected) { endRing(stage, true); return; }
+  const r = stage._ring || (stage._ring = { t0: Date.now(), p: 0 });
+  if (!r.t0 || stage.classList.contains('is-buffering') && !stage.classList.contains('is-starting')) r.t0 = r.t0 || Date.now();
+  const secs = (Date.now() - r.t0) / 1000;
+  const fake = 0.92 * (1 - Math.exp(-secs / 2.4));            // eases toward ~92% while we wait
+  r.p = Math.max(r.p, Math.min(.99, fake));                    // never goes backwards
+  const pct = r.done ? 100 : Math.round(r.p * 100);
+  el.style.setProperty('--p', String(pct));
+  const b = el.querySelector('[data-pct]'); if (b) b.textContent = pct + '%';
+  const l = el.querySelector('[data-lbl]'); if (l) l.textContent = stage.classList.contains('is-starting') ? 'Loading video' : 'Buffering';
+}
+function syncRing(stage, buffering) {                          // mid-play / first-play buffering uses the same ring
+  if (stage.classList.contains('is-starting')) return;
+  if (buffering) {
+    if (!stage._ring) stage._ring = { t0: Date.now(), p: 0, id: setInterval(() => ringTick(stage), 90) };
+    ringTick(stage);
+  } else if (stage._ring) endRing(stage, true);
+}
+function endRing(stage, quiet) {
+  const r = stage._ring; if (!r) { stage.classList.remove('is-starting'); return; }
+  clearInterval(r.id); clearTimeout(r.kill);
+  if (quiet) { stage.classList.remove('is-starting'); stage._ring = null; return; }
+  r.done = true; ringTick(stage);                              // snap to 100% then fade
+  setTimeout(() => { stage.classList.remove('is-starting'); stage._ring = null; }, 260);
+}
+
 function htmlEngine(stage, src, poster) {
   const el = document.createElement('video');
   el.playsInline = true; el.preload = 'metadata'; el.src = src;
@@ -254,6 +290,7 @@ export function mountPlayer(host, first, ctx) {
     const poster = videoThumb(v);
     stage.style.setProperty('--poster', poster ? `url("${poster.replace(/"/g, '%22')}")` : 'none');
     stage.classList.add('loading');
+    if (info.kind !== 'file') startRing(stage);      // autoplay engines: ring + progress until the first frame plays
     try {
       engine = info.kind === 'file' ? htmlEngine(stage, info.src, poster)
         : info.kind === 'youtube' ? await youtubeEngine(stage, info.id)
@@ -273,7 +310,14 @@ export function mountPlayer(host, first, ctx) {
 
   const controlsHtml = () => `
     <div class="res-pl-shield" data-shield></div>
-    <div class="pl-spin hidden"><i class="fa-solid fa-spinner fa-spin"></i></div>
+    <div class="pl-spin" aria-live="polite" aria-label="Loading video">
+      <div class="pl-ring"><svg viewBox="0 0 80 80" aria-hidden="true">
+        <defs><linearGradient id="plg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0070f3"/><stop offset="1" stop-color="#00dfd8"/></linearGradient></defs>
+        <circle class="pl-trk" cx="40" cy="40" r="34"/>
+        <circle class="pl-prog" cx="40" cy="40" r="34" pathLength="100"/>
+        <g class="pl-rot"><circle class="pl-arc" cx="40" cy="40" r="34" pathLength="100"/></g></svg>
+        <span class="pl-glyph">${I.play}</span></div>
+      <div class="pl-lbl"><b data-pct>0%</b><span data-lbl>Loading video</span></div></div>
     <div class="pl-ripple l hidden">−10s</div><div class="pl-ripple r hidden">+10s</div>
     <div class="res-pl-ui" data-ui>
       <div class="pl-mid">
@@ -309,7 +353,8 @@ export function mountPlayer(host, first, ctx) {
       stage.querySelector('[data-a=mute]').innerHTML = ui.muted ? I.mute : I.vol;
       stage.querySelector('[data-a=fs]').innerHTML = isFs() ? I.fsx : I.fs;
       stage.classList.toggle('is-playing', pl);
-      spin.classList.toggle('hidden', ui.state !== 'buffering');
+      stage.classList.toggle('is-buffering', ui.state === 'buffering');
+      syncRing(stage, ui.state === 'buffering');
     };
     const isFs = () => document.fullscreenElement === stage || stage.classList.contains('fs');
     const showUi = () => {
@@ -342,8 +387,8 @@ export function mountPlayer(host, first, ctx) {
       seek.setAttribute('aria-valuenow', Math.round(p));
     };
 
-    engine.ev.on('state', s => { ui.state = s; paintIcons(); if (s === 'playing') showUi(); else { showUi(); clearTimeout(ui.hideT); } });
-    engine.ev.on('error', () => { stage.insertAdjacentHTML('beforeend', '<div class="res-pl-msg over"><i class="fa-solid fa-play"></i><p>This video couldn’t be played.</p></div>'); });
+    engine.ev.on('state', s => { ui.state = s; if (s === 'playing') endRing(stage); paintIcons(); if (s === 'playing') showUi(); else { showUi(); clearTimeout(ui.hideT); } });
+    engine.ev.on('error', () => { endRing(stage, true); stage.insertAdjacentHTML('beforeend', '<div class="res-pl-msg over"><i class="fa-solid fa-play"></i><p>This video couldn’t be played.</p></div>'); });
     every(paint, 200);
     paintIcons(); paint();
 
