@@ -91,7 +91,7 @@ export async function openProfilePage({ doLogout } = {}) {
 
       <h2 class="pf-section-title">Preferences</h2>
       <section class="pf-card">
-        ${row('fa-solid fa-users', '#2A62FF', 'Appear in Class Chat', 'Let classmates find and message you.', toggle('appearInChatToggle', appearInChat), 'appearInChatToggle')}
+        ${row('fa-solid fa-users', '#0070f3', 'Appear in Class Chat', 'Let classmates find and message you.', toggle('appearInChatToggle', appearInChat), 'appearInChatToggle')}
         ${row('fa-solid fa-bell', '#E8923B', 'Message notifications', 'Pop-up on this device for new messages.', toggle('chatNotifyToggle', getChatNotifyEnabled()), 'chatNotifyToggle')}
       </section>
 
@@ -108,7 +108,7 @@ export async function openProfilePage({ doLogout } = {}) {
       <section class="pf-card">
         <div class="pf-access-group">
           <button type="button" class="pf-action" id="pfBundlesBtn" aria-expanded="false">
-            <span class="pf-ico" style="--tone:#2A62FF"><i class="fa-solid fa-box"></i></span>
+            <span class="pf-ico" style="--tone:#0070f3"><i class="fa-solid fa-box"></i></span>
             <span class="pf-row-text">
               <span class="pf-row-title">Bundles</span>
               <span class="pf-row-sub" id="pfBundlesSub">Loading…</span>

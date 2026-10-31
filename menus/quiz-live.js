@@ -390,13 +390,13 @@ liveSectionStyle.textContent = `
   .live-card {
     scroll-snap-align: start; flex: 0 0 236px; cursor: pointer;
     border-radius: 20px; padding: 2px; position: relative;
-    background:  rgba(var(--live-color-rgb,42, 98, 255),.9);
+    background:  rgba(var(--live-color-rgb,0, 112, 243),.9);
     background-size: 220% 220%;
     animation: ql-card-rise .4s cubic-bezier(.2,.9,.25,1) both, ql-card-drift 5s ease-in-out infinite;
     transition: transform .2s ease, box-shadow .2s ease;
-    box-shadow: 0 10px 24px -12px rgba(var(--live-color-rgb,42, 98, 255),.55);
+    box-shadow: 0 10px 24px -12px rgba(var(--live-color-rgb,0, 112, 243),.55);
   }
-  .live-card:hover { transform: translateY(-4px) scale(1.015); box-shadow: 0 16px 32px -12px rgba(var(--live-color-rgb,42, 98, 255),.7); }
+  .live-card:hover { transform: translateY(-4px) scale(1.015); box-shadow: 0 16px 32px -12px rgba(var(--live-color-rgb,0, 112, 243),.7); }
   .live-card:active { transform: translateY(-1px) scale(.99); }
 
   .live-card .lc-inner {
@@ -415,9 +415,9 @@ liveSectionStyle.textContent = `
   .live-card .lc-badge {
     position: absolute; top: 12px; right: 12px; z-index: 2;
     display: inline-flex; align-items: center; gap: 5px;
-    background: var(--live-color,#2A62FF); color: #fff; font-size: 9px; font-weight: 900;
+    background: var(--live-color,#0070f3); color: #fff; font-size: 9px; font-weight: 900;
     text-transform: uppercase; letter-spacing: .06em; padding: 4px 10px 4px 8px; border-radius: 999px;
-    box-shadow: 0 4px 12px -2px rgba(var(--live-color-rgb,42, 98, 255),.6);
+    box-shadow: 0 4px 12px -2px rgba(var(--live-color-rgb,0, 112, 243),.6);
   }
   .live-card .lc-badge .lc-dot {
     width: 6px; height: 6px; border-radius: 50%; background: #fff;
@@ -427,8 +427,8 @@ liveSectionStyle.textContent = `
   .live-card .cc-top { position: relative; z-index: 1; }
   .live-card .cc-icon {
     width: 40px; height: 40px; border-radius: 13px; display: flex; align-items: center; justify-content: center;
-    background:  rgba(var(--live-color-rgb,42, 98, 255),.22);
-    box-shadow: inset 0 0 0 1px rgba(var(--live-color-rgb,42, 98, 255),.25);
+    background:  rgba(var(--live-color-rgb,0, 112, 243),.22);
+    box-shadow: inset 0 0 0 1px rgba(var(--live-color-rgb,0, 112, 243),.25);
     font-size: 15px;
   }
   .live-card .cc-body { position: relative; z-index: 1; }
@@ -436,12 +436,12 @@ liveSectionStyle.textContent = `
     display: inline-flex; align-items: center; gap: 5px; max-width: 100%;
     font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
     padding: 3px 8px; margin-top: 10px; border-radius: 999px;
-    color: var(--live-color, #2A62FF); background: rgba(var(--live-color-rgb,42, 98, 255),.12);
+    color: var(--live-color, #0070f3); background: rgba(var(--live-color-rgb,0, 112, 243),.12);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .live-card .cc-subject {
     font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
-    color: var(--live-color,#2A62FF); opacity: .85; margin-top: 10px;
+    color: var(--live-color,#0070f3); opacity: .85; margin-top: 10px;
   }
   .live-card h4 {
     margin: 3px 0 0; font-size: 15px; font-weight: 900; line-height: 1.28;
@@ -457,8 +457,8 @@ liveSectionStyle.textContent = `
   }
   .live-card .lc-start {
     font-size: 11.5px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 5px;
-    background: var(--live-color,#2A62FF); padding: 6px 12px; border-radius: 999px;
-    box-shadow: 0 4px 10px -3px rgba(var(--live-color-rgb,42, 98, 255),.6);
+    background: var(--live-color,#0070f3); padding: 6px 12px; border-radius: 999px;
+    box-shadow: 0 4px 10px -3px rgba(var(--live-color-rgb,0, 112, 243),.6);
     transition: transform .15s ease;
   }
   .live-card:hover .lc-start { transform: scale(1.05); }
@@ -501,7 +501,7 @@ function renderLiveSection() {
 
   liveRail.innerHTML = liveQuizzes.map((q) => {
     const isLive = liveStatus(q) === 'live';
-    const cardColor = q.liveCardColor || '#2A62FF';
+    const cardColor = q.liveCardColor || '#0070f3';
     const cardColorRgb = hexToRgb(cardColor);
     const metaTag = isLive
       ? `<span class="lc-countdown" style="color:${cardColor};background:rgba(${cardColorRgb},0.12);"><i class="fa-solid fa-hourglass-half"></i> ${formatCountdown(q.liveEnd)}</span>`
@@ -664,7 +664,7 @@ function showLiveNoteModal(quiz, proceed) {
   const hasContent = quiz.liveNoteTitle || quiz.liveNoteBody || (quiz.liveNoteImages && quiz.liveNoteImages.length);
   if (!quiz.liveNoteEnabled || !hasContent) { proceed(); return; }
 
-  const color = quiz.liveCardColor || '#2A62FF';
+  const color = quiz.liveCardColor || '#0070f3';
   const colorRgb = hexToRgb(color);
 
   const overlay = document.createElement('div');
@@ -756,7 +756,7 @@ function buildLiveQuizEntry(q, name) {
     moduleName: q.moduleName,
     liveStart: q.liveStart,
     liveLabel: q.liveLabel,
-    liveCardColor: q.liveCardColor || '#2A62FF',
+    liveCardColor: q.liveCardColor || '#0070f3',
     pinnedByAdmin: !!q.pinnedByAdmin,
     liveNoteEnabled: !!q.liveNoteEnabled,
     liveNoteTitle: q.liveNoteTitle || '',
@@ -790,7 +790,7 @@ function applyCardVisuals(card, q) {
   }
 
   if (liveStatus(q) === 'live') {
-    const cardColor = q.liveCardColor || '#2A62FF';
+    const cardColor = q.liveCardColor || '#0070f3';
     card.style.setProperty('--ql-color', cardColor);
     card.style.setProperty('--ql-color-rgb', hexToRgb(cardColor));
 

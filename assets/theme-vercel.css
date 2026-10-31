@@ -1,0 +1,136 @@
+/* =========================================================================
+   ALIF Med — "Vercel / Linear" theme (matches the Pre-med reference page)
+   Primary #0070f3 · gradient #0070f3 → #00dfd8 · Inter · 24px cards with
+   hairline borders · pill buttons / search / filters · gradient header card.
+   Loaded AFTER arqam-style.css and BEFORE amoled-dark.css, so the tuned dark
+   surfaces (black page, black question cards, lighter-black options) are kept.
+   ========================================================================= */
+
+/* ---- 1. tokens (light) ---- */
+html:root, body {
+  --primary: #0070f3;
+  --primary-rgb: 0, 112, 243;
+  --primary-hover: #3291ff;
+  --primary-press: #0062d6;
+  --primary-deep: #0050c8;
+  --primary-night: #003a99;
+  --brand-navy: #0062d6;
+  --brand-sky: #00b8d4;
+  --brand-sky-rgb: 0, 184, 212;
+  --brand-grad: linear-gradient(135deg, #0070f3 0%, #00dfd8 100%);    /* reference gradient */
+  --btn-grad: linear-gradient(135deg, #0062d6 0%, #0070f3 48%, #00a6f0 100%); /* same family, readable white labels */
+  --hero-grad: var(--brand-grad);
+  --brand-glow: 0 4px 12px rgba(0, 112, 243, .30);
+  --shadow-card: 0 30px 60px rgba(0, 0, 0, .12);
+  --primary-soft: rgba(0, 112, 243, .06);
+  --primary-line: rgba(0, 112, 243, .35);
+  --ac-ring: rgba(0, 112, 243, .22);
+  --on-primary: #ffffff;
+  --wrong: #ef4444;
+  --right: #16a34a;
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+}
+html:root {
+  --paper: #fafafa;
+  --paper-2: #f4f4f5;
+  --card: #ffffff;
+  --card-border: #eaeaea;
+  --ui-border: #eaeaea;
+  --ink: #171717;
+  --ink-soft: #666666;
+  --ink-faint: #888888;
+  --input-bg: #ffffff;
+  --input-border: #eaeaea;
+  --topbar-bg: #ffffff;
+  --shadow: 0 4px 14px rgba(0, 0, 0, .06);
+  --shadow-lg: 0 30px 60px rgba(0, 0, 0, .12);
+}
+/* dark: only the brand changes here; neutral surfaces stay with amoled-dark.css */
+body.dark {
+  --primary: #0070f3;
+  --primary-rgb: 0, 112, 243;
+  --primary-hover: #3291ff;
+  --primary-press: #0062d6;
+  --brand-navy: #7cc4ff;
+  --brand-sky: #4cc9ff;
+  --brand-glow: 0 6px 18px rgba(0, 112, 243, .35);
+  --primary-soft: rgba(0, 112, 243, .14);
+  --primary-line: rgba(0, 112, 243, .55);
+  --ac-ring: rgba(0, 112, 243, .45);
+  --brand-grad: linear-gradient(135deg, #0070f3 0%, #00dfd8 100%);
+  --btn-grad: linear-gradient(135deg, #0062d6 0%, #0070f3 48%, #00a6f0 100%);
+  --hero-grad: var(--brand-grad);
+  --shadow-card: 0 30px 60px rgba(0, 0, 0, .55);
+  --primary-deep: #0050c8;
+  --primary-night: #003a99;
+}
+
+/* ---- 2. shape language: 24px cards, hairline border, lift + primary border on hover ---- */
+:is(.module-card, .subject-card, .quiz-card, .package-card, .university-card, .continue-card, .reco-card,
+    .live-card, .pf-card, .learn-celebrate-card, .package-overlay-card, .res-mod, .res-book, .res-vid) {
+  border-radius: 24px !important;
+}
+:is(.screen-card, .overlay-panel, .action-modal-panel) { border-radius: 24px; }
+:is(.module-card, .subject-card, .quiz-card, .package-card, .university-card, .continue-card, .res-mod):not(.active):not(.current):not(.locked):hover {
+  border-color: var(--primary) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+body.dark :is(.module-card, .subject-card, .quiz-card, .package-card, .university-card, .continue-card, .res-mod):not(.active):not(.current):not(.locked):hover {
+  box-shadow: 0 20px 44px -18px rgba(0, 112, 243, .35) !important;
+}
+
+/* ---- 3. gradient header card (home welcome card) + selected cards ---- */
+.home-hero-card .home-hero-inner,
+body.dark .home-hero-card .home-hero-inner {
+  background: var(--brand-grad) !important;
+  border: 0 !important;
+  border-radius: 24px !important;
+  box-shadow: var(--shadow-card) !important;
+  color: #fff !important;
+}
+body.dark .home-hero-card .home-hero-inner { box-shadow: 0 24px 54px -26px rgba(0, 112, 243, .55) !important; }
+.home-hero-card .home-hero-inner :is(h1, p.sub, .eyebrow) { color: #fff !important; text-shadow: 0 1px 14px rgba(0, 40, 110, .35); }
+.home-hero-card .home-hero-inner p.sub { opacity: .92; }
+.home-hero-card .home-hero-cta, body.dark .home-hero-card .home-hero-cta { color: var(--primary-press) !important; }
+
+.module-card.active, .subject-card.active, .university-card.current,
+body.dark .module-card.active, body.dark .subject-card.active, body.dark .university-card.current {
+  background: var(--brand-grad) !important;
+  color: #fff !important;
+  box-shadow: 0 14px 30px -14px rgba(0, 112, 243, .55) !important;
+}
+
+/* ---- 4. buttons: gradient pills with a soft blue glow ---- */
+:is(.home-hero-cta, .pill-btn.primary, .primary-btn, .submit-btn, .pkd-cta-btn, .tour-next-btn, .bf-btn.primary,
+    .chat-send-btn, .action-modal-actions button.primary, .student-chip .guest-signup-btn, .profile-btn.signup-btn,
+    .learn-celebrate-card .lc-btn, .ai-explain-btn, .jump-fab):not(.home-hero-cta-ghost),
+body.dark :is(.pill-btn.primary, .primary-btn, .submit-btn, .pkd-cta-btn, .tour-next-btn, .bf-btn.primary,
+    .chat-send-btn, .action-modal-actions button.primary, .student-chip .guest-signup-btn, .profile-btn.signup-btn,
+    .learn-celebrate-card .lc-btn) {
+  background-image: var(--btn-grad) !important;
+  border-radius: 999px !important;
+  box-shadow: var(--brand-glow) !important;
+}
+.home-hero-card .home-hero-cta, body.dark .home-hero-card .home-hero-cta { background: #fff !important; background-image: none !important; }
+:is(.pill-btn.primary, .primary-btn, .submit-btn, .pkd-cta-btn, .bf-btn.primary):hover { transform: translateY(-2px); }
+
+/* ---- 5. pill inputs / search / filters ---- */
+:is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), select) { border-radius: 999px; }
+:is(input, select, textarea):focus { border-color: var(--primary) !important; box-shadow: 0 0 0 4px rgba(0, 112, 243, .12) !important; outline: none; }
+:is(.pill, .res-pill, .pkg-filter, .toggle-btn, .filter-chip, .cat-filter-bar .cf-clear) { border-radius: 999px !important; }
+.pill.active, .res-pill.active, .toggle-btn.open { background-image: var(--btn-grad); border-color: transparent !important; color: #fff; }
+.res-pill.active { background-color: transparent; }
+
+/* ---- 6. chrome ---- */
+.topbar, .picker-topbar, .atlas-topbar { background: var(--paper) !important; border-bottom: 1px solid var(--ui-border) !important; }
+.res-brand-ico, .app-title-icon { background: var(--brand-grad) !important; }
+.res-tab.active { color: var(--primary); }
+
+/* hero CTA stays a white pill on the gradient (beats the generic gradient-button rule) */
+body .home-hero-card .home-hero-inner .home-hero-cta {
+  background: #ffffff !important; background-image: none !important;
+  color: var(--primary-press) !important; box-shadow: 0 10px 24px -12px rgba(0, 30, 90, .55) !important;
+}
+body .home-hero-card .home-hero-inner .home-hero-cta-ghost { border-radius: 999px !important; }

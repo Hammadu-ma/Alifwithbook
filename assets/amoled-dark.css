@@ -40,8 +40,6 @@ body.dark {
   --ui-shadow-strong: var(--shadow-lg);
 
   /* brand on black — lighter tints for text/links, solid blue for fills */
-  --brand-navy: #A9C0FF;
-  --brand-sky: #8DAEFF;
   --primary-soft: color-mix(in srgb, var(--primary) 14%, #000);
   --primary-line: color-mix(in srgb, var(--primary) 55%, transparent);
   --ac-ring: rgba(var(--primary-rgb), .55);
