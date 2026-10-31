@@ -151,3 +151,28 @@ body .home-hero-card .home-hero-inner .home-hero-cta {
 body .home-hero-card .home-hero-inner .home-hero-cta-ghost { border-radius: 999px !important; }
 
 .home-hero-card .home-hero-inner, body.dark .home-hero-card .home-hero-inner { background-repeat: no-repeat !important; }
+
+/* ---- Profile card: same look as the welcome card (gradient + cyan glow + medical drawing) ---- */
+.pf-hero {
+  background:
+    var(--hero-deco-sm) right -36px top 50% / auto 100% no-repeat,
+    radial-gradient(85% 75% at 100% 100%, rgba(0, 223, 216, .60) 0%, rgba(0, 223, 216, 0) 62%),
+    radial-gradient(120% 90% at 100% 0%, rgba(110, 160, 255, .50) 0%, rgba(110, 160, 255, 0) 58%),
+    linear-gradient(145deg, #2A62FF 0%, #1B3FD6 32%, #0E1F6B 70%, #04122e 100%) !important;
+  border: 1px solid rgba(140, 175, 255, .28);
+  border-radius: 24px !important;
+  box-shadow: 0 24px 48px -22px rgba(42, 98, 255, .60), 0 2px 8px rgba(6, 11, 30, .30) !important;
+}
+body.dark .pf-hero {
+  background:
+    var(--hero-deco-sm) right -36px top 50% / auto 100% no-repeat,
+    radial-gradient(85% 75% at 100% 100%, rgba(0, 223, 216, .40) 0%, rgba(0, 223, 216, 0) 62%),
+    radial-gradient(120% 90% at 100% 0%, rgba(90, 140, 255, .46) 0%, rgba(90, 140, 255, 0) 58%),
+    linear-gradient(145deg, #2A62FF 0%, #1B3FD6 28%, #0A1650 62%, #000000 100%) !important;
+  border-color: rgba(140, 175, 255, .20);
+  box-shadow: 0 24px 54px -24px rgba(42, 98, 255, .55), 0 0 0 1px rgba(0, 0, 0, .6) !important;
+}
+.pf-hero::before, .pf-hero::after { display: none !important; }   /* replaced by the SVG layer */
+.pf-hero :is(.pf-name, .pf-email) { text-shadow: 0 1px 14px rgba(0, 20, 80, .35); }
+.pf-hero .pf-avatar { background: rgba(255, 255, 255, .14); border-color: rgba(255, 255, 255, .6); }
+.pf-hero .pf-chip { background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .22); }
