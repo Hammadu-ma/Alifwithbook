@@ -189,5 +189,4 @@ body.dark { --deco-bg: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org
   content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background: var(--deco-bg) center / cover no-repeat;
 }
-body.dark #appScreen :is(.sidebar) { background: transparent !important; }
 @media print, (prefers-reduced-data: reduce) { #appScreen::before { display: none; } }

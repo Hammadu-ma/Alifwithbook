@@ -24,12 +24,50 @@ function __applyCat(key){
   const hero=document.querySelector(".hero");(hero||document.getElementById("feed")).scrollIntoView({block:"start"});
 }
 function __resetCat(){__setCat(null);const b=document.getElementById("catFilterBar");b&&b.remove();document.querySelectorAll("#catList .cat-item.cat-active").forEach(el=>el.classList.remove("cat-active"))}
+/* Browse-by-category lives INSIDE the sidebar: the main sidebar content slides away and the category list slides in. */
+function __sbPanel(){
+  const sb=document.getElementById("sidebar");if(!sb)return null;
+  let p=document.getElementById("sbCats");
+  if(!p){
+    p=document.createElement("div");p.id="sbCats";p.className="sb-cats";p.setAttribute("aria-hidden","true");
+    p.innerHTML='<div class="sbc-head"><button type="button" class="sbc-back" id="sbcBack" aria-label="Back to sidebar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button><div class="sbc-title">Browse by category</div></div><div class="sbc-body" id="sbcBody"></div>';
+    sb.appendChild(p);
+    p.querySelector("#sbcBack").addEventListener("click",()=>__sbClose());
+    const w=document.getElementById("categoryListWrap");if(w)p.querySelector("#sbcBody").appendChild(w);
+  }
+  return p;
+}
+let __sbSaved=0;
+function __sbOpen(){
+  const sb=document.getElementById("sidebar"),p=__sbPanel();if(!sb||!p)return;
+  __sbSaved=sb.scrollTop;sb.scrollTop=0;
+  const key=__getCat();
+  p.querySelectorAll("[data-ovl-scrollto]").forEach(h=>{const a=!!key&&h.dataset.ovlScrollto==="cat-"+key;h.closest(".cat-item")?.classList.toggle("sbc-active",a)});
+  p.querySelectorAll(".cat-item").forEach((it,i)=>it.style.setProperty("--i",i));
+  sb.classList.add("sb-cat-open");p.setAttribute("aria-hidden","false");
+  const b=p.querySelector(".sbc-body");b&&(b.scrollTop=0);
+}
+function __sbClose(instant){
+  const sb=document.getElementById("sidebar"),p=document.getElementById("sbCats");if(!sb||!sb.classList.contains("sb-cat-open"))return;
+  if(instant)sb.classList.add("sb-no-anim");
+  sb.classList.remove("sb-cat-open");p&&p.setAttribute("aria-hidden","true");
+  sb.scrollTop=__sbSaved;
+  if(instant)requestAnimationFrame(()=>requestAnimationFrame(()=>sb.classList.remove("sb-no-anim")));
+}
+/* runs after the original handler has filled #categoryListWrap and shown the modal; closes the modal again before it paints */
+document.addEventListener("click",ev=>{
+  const b=ev.target.closest&&ev.target.closest("#openCategoryOverlay");if(!b)return;
+  const ov=document.getElementById("categoryOverlay");
+  if(ov&&ov.classList.contains("show")){const c=document.getElementById("closeCategoryOverlay");c&&c.click();ov.classList.remove("show")}
+  __sbOpen();
+});
+{const __sb=document.getElementById("sidebar");__sb&&new MutationObserver(()=>{if(!__sb.classList.contains("open")&&matchMedia("(max-width:880px)").matches)__sbClose(true)}).observe(__sb,{attributes:true,attributeFilter:["class"]})}
 document.addEventListener("click",ev=>{
   const el=ev.target.closest&&ev.target.closest('[data-scrollto^="cat-"],[data-ovl-scrollto^="cat-"]');
   if(!el)return;
   ev.preventDefault();ev.stopImmediatePropagation();
   const key=(el.dataset.scrollto||el.dataset.ovlScrollto).slice(4);
-  const ov=document.getElementById("categoryOverlay");ov&&ov.classList.remove("show");
+  const ov=document.getElementById("categoryOverlay");ov&&ov.classList.remove("show");__sbClose();
   try{e()}catch(_){}
   __applyCat(__getCat()===key?null:key);
 },true);
