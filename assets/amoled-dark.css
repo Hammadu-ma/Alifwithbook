@@ -271,16 +271,16 @@ body.dark #appScreen .sidebar{background:#000!important;border-right-color:rgba(
   #appScreen .sidebar.sb-full .sb-grip::after{opacity:.35}
 }
 
-/* sidebar back button: red, with a gliding arrow */
+/* sidebar back button: small, minimal, red with a gliding arrow (closes the sidebar only) */
 #appScreen .switch-quiz-btn{
-  display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
-  height:44px;border-radius:999px;font-weight:700;font-size:14px;letter-spacing:.01em;
-  color:#fff!important;border:0!important;cursor:pointer;
-  background:linear-gradient(135deg,#ff4d4f,#e11d48)!important;
-  box-shadow:0 8px 20px -8px rgba(225,29,72,.65),inset 0 1px 0 rgba(255,255,255,.22)!important;
-  transition:transform .2s,box-shadow .2s,filter .2s;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;width:auto;align-self:flex-start;
+  height:32px;padding:0 14px 0 10px;border-radius:999px;font-weight:650;font-size:12.5px;letter-spacing:.01em;
+  color:#ef4444!important;cursor:pointer;
+  background:rgba(239,68,68,.10)!important;border:1px solid rgba(239,68,68,.32)!important;box-shadow:none!important;
+  transition:background .2s,border-color .2s,transform .2s;
 }
-#appScreen .switch-quiz-btn:hover{filter:brightness(1.06);box-shadow:0 10px 24px -8px rgba(225,29,72,.8),inset 0 1px 0 rgba(255,255,255,.25)!important}
-#appScreen .switch-quiz-btn:active{transform:scale(.97)}
-#appScreen .switch-quiz-btn svg{width:20px;height:20px;transition:transform .25s cubic-bezier(.22,.8,.24,1)}
-#appScreen .switch-quiz-btn:hover svg{transform:translateX(-4px)}
+#appScreen .switch-quiz-btn:hover{background:rgba(239,68,68,.18)!important;border-color:rgba(239,68,68,.55)!important}
+#appScreen .switch-quiz-btn:active{transform:scale(.95)}
+#appScreen .switch-quiz-btn svg{width:16px;height:16px;transition:transform .25s cubic-bezier(.22,.8,.24,1)}
+#appScreen .switch-quiz-btn:hover svg{transform:translateX(-3px)}
+body.dark #appScreen .switch-quiz-btn{color:#ff6b6b!important}
