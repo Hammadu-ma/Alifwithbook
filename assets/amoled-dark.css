@@ -166,14 +166,14 @@ body.dark #appScreen .sidebar{background:#0B0D10!important;border-right-color:rg
 
 /* main sidebar content slides away (staggered) ... */
 #appScreen .sidebar>*:not(.sb-cats){
-  transition:transform .42s cubic-bezier(.22,.8,.24,1),opacity .3s ease,filter .42s ease;
+  transition:transform .42s cubic-bezier(.22,.8,.24,1),opacity .3s ease;
   transition-delay:calc(var(--n,0)*18ms);
 }
 #appScreen .sidebar>*:nth-child(2){--n:1}#appScreen .sidebar>*:nth-child(3){--n:2}#appScreen .sidebar>*:nth-child(4){--n:3}
 #appScreen .sidebar>*:nth-child(5){--n:4}#appScreen .sidebar>*:nth-child(6){--n:5}#appScreen .sidebar>*:nth-child(7){--n:6}
 #appScreen .sidebar.sb-cat-open{overflow:hidden}
 #appScreen .sidebar.sb-cat-open>*:not(.sb-cats){
-  transform:translateX(-34px);opacity:0;filter:blur(3px);pointer-events:none;
+  transform:translateX(-34px);opacity:0;pointer-events:none;
 }
 /* ... and the category panel glides in */
 .sb-cats{
@@ -219,3 +219,6 @@ body.dark #appScreen .sidebar{background:#0B0D10!important;border-right-color:rg
 
 /* mobile drawer: dim only, no blur behind the sidebar */
 .sidebar-backdrop,.sidebar-backdrop.show{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:rgba(0,0,0,.45)}
+
+/* the old modals are only data sources now; never let them flash */
+#categoryOverlay,#bmOverlay{display:none!important}

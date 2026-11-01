@@ -73,13 +73,13 @@ document.addEventListener("click",ev=>{
 });
 {const __sb=document.getElementById("sidebar");__sb&&new MutationObserver(()=>{if(!__sb.classList.contains("open")&&matchMedia("(max-width:880px)").matches)__sbClose(true)}).observe(__sb,{attributes:true,attributeFilter:["class"]})}
 /* tapping a bookmarked question jumps to it and returns the sidebar to normal */
-document.addEventListener("click",ev=>{const r=ev.target.closest&&ev.target.closest("#sbBm .bm-row");if(r&&!ev.target.closest(".bm-remove"))__sbClose()});
+document.addEventListener("click",ev=>{const r=ev.target.closest&&ev.target.closest("#sbBm .bm-row");if(r&&!ev.target.closest(".bm-remove"))__sbClose(matchMedia("(max-width:880px)").matches)});
 document.addEventListener("click",ev=>{
   const el=ev.target.closest&&ev.target.closest('[data-scrollto^="cat-"],[data-ovl-scrollto^="cat-"]');
   if(!el)return;
   ev.preventDefault();ev.stopImmediatePropagation();
   const key=(el.dataset.scrollto||el.dataset.ovlScrollto).slice(4);
-  const ov=document.getElementById("categoryOverlay");ov&&ov.classList.remove("show");__sbClose();
+  const ov=document.getElementById("categoryOverlay");ov&&ov.classList.remove("show");__sbClose(matchMedia("(max-width:880px)").matches);
   try{e()}catch(_){}
   __applyCat(__getCat()===key?null:key);
 },true);
