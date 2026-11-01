@@ -270,3 +270,17 @@ body.dark #appScreen .sidebar{background:#000!important;border-right-color:rgba(
   .sb-grip::after{content:'';position:absolute;top:50%;right:7px;width:4px;height:44px;margin-top:-22px;border-radius:4px;background:var(--ink-faint);opacity:.55}
   #appScreen .sidebar.sb-full .sb-grip::after{opacity:.35}
 }
+
+/* sidebar back button: red, with a gliding arrow */
+#appScreen .switch-quiz-btn{
+  display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+  height:44px;border-radius:999px;font-weight:700;font-size:14px;letter-spacing:.01em;
+  color:#fff!important;border:0!important;cursor:pointer;
+  background:linear-gradient(135deg,#ff4d4f,#e11d48)!important;
+  box-shadow:0 8px 20px -8px rgba(225,29,72,.65),inset 0 1px 0 rgba(255,255,255,.22)!important;
+  transition:transform .2s,box-shadow .2s,filter .2s;
+}
+#appScreen .switch-quiz-btn:hover{filter:brightness(1.06);box-shadow:0 10px 24px -8px rgba(225,29,72,.8),inset 0 1px 0 rgba(255,255,255,.25)!important}
+#appScreen .switch-quiz-btn:active{transform:scale(.97)}
+#appScreen .switch-quiz-btn svg{width:20px;height:20px;transition:transform .25s cubic-bezier(.22,.8,.24,1)}
+#appScreen .switch-quiz-btn:hover svg{transform:translateX(-4px)}
