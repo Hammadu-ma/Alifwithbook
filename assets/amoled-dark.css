@@ -144,3 +144,11 @@ body.dark .panel blockquote { background: #07080B; }
 
 /* profile page header: deep black, hairline underneath */
 body.dark .pf-topbar { background: #000000 !important; border-bottom-color: rgba(255, 255, 255, .07) !important; }
+
+/* question practice page: a slightly softer dark page so the black question cards stand out */
+body.dark #appScreen {
+  --quiz-bg: #121418;
+  background: var(--quiz-bg) !important;
+}
+body.dark #appScreen :is(.topbar, .sidebar) { background: var(--quiz-bg) !important; }
+body.dark #appScreen main { background: transparent !important; }

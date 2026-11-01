@@ -310,3 +310,11 @@ main, #feed, .qcard, .card-inner { min-width: 0; }
   #feed .qcard .panel { margin-left: -16px !important; margin-right: -16px !important; width: auto; max-width: none !important; }
   #feed .qcard .result-line, #feed .qcard .toggles { margin-left: 0; margin-right: 0; }
 }
+
+/* ---- Questions are one connected card; only a full-width break line separates them ---- */
+#feed .qcard:not(:last-child) .card-inner::after {
+  left: 0 !important; right: 0 !important; height: 1px !important; opacity: 1 !important;
+  background: var(--ui-border) !important;
+}
+body.dark #feed .qcard:not(:last-child) .card-inner::after { background: rgba(255, 255, 255, .12) !important; }
+#feed .qcard + .qcard { margin-top: 0 !important; }
