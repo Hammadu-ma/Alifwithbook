@@ -196,3 +196,32 @@ body.dark { --deco-bg: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org
 .scr-enter>:not(.picker-topbar):not(.progress-topbar):not(script){animation:scr-up .26s cubic-bezier(.22,.8,.24,1) backwards}
 .scr-enter>:nth-child(3){animation-delay:30ms}.scr-enter>:nth-child(4){animation-delay:60ms}.scr-enter>:nth-child(5){animation-delay:90ms}.scr-enter>:nth-child(n+6){animation-delay:110ms}
 @media (prefers-reduced-motion:reduce){.scr-enter>*{animation:none!important}}
+
+/* ===== flat, calm welcome + profile hero (glow dialled way down) ===== */
+.home-hero-card .home-hero-inner, .pf-hero {
+  background:
+    var(--hero-deco) right center / auto 118% no-repeat,
+    radial-gradient(80% 70% at 100% 100%, rgba(0, 223, 216, .13) 0%, rgba(0, 223, 216, 0) 60%),
+    linear-gradient(160deg, #2458F0 0%, #1A3CC4 55%, #12297F 100%) !important;
+  border: 1px solid rgba(255, 255, 255, .10) !important;
+  box-shadow: none !important;
+}
+.pf-hero { background-image: var(--hero-deco-sm), radial-gradient(80% 70% at 100% 100%, rgba(0, 223, 216, .13) 0%, rgba(0, 223, 216, 0) 60%), linear-gradient(160deg, #2458F0 0%, #1A3CC4 55%, #12297F 100%) !important; background-position: right -36px top 50%, 0 0, 0 0 !important; background-size: auto 100%, auto, auto !important; }
+body.dark .home-hero-card .home-hero-inner, body.dark .pf-hero {
+  background:
+    var(--hero-deco) right center / auto 118% no-repeat,
+    radial-gradient(80% 70% at 100% 100%, rgba(0, 223, 216, .09) 0%, rgba(0, 223, 216, 0) 60%),
+    linear-gradient(160deg, #1F4FDC 0%, #132E9E 50%, #070F36 100%) !important;
+  border-color: rgba(255, 255, 255, .07) !important;
+  box-shadow: none !important;
+}
+body.dark .pf-hero { background-image: var(--hero-deco-sm), radial-gradient(80% 70% at 100% 100%, rgba(0, 223, 216, .09) 0%, rgba(0, 223, 216, 0) 60%), linear-gradient(160deg, #1F4FDC 0%, #132E9E 50%, #070F36 100%) !important; background-position: right -36px top 50%, 0 0, 0 0 !important; background-size: auto 100%, auto, auto !important; }
+@media (max-width: 640px) {
+  .home-hero-card .home-hero-inner, body.dark .home-hero-card .home-hero-inner {
+    background-image: var(--hero-deco-sm), radial-gradient(80% 70% at 100% 100%, rgba(0, 223, 216, .12) 0%, rgba(0, 223, 216, 0) 60%), linear-gradient(160deg, #2458F0 0%, #1A3CC4 55%, #12297F 100%) !important;
+  }
+  body.dark .home-hero-card .home-hero-inner { background-image: var(--hero-deco-sm), radial-gradient(80% 70% at 100% 100%, rgba(0, 223, 216, .08) 0%, rgba(0, 223, 216, 0) 60%), linear-gradient(160deg, #1F4FDC 0%, #132E9E 50%, #070F36 100%) !important; }
+}
+.home-hero-card .home-hero-inner :is(h1, p.sub, .eyebrow), .pf-hero :is(.pf-name, .pf-email) { text-shadow: none !important; }
+body .home-hero-card .home-hero-inner .home-hero-cta { box-shadow: none !important; }
+.home-hero-card .home-hero-inner .home-hero-cta-ghost { box-shadow: none !important; }
