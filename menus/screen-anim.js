@@ -10,7 +10,7 @@ IDS.forEach(id => {
     const hidden = el.classList.contains('hidden');
     if (wasHidden && !hidden && !reduce()) {
       el.classList.remove('scr-enter'); void el.offsetWidth; el.classList.add('scr-enter');
-      clearTimeout(timer); timer = setTimeout(() => el.classList.remove('scr-enter'), 1300);
+      clearTimeout(timer); timer = setTimeout(() => el.classList.remove('scr-enter'), 420);
     }
     wasHidden = hidden;
   }).observe(el, { attributes: true, attributeFilter: ['class'] });

@@ -191,32 +191,8 @@ body.dark { --deco-bg: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org
 }
 @media print, (prefers-reduced-data: reduce) { #appScreen::before { display: none; } }
 
-/* ===== screen switch animation (Home / Exams / Modules / Subjects) ===== */
-@keyframes scr-up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-.scr-enter>:not(.picker-topbar):not(.progress-topbar):not(script){animation:scr-up .5s var(--ease,cubic-bezier(.22,.8,.24,1)) backwards}
-.scr-enter #quizGrid>*,.scr-enter .quick-actions-row>*{animation:scr-up .5s var(--ease,cubic-bezier(.22,.8,.24,1)) backwards}
-.scr-enter>:nth-child(1){animation-delay:0ms}
-.scr-enter>:nth-child(2){animation-delay:55ms}
-.scr-enter>:nth-child(3){animation-delay:110ms}
-.scr-enter>:nth-child(4){animation-delay:165ms}
-.scr-enter>:nth-child(5){animation-delay:220ms}
-.scr-enter>:nth-child(6){animation-delay:275ms}
-.scr-enter>:nth-child(7){animation-delay:330ms}
-.scr-enter>:nth-child(8){animation-delay:385ms}
-.scr-enter>:nth-child(9){animation-delay:440ms}
-.scr-enter>:nth-child(10){animation-delay:495ms}
-.scr-enter .quick-actions-row>:nth-child(1){animation-delay:140ms}.scr-enter .quick-actions-row>:nth-child(2){animation-delay:190ms}
-.scr-enter .quick-actions-row>:nth-child(3){animation-delay:240ms}.scr-enter .quick-actions-row>:nth-child(4){animation-delay:290ms}
-.scr-enter #quizGrid>:nth-child(1){animation-delay:120ms}
-.scr-enter #quizGrid>:nth-child(2){animation-delay:160ms}
-.scr-enter #quizGrid>:nth-child(3){animation-delay:200ms}
-.scr-enter #quizGrid>:nth-child(4){animation-delay:240ms}
-.scr-enter #quizGrid>:nth-child(5){animation-delay:280ms}
-.scr-enter #quizGrid>:nth-child(6){animation-delay:320ms}
-.scr-enter #quizGrid>:nth-child(7){animation-delay:360ms}
-.scr-enter #quizGrid>:nth-child(8){animation-delay:400ms}
-.scr-enter #quizGrid>:nth-child(9){animation-delay:440ms}
-.scr-enter #quizGrid>:nth-child(10){animation-delay:480ms}
-.scr-enter #quizGrid>:nth-child(11){animation-delay:520ms}
-.scr-enter #quizGrid>:nth-child(12){animation-delay:560ms}
-@media (prefers-reduced-motion:reduce){.scr-enter *{animation:none!important}}
+/* ===== screen switch animation (Home / Exams / Modules / Subjects): quick, only top-level sections ===== */
+@keyframes scr-up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.scr-enter>:not(.picker-topbar):not(.progress-topbar):not(script){animation:scr-up .26s cubic-bezier(.22,.8,.24,1) backwards}
+.scr-enter>:nth-child(3){animation-delay:30ms}.scr-enter>:nth-child(4){animation-delay:60ms}.scr-enter>:nth-child(5){animation-delay:90ms}.scr-enter>:nth-child(n+6){animation-delay:110ms}
+@media (prefers-reduced-motion:reduce){.scr-enter>*{animation:none!important}}
