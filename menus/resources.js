@@ -120,11 +120,12 @@ function loadList(name, assign) {
   }).catch(() => { if (!cached) loadFailed = true; });
 }
 
+const RELATED_SUBS = new Set();
 let renderQueued = false;
 function queueRender() {
   if (renderQueued) return;
   renderQueued = true;
-  requestAnimationFrame(() => { renderQueued = false; if (isOpen()) render(); });
+  requestAnimationFrame(() => { renderQueued = false; if (isOpen()) render(); RELATED_SUBS.forEach(f => { try { f(); } catch (_) {} }); });
 }
 
 function ensureData() {
@@ -721,3 +722,17 @@ document.addEventListener('keydown', e => {
   else if (elPlayer.classList.contains('show')) closePlayer();
   else if (elSheet.classList.contains('show')) closeSheet();
 });
+
+
+/* ------------------------------------------------ hook for the quiz sidebar ("Related videos & books") */
+window.__alifRes = {
+  ensure() { if (!(loaded.books && loaded.videos && loaded.mods)) ensureData(); },
+  subscribe(f) { RELATED_SUBS.add(f); return () => RELATED_SUBS.delete(f); },
+  get(moduleId, sid) {
+    const rank = x => (sid && x.subjectId === sid) ? 0 : (moduleId && x.moduleId === moduleId) ? 1 : 2;
+    const pick = list => list.map(x => ({ x, r: rank(x) })).filter(o => o.r < 2).sort((a, b) => a.r - b.r).map(o => ({ ...o.x, _same: o.r === 0, _sub: subjectName(o.x.subjectId) }));
+    return { ready: loaded.books && loaded.videos, videos: pick(VIDEOS), books: pick(BOOKS) };
+  },
+  openVideo(id) { const v = VIDEOS.find(x => x.id === id); if (v) openVideo(v); },
+  openBook(id) { const b = BOOKS.find(x => x.id === id); if (!b) return; if (safeUrl(b.fileUrl)) openReader(b); else openBook(b); }
+};
