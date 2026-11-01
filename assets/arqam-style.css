@@ -318,3 +318,15 @@ main, #feed, .qcard, .card-inner { min-width: 0; }
 }
 body.dark #feed .qcard:not(:last-child) .card-inner::after { background: rgba(255, 255, 255, .12) !important; }
 #feed .qcard + .qcard { margin-top: 0 !important; }
+
+/* category filter bar: long names truncate with "…" and never widen the page */
+.cat-filter-bar{min-width:0;max-width:100%;box-sizing:border-box;overflow:hidden}
+.cat-filter-bar .cf-label{flex:0 1 auto;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cat-filter-bar .cf-count{flex:1 0 auto}
+.cat-filter-bar .cf-clear{flex:none;white-space:nowrap}
+@media (max-width:640px){.cat-filter-bar .cf-label{flex:1 1 0}.cat-filter-bar .cf-count{flex:none}}
+#appScreen main{min-width:0;max-width:100%}
+#appScreen main>.cat-filter-bar{width:auto;max-width:100%}
+/* main column must be allowed to shrink: grid 1fr = minmax(auto,1fr) let long content widen the whole page */
+#appScreen>div{min-width:0}
+@media (max-width:880px){#appScreen.app{grid-template-columns:minmax(0,1fr)!important}}

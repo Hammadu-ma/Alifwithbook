@@ -150,7 +150,7 @@ body.dark #appScreen {
   --quiz-bg: #121418;
   background: var(--quiz-bg) !important;
 }
-body.dark #appScreen .topbar { background: var(--quiz-bg) !important; }
+body.dark #appScreen :is(.topbar,.focus-topbar) { background: #000 !important; border-bottom-color: rgba(255,255,255,.07) !important; }
 body.dark #appScreen main { background: transparent !important; }
 
 /* ===== Sidebar: solid, minimal (no glass) + in-sidebar category panel ===== */
