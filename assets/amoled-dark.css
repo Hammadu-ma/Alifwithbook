@@ -161,7 +161,6 @@ body.dark #appScreen main { background: transparent !important; }
   box-shadow:none;
   overflow-x:hidden;
 }
-body.dark #appScreen .sidebar{background:#0B0D10!important;border-right-color:rgba(255,255,255,.07)!important}
 @media (max-width:880px){#appScreen .sidebar{box-shadow:0 0 40px rgba(0,0,0,.28)!important;border-right:none!important}}
 
 /* main sidebar content slides away (staggered) ... */
@@ -222,3 +221,18 @@ body.dark #appScreen .sidebar{background:#0B0D10!important;border-right-color:rg
 
 /* the old modals are only data sources now; never let them flash */
 #categoryOverlay,#bmOverlay{display:none!important}
+
+/* sidebar: deep black at night */
+body.dark #appScreen .sidebar{background:#000!important;border-right-color:rgba(255,255,255,.07)!important}
+
+/* desktop: drag handle on the left sidebar's edge */
+.left-sidebar-resize{display:none}
+@media (min-width:881px){
+  .left-sidebar-resize{
+    display:block;position:fixed;top:0;left:calc(var(--left-sidebar-w,360px) - 4px);width:8px;height:100vh;
+    cursor:col-resize;z-index:46;touch-action:none;
+  }
+  .left-sidebar-resize::after{content:'';position:absolute;top:0;left:3px;width:2px;height:100%;background:transparent;transition:background .15s}
+  .left-sidebar-resize:hover::after,.left-sidebar-resize.dragging::after{background:var(--primary);opacity:.55}
+  #appScreen.left-collapsed .left-sidebar-resize,#appScreen.focus-mode .left-sidebar-resize,#appScreen.embedded .left-sidebar-resize{display:none}
+}

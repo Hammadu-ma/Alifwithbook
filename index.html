@@ -3478,7 +3478,7 @@
     /* ----- app shell ----- */
     .app {
       display: grid;
-      grid-template-columns: 360px 1fr;
+      grid-template-columns: var(--left-sidebar-w, 360px) 1fr;
       min-height: 100vh;
       width: 100%;
       --related-sidebar-w: 380px;
@@ -3496,7 +3496,7 @@
     }
     @media (min-width: 881px) {
       .app.has-related {
-        grid-template-columns: 360px 1fr var(--related-sidebar-w);
+        grid-template-columns: var(--left-sidebar-w, 360px) 1fr var(--related-sidebar-w);
       }
       .app.left-collapsed {
         grid-template-columns: 1fr;
@@ -3505,7 +3505,7 @@
         grid-template-columns: 1fr var(--related-sidebar-w);
       }
       .app.has-related.related-hidden {
-        grid-template-columns: 360px 1fr;
+        grid-template-columns: var(--left-sidebar-w, 360px) 1fr;
       }
       .app.left-collapsed.has-related.related-hidden {
         grid-template-columns: 1fr;
@@ -3538,7 +3538,7 @@
         transition: left 0.25s var(--ease), right 0.25s var(--ease), background 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease);
       }
       .sidebar-edge-toggle {
-        left: 360px;
+        left: var(--left-sidebar-w, 360px);
         transform: translate(-50%, -50%);
       }
       .related-sidebar-edge-toggle {

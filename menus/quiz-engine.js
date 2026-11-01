@@ -24,6 +24,23 @@ function __applyCat(key){
   const hero=document.querySelector(".hero");(hero||document.getElementById("feed")).scrollIntoView({block:"start"});
 }
 function __resetCat(){__setCat(null);const b=document.getElementById("catFilterBar");b&&b.remove();document.querySelectorAll("#catList .cat-item.cat-active").forEach(el=>el.classList.remove("cat-active"))}
+/* Desktop: drag the left sidebar's edge to resize it (same as the right-hand related sidebar). */
+{const app=document.getElementById("appScreen"),sb=document.getElementById("sidebar");
+if(app&&sb){
+  const K="alif.leftSidebarW",MIN=280,MAX=560;
+  const clamp=v=>Math.min(MAX,Math.max(MIN,v));
+  try{const v=parseFloat(localStorage.getItem(K));if(v)app.style.setProperty("--left-sidebar-w",clamp(v)+"px")}catch(_){}
+  const h=document.createElement("div");h.id="leftSidebarResize";h.className="left-sidebar-resize";h.title="Drag to resize";app.appendChild(h);
+  let on=false,x0=0,w0=0;
+  const mv=e=>{if(!on)return;const x=e.touches?e.touches[0].clientX:e.clientX;app.style.setProperty("--left-sidebar-w",clamp(w0+x-x0)+"px")};
+  const up=()=>{if(!on)return;on=false;h.classList.remove("dragging");document.body.style.userSelect="";document.body.style.cursor="";
+    try{localStorage.setItem(K,parseFloat(getComputedStyle(app).getPropertyValue("--left-sidebar-w"))||360)}catch(_){}
+    document.removeEventListener("mousemove",mv);document.removeEventListener("mouseup",up);document.removeEventListener("touchmove",mv);document.removeEventListener("touchend",up)};
+  const dn=e=>{on=true;x0=e.touches?e.touches[0].clientX:e.clientX;w0=sb.getBoundingClientRect().width;h.classList.add("dragging");document.body.style.userSelect="none";document.body.style.cursor="col-resize";
+    document.addEventListener("mousemove",mv);document.addEventListener("mouseup",up);document.addEventListener("touchmove",mv,{passive:true});document.addEventListener("touchend",up);e.preventDefault&&e.preventDefault()};
+  h.addEventListener("mousedown",dn);h.addEventListener("touchstart",dn,{passive:false});
+  h.addEventListener("dblclick",()=>{app.style.removeProperty("--left-sidebar-w");try{localStorage.removeItem(K)}catch(_){}});
+}}
 /* Browse-by-category and Bookmarked live INSIDE the sidebar: the main sidebar content slides away and the panel slides in. */
 const __SBP={
   cats:{id:"sbCats",title:"Browse by category",btn:"#openCategoryOverlay",overlay:"categoryOverlay",close:"closeCategoryOverlay",move:["categoryListWrap"]},
