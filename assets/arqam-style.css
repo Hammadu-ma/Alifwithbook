@@ -325,7 +325,8 @@ body.dark #feed .qcard:not(:last-child) .card-inner::after { background: rgba(25
 .cat-filter-bar .cf-count{flex:1 0 auto}
 .cat-filter-bar .cf-clear{flex:none;white-space:nowrap}
 @media (max-width:640px){.cat-filter-bar .cf-label{flex:1 1 0}.cat-filter-bar .cf-count{flex:none}}
-#appScreen main{min-width:0;max-width:100%}
+#appScreen main{min-width:0}
+@media (min-width:900px){#appScreen main{max-width:860px;margin-left:auto;margin-right:auto}}
 #appScreen main>.cat-filter-bar{width:auto;max-width:100%}
 /* main column must be allowed to shrink: grid 1fr = minmax(auto,1fr) let long content widen the whole page */
 #appScreen>div{min-width:0}
