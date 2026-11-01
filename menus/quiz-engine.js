@@ -24,44 +24,56 @@ function __applyCat(key){
   const hero=document.querySelector(".hero");(hero||document.getElementById("feed")).scrollIntoView({block:"start"});
 }
 function __resetCat(){__setCat(null);const b=document.getElementById("catFilterBar");b&&b.remove();document.querySelectorAll("#catList .cat-item.cat-active").forEach(el=>el.classList.remove("cat-active"))}
-/* Browse-by-category lives INSIDE the sidebar: the main sidebar content slides away and the category list slides in. */
-function __sbPanel(){
-  const sb=document.getElementById("sidebar");if(!sb)return null;
-  let p=document.getElementById("sbCats");
+/* Browse-by-category and Bookmarked live INSIDE the sidebar: the main sidebar content slides away and the panel slides in. */
+const __SBP={
+  cats:{id:"sbCats",title:"Browse by category",btn:"#openCategoryOverlay",overlay:"categoryOverlay",close:"closeCategoryOverlay",move:["categoryListWrap"]},
+  bm:{id:"sbBm",title:"Bookmarked questions",btn:"#openBookmarks",overlay:"bmOverlay",close:"closeOverlay",move:["practiceAllBtn","bmListWrap"]}
+};
+function __sbPanel(k){
+  const cfg=__SBP[k],sb=document.getElementById("sidebar");if(!sb)return null;
+  let p=document.getElementById(cfg.id);
   if(!p){
-    p=document.createElement("div");p.id="sbCats";p.className="sb-cats";p.setAttribute("aria-hidden","true");
-    p.innerHTML='<div class="sbc-head"><button type="button" class="sbc-back" id="sbcBack" aria-label="Back to sidebar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button><div class="sbc-title">Browse by category</div></div><div class="sbc-body" id="sbcBody"></div>';
+    p=document.createElement("div");p.id=cfg.id;p.className="sb-cats";p.setAttribute("aria-hidden","true");
+    p.innerHTML='<div class="sbc-head"><button type="button" class="sbc-back" aria-label="Back to sidebar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button><div class="sbc-title"></div></div><div class="sbc-body"></div>';
+    p.querySelector(".sbc-title").textContent=cfg.title;
     sb.appendChild(p);
-    p.querySelector("#sbcBack").addEventListener("click",()=>__sbClose());
-    const w=document.getElementById("categoryListWrap");if(w)p.querySelector("#sbcBody").appendChild(w);
+    p.querySelector(".sbc-back").addEventListener("click",()=>__sbClose());
+    const body=p.querySelector(".sbc-body");
+    cfg.move.forEach(i=>{let e=document.getElementById(i);if(!e)return;if(i==="practiceAllBtn")e=e.closest(".overlay-actions")||e;body.appendChild(e)});
   }
   return p;
 }
 let __sbSaved=0;
-function __sbOpen(){
-  const sb=document.getElementById("sidebar"),p=__sbPanel();if(!sb||!p)return;
-  __sbSaved=sb.scrollTop;sb.scrollTop=0;
+function __sbOpen(k){
+  const sb=document.getElementById("sidebar"),p=__sbPanel(k);if(!sb||!p)return;
+  document.querySelectorAll(".sb-cats.on").forEach(x=>{if(x!==p){x.classList.remove("on");x.setAttribute("aria-hidden","true")}});
+  if(!sb.classList.contains("sb-cat-open")){__sbSaved=sb.scrollTop;sb.scrollTop=0}
   const key=__getCat();
   p.querySelectorAll("[data-ovl-scrollto]").forEach(h=>{const a=!!key&&h.dataset.ovlScrollto==="cat-"+key;h.closest(".cat-item")?.classList.toggle("sbc-active",a)});
-  p.querySelectorAll(".cat-item").forEach((it,i)=>it.style.setProperty("--i",i));
-  sb.classList.add("sb-cat-open");p.setAttribute("aria-hidden","false");
+  p.querySelectorAll(".cat-item,.bm-row").forEach((it,i)=>it.style.setProperty("--i",i));
+  sb.classList.add("sb-cat-open");p.classList.add("on");p.setAttribute("aria-hidden","false");
   const b=p.querySelector(".sbc-body");b&&(b.scrollTop=0);
 }
 function __sbClose(instant){
-  const sb=document.getElementById("sidebar"),p=document.getElementById("sbCats");if(!sb||!sb.classList.contains("sb-cat-open"))return;
+  const sb=document.getElementById("sidebar");if(!sb||!sb.classList.contains("sb-cat-open"))return;
   if(instant)sb.classList.add("sb-no-anim");
-  sb.classList.remove("sb-cat-open");p&&p.setAttribute("aria-hidden","true");
+  sb.classList.remove("sb-cat-open");
+  document.querySelectorAll(".sb-cats.on").forEach(x=>{x.classList.remove("on");x.setAttribute("aria-hidden","true")});
   sb.scrollTop=__sbSaved;
   if(instant)requestAnimationFrame(()=>requestAnimationFrame(()=>sb.classList.remove("sb-no-anim")));
 }
-/* runs after the original handler has filled #categoryListWrap and shown the modal; closes the modal again before it paints */
+/* runs after the original handler has filled the list and shown the modal; closes the modal again before it paints */
 document.addEventListener("click",ev=>{
-  const b=ev.target.closest&&ev.target.closest("#openCategoryOverlay");if(!b)return;
-  const ov=document.getElementById("categoryOverlay");
-  if(ov&&ov.classList.contains("show")){const c=document.getElementById("closeCategoryOverlay");c&&c.click();ov.classList.remove("show")}
-  __sbOpen();
+  for(const k in __SBP){
+    const cfg=__SBP[k],b=ev.target.closest&&ev.target.closest(cfg.btn);if(!b)continue;
+    const ov=document.getElementById(cfg.overlay);
+    if(ov&&ov.classList.contains("show")){const c=document.getElementById(cfg.close);c&&c.click();ov.classList.remove("show")}
+    __sbOpen(k);return;
+  }
 });
 {const __sb=document.getElementById("sidebar");__sb&&new MutationObserver(()=>{if(!__sb.classList.contains("open")&&matchMedia("(max-width:880px)").matches)__sbClose(true)}).observe(__sb,{attributes:true,attributeFilter:["class"]})}
+/* tapping a bookmarked question jumps to it and returns the sidebar to normal */
+document.addEventListener("click",ev=>{const r=ev.target.closest&&ev.target.closest("#sbBm .bm-row");if(r&&!ev.target.closest(".bm-remove"))__sbClose()});
 document.addEventListener("click",ev=>{
   const el=ev.target.closest&&ev.target.closest('[data-scrollto^="cat-"],[data-ovl-scrollto^="cat-"]');
   if(!el)return;
