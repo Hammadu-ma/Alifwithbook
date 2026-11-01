@@ -1,3 +1,4 @@
+import './screen-anim.js';
 import { clearStudent, getStoredStudent, loadStudentForUser, signOutStudent, storeStudent, waitForAuthReady } from './auth.js';
 import { startUnreadTracking } from './class-chat.js';
 import { assertDeviceAllowed, holdBlockedDevice, startHeartbeat } from './device-session.js';
