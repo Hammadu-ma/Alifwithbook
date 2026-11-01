@@ -164,14 +164,14 @@ body.dark #appScreen main { background: transparent !important; }
 @media (max-width:880px){#appScreen .sidebar{box-shadow:0 0 40px rgba(0,0,0,.28)!important;border-right:none!important}}
 
 /* main sidebar content slides away (staggered) ... */
-#appScreen .sidebar>*:not(.sb-cats){
+#appScreen .sidebar>*:not(.sb-cats):not(.sb-grip){
   transition:transform .42s cubic-bezier(.22,.8,.24,1),opacity .3s ease;
   transition-delay:calc(var(--n,0)*18ms);
 }
 #appScreen .sidebar>*:nth-child(2){--n:1}#appScreen .sidebar>*:nth-child(3){--n:2}#appScreen .sidebar>*:nth-child(4){--n:3}
 #appScreen .sidebar>*:nth-child(5){--n:4}#appScreen .sidebar>*:nth-child(6){--n:5}#appScreen .sidebar>*:nth-child(7){--n:6}
 #appScreen .sidebar.sb-cat-open{overflow:hidden}
-#appScreen .sidebar.sb-cat-open>*:not(.sb-cats){
+#appScreen .sidebar.sb-cat-open>*:not(.sb-cats):not(.sb-grip){
   transform:translateX(-34px);opacity:0;pointer-events:none;
 }
 /* ... and the category panel glides in */
@@ -253,3 +253,20 @@ body.dark #appScreen .sidebar{background:#000!important;border-right-color:rgba(
 .rel-tx{min-width:0;display:flex;flex-direction:column;gap:3px}
 .rel-tx b{font-size:13px;font-weight:650;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .rel-tx small{font-size:11.5px;color:var(--ink-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* questions practised inside the sidebar (Practice all bookmarked): keep the explanation inside the card */
+.sb-cats .qcard{margin-left:0!important;margin-right:0!important;padding-left:0}
+.sb-cats .qcard .card-inner{border:1px solid var(--card-border);border-radius:16px!important;overflow:hidden}
+.sb-cats .qcard .panel{margin-left:0!important;margin-right:0!important;width:auto!important;max-width:100%!important;border-radius:12px}
+.sb-cats .vessel-rail{display:flex;flex-direction:column;gap:10px}
+
+/* mobile: sidebar can be dragged out to full screen */
+.sb-grip{display:none}
+@media (max-width:880px){
+  #appScreen .sidebar{width:var(--sbm-w,86vw)!important;max-width:var(--sbm-max,340px)!important;transition:transform .25s ease,width .32s cubic-bezier(.22,.8,.24,1),max-width .32s cubic-bezier(.22,.8,.24,1)!important}
+  #appScreen .sidebar.sb-full{--sbm-w:100vw;--sbm-max:100vw;border-radius:0!important}
+  #appScreen .sidebar.sb-dragging{transition:transform .25s ease!important}
+  .sb-grip{display:block;position:fixed;top:0;right:0;width:26px;height:100%;z-index:5;touch-action:none;cursor:ew-resize}
+  .sb-grip::after{content:'';position:absolute;top:50%;right:7px;width:4px;height:44px;margin-top:-22px;border-radius:4px;background:var(--ink-faint);opacity:.55}
+  #appScreen .sidebar.sb-full .sb-grip::after{opacity:.35}
+}

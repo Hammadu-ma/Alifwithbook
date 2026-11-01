@@ -54,6 +54,27 @@ if(app&&sb){
   h.addEventListener("mousedown",dn);h.addEventListener("touchstart",dn,{passive:false});
   h.addEventListener("dblclick",()=>{app.style.removeProperty("--left-sidebar-w");try{localStorage.removeItem(K)}catch(_){}});
 }}
+/* Mobile: drag the sidebar's right edge to pull it out to full screen (and back). */
+{const sb=document.getElementById("sidebar");
+if(sb){
+  const g=document.createElement("div");g.className="sb-grip";g.setAttribute("aria-hidden","true");sb.appendChild(g);sb.addEventListener("scroll",()=>{g.style.transform="translateY("+sb.scrollTop+"px)"},{passive:true});
+  const vw=()=>window.innerWidth,base=()=>Math.min(340,vw()*.86);
+  let on=false,x0=0,w0=0;
+  const set=w=>{sb.style.setProperty("--sbm-w",w+"px");sb.style.setProperty("--sbm-max",w+"px")};
+  const clear=()=>{sb.style.removeProperty("--sbm-w");sb.style.removeProperty("--sbm-max")};
+  const mv=ev=>{if(!on)return;const x=ev.touches?ev.touches[0].clientX:ev.clientX;set(Math.min(vw(),Math.max(base(),w0+x-x0)))};
+  const up=()=>{if(!on)return;on=false;sb.classList.remove("sb-dragging");
+    const w=sb.getBoundingClientRect().width,full=w>base()+(vw()-base())*.35;
+    clear();sb.classList.toggle("sb-full",full);
+    document.removeEventListener("touchmove",mv);document.removeEventListener("touchend",up);document.removeEventListener("touchcancel",up)};
+  g.addEventListener("touchstart",ev=>{on=true;x0=ev.touches[0].clientX;w0=sb.getBoundingClientRect().width;sb.classList.add("sb-dragging");set(w0);
+    document.addEventListener("touchmove",mv,{passive:true});document.addEventListener("touchend",up);document.addEventListener("touchcancel",up)},{passive:true});
+  window.__sbFull=(f=true)=>sb.classList.toggle("sb-full",!!f);
+  /* closing the drawer returns it to normal width for next time */
+  new MutationObserver(()=>{if(!sb.classList.contains("open")&&sb.classList.contains("sb-full"))setTimeout(()=>{sb.classList.remove("sb-full")},300)}).observe(sb,{attributes:true,attributeFilter:["class"]});
+  /* practising all bookmarked questions needs room: open full screen on phones */
+  document.addEventListener("click",ev=>{if(ev.target.closest&&ev.target.closest("#practiceAllBtn")&&matchMedia("(max-width:880px)").matches)sb.classList.add("sb-full")});
+}}
 /* Browse-by-category and Bookmarked live INSIDE the sidebar: the main sidebar content slides away and the panel slides in. */
 const __SBP={
   cats:{id:"sbCats",title:"Browse by category",btn:"#openCategoryOverlay",overlay:"categoryOverlay",close:"closeCategoryOverlay",move:["categoryListWrap"]},
