@@ -243,7 +243,7 @@ function renderHead() {
   if (nav.view === 'root') {
     elBrandIcon.className = 'fa-solid fa-book-open';
     elTitle.textContent = 'AResources';
-    elSub.textContent = 'Books and lectures for every module';
+    elSub.textContent = '';
     tabs = tabsHtml([
       { key: 'books', icon: 'fa-solid fa-book', label: 'ABooks', count: loaded.books ? BOOKS.length : null },
       { key: 'videos', icon: 'fa-solid fa-play', label: 'AVideos', count: loaded.videos ? VIDEOS.length : null }

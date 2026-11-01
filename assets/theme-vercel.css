@@ -176,3 +176,7 @@ body.dark .pf-hero {
 .pf-hero :is(.pf-name, .pf-email) { text-shadow: 0 1px 14px rgba(0, 20, 80, .35); }
 .pf-hero .pf-avatar { background: rgba(255, 255, 255, .14); border-color: rgba(255, 255, 255, .6); }
 .pf-hero .pf-chip { background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .22); }
+
+/* ---- Resources home: no subtitle and no brand icon next to the title (module pages keep theirs) ---- */
+.res-head:not(.compact) .res-brand-ico,
+.res-head:not(.compact) .res-sub { display: none !important; }

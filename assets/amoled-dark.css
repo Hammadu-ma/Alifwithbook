@@ -141,3 +141,6 @@ body.dark #feed .qcard .panel {
 }
 body.dark .panel code { background: #0E1014; }
 body.dark .panel blockquote { background: #07080B; }
+
+/* profile page header: deep black, hairline underneath */
+body.dark .pf-topbar { background: #000000 !important; border-bottom-color: rgba(255, 255, 255, .07) !important; }
