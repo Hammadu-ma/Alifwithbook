@@ -216,3 +216,6 @@ body.dark #appScreen .sidebar{background:#0B0D10!important;border-right-color:rg
 @media (prefers-reduced-motion:reduce){
   #appScreen .sidebar>*,.sb-cats,.sb-cats .cat-item{transition-duration:.01ms!important;transition-delay:0s!important}
 }
+
+/* mobile drawer: dim only, no blur behind the sidebar */
+.sidebar-backdrop,.sidebar-backdrop.show{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:rgba(0,0,0,.45)}
