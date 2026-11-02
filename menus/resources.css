@@ -912,3 +912,6 @@ body.rq-embedded .jump-fab { z-index: 440; }
 .res-sov-empty i { font-size: 28px; opacity: .6; }
 @media (prefers-reduced-motion: reduce) { .res-sov { transition: none; } }
 .res-sov-fillico.fa-arrow-up { transform: rotate(-45deg); }
+
+/* old Exams-page quiz cards reused inside Resources */
+.res-main .quiz-grid.res-qgrid { margin: 4px 0 0; padding: 0; }

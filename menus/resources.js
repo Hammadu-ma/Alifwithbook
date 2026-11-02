@@ -24,7 +24,7 @@ import { forceUnlockBodyScroll, lockBodyScroll } from './cache.js';
 import { closeChatScreen } from './class-chat.js';
 import { db } from './cloud-sync.js';
 import { homeScreen, pickerScreen } from './gate-screen.js';
-import { startQuizFromCard, triggerLockResponse } from './home-screen.js';
+import { quizCardsHtml, startQuizFromCard, triggerLockResponse, wireQuizCards } from './home-screen.js';
 import { cacheState, getCachedWithTTL, setCachedWithTTL } from './loaders.js';
 import { getEffectiveLockMessage, isResourceLocked } from './lock.js';
 import { popModalState, pushModalState } from './modal-backbutton.js';
@@ -170,13 +170,15 @@ async function ensureQuizzes(force = false) {
   quizzesLoading = false;
   queueRender();
 }
-function openQuiz(el) {
-  const q = QUIZZES.find(x => x.id === el.dataset.qid && x.subjectId === el.dataset.qsub);
+function openQuiz(el) { openQuizBy(el.dataset.qsub, el.dataset.qid, el); }
+function openQuizBy(subjectId, quizId, el) {
+  const q = QUIZZES.find(x => x.id === quizId && x.subjectId === subjectId);
   if (!q) return;
   const msg = isResourceLocked({ ...q }, getStoredStudent(), 'quiz')
     ? lockMessage({ quiz: q, subjectId: q.subjectId }, getStoredStudent()) : '';
-  if (msg) { triggerLockResponse(el, msg); return; }
+  if (msg) { triggerLockResponse(el || null, msg); return; }
   // the Exams code looks the quiz up in its own list: make sure it is there, then use its normal opening steps
+  // (that path also handles exam mode, link quizzes and locks exactly like the Exams page)
   if (!ALL_QUIZZES.some(x => x.id === q.id && x.subjectId === q.subjectId)) setALL_QUIZZES(ALL_QUIZZES.concat([q]));
   closeResources();
   startQuizFromCard(q.subjectId, q.id);
@@ -499,23 +501,6 @@ function lecturerCard(g, i) {
   </button>`;
 }
 
-function quizCard(q, i) {
-  const color = q.subjectId ? subjectColorFor(q.subjectId) : accentFor(q.moduleId);
-  const sub = subjectName(q.subjectId);
-  const locked = isResourceLocked({ ...q }, getStoredStudent(), 'quiz');
-  const link = !!(q.linkUrl || q.type === 'link');
-  const cnt = q.questionCount ?? q.totalQuestions ?? q.count ?? q.numQuestions ?? null;
-  const badge = q.isExam ? '<span class="res-chip solid">Exam</span>' : link ? '<span class="res-chip solid">Link</span>' : '';
-  return `<button type="button" class="res-quiz${locked ? ' locked' : ''}" data-qid="${esc(q.id)}" data-qsub="${esc(q.subjectId)}" style="--accent:${color};--i:${Math.min(i, 14)}">
-    <span class="res-quiz-ico"><i class="fa-solid ${q.isExam ? 'fa-stopwatch' : link ? 'fa-link' : 'fa-circle-question'}"></i></span>
-    <span class="res-quiz-body">
-      <span class="res-quiz-title">${esc(q.name || 'Quiz')}</span>
-      <span class="res-quiz-meta">${sub ? `<span class="res-tag"><span class="dot"></span>${esc(sub)}</span>` : ''}${cnt ? `<em>${plural(Number(cnt) || 0, 'question')}</em>` : ''}${badge}</span>
-    </span>
-    ${locked ? '<span class="res-lock inline"><i class="fa-solid fa-lock"></i></span>' : '<i class="fa-solid fa-chevron-right res-mod-chev"></i>'}
-  </button>`;
-}
-
 const matches = (it, q, fields) => !q || fields.some(f => norm(it[f]).includes(q));
 
 function renderList(o) {
@@ -550,11 +535,14 @@ function renderListImpl({ animate = true } = {}) {
     }
     let items = inModule.filter(x => x.subjectId === nav.subject);
     items = items.filter(x => matches(x, q, ['name']));
+    const student = getStoredStudent();
+    items = items.slice().sort((x, y) => (isResourceLocked({ ...x }, student, 'quiz') ? 1 : 0) - (isResourceLocked({ ...y }, student, 'quiz') ? 1 : 0));
     host.innerHTML = items.length
-      ? `<div class="res-grid res-grid-quiz">${items.map(quizCard).join('')}</div>`
+      ? `<div class="quiz-grid res-qgrid">${quizCardsHtml(items)}</div>`
       : (q
         ? emptyHtml('fa-solid fa-magnifying-glass', 'No quizzes found', 'Try a different search.')
         : emptyHtml('fa-solid fa-circle-question', 'No quizzes yet', 'Quizzes for this module will appear here.'));
+    if (items.length) wireQuizCards(host, openQuizBy);
     return;
   }
   const ready = isBooks ? loaded.books : loaded.videos;
