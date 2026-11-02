@@ -36,6 +36,9 @@ function hasExamInProgress(subjectId, quizId) {   // same key as exam-mode.js
 
 const CSS = `
 .quiz-card.exm-dual{touch-action:pan-y;-webkit-user-select:none;user-select:none}
+/* no lift on hover: the card moving under the pointer made the chooser flicker and jolt the page */
+.quiz-card.exm-dual:hover,.quiz-card.exm-dual:focus-visible{transform:none!important}
+.res-main .quiz-card.exm-dual{overflow:hidden;contain:paint}
 
 /* ---------- Exam-only tag ---------- */
 .exm-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
