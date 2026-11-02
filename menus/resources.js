@@ -69,12 +69,12 @@ let QUIZZES = [];
 let loaded = { mods: false, books: false, videos: false, quizzes: false };
 let loadFailed = false;
 
-const ROOT = { tab: 'books', view: 'root', moduleId: null, vtab: 'all', lecturer: null, subject: null };
+const ROOT = { tab: 'books', view: 'root', moduleId: null, vtab: 'all', lecturer: null, subject: null, solo: false };
 let nav = { ...ROOT };
 let subjectId = 'all';   // transient filters (not kept in history)
 let query = '';
 
-const snap = () => ({ tab: nav.tab, view: nav.view, moduleId: nav.moduleId, vtab: nav.vtab, lecturer: nav.lecturer, subject: nav.subject });
+const snap = () => ({ tab: nav.tab, view: nav.view, moduleId: nav.moduleId, vtab: nav.vtab, lecturer: nav.lecturer, subject: nav.subject, solo: nav.solo });
 const isOpen = () => screen && !screen.classList.contains('hidden');
 
 function bookTypeLabel(b) {
@@ -189,13 +189,14 @@ function hideSiblings() {
     .forEach(el => el && el.classList.add('hidden'));
 }
 
-export function openResources({ skipHistory = false } = {}) {
+export function openResources({ skipHistory = false, solo = false } = {}) {
   const student = getStoredStudent();
   if (!student) return;
   hideSiblings();
   closeChatScreen();
   screen.classList.remove('hidden');
-  setActiveNavTab('resources');
+  const rvSolo = skipHistory && history.state && history.state.rv && history.state.rv.solo;
+  setActiveNavTab(solo || rvSolo ? 'exams' : 'resources');
   updateBottomNavVisibility();
   forceUnlockBodyScroll();
   lockBodyScroll();
@@ -204,7 +205,7 @@ export function openResources({ skipHistory = false } = {}) {
     const rv = history.state && history.state.rv;
     nav = rv ? { ...ROOT, ...rv } : { ...ROOT, tab: nav.tab };
   } else {
-    nav = { ...ROOT, tab: nav.tab };
+    nav = { ...ROOT, tab: solo ? 'quizzes' : (nav.solo ? 'books' : nav.tab), solo: !!solo };
     if (history.state && history.state.appState === 'resources') history.replaceState({ appState: 'resources', rv: snap() }, '', '');
     else pushAppState('resources');
   }
@@ -234,14 +235,14 @@ function go(next, { push = false } = {}) {
 function goBack() {
   if (nav.view === 'root') return;
   if (history.state && history.state.rv && history.state.rv.view !== 'root') { history.back(); return; }
-  go(nav.view === 'qsubject' ? { view: 'module', subject: null } : nav.view === 'lecturer' ? { view: 'module', lecturer: null, vtab: 'lect' } : { ...ROOT, tab: nav.tab });
+  go(nav.view === 'qsubject' ? { view: 'module', subject: null } : nav.view === 'lecturer' ? { view: 'module', lecturer: null, vtab: 'lect' } : { ...ROOT, tab: nav.tab, solo: nav.solo });
 }
 
 /* ------------------------------------------------------------- rendering */
 function render() {
   if (!isOpen()) return;
   // A module that no longer exists (deleted / other university) -> back to the root.
-  if (nav.view !== 'root' && loaded.mods && !moduleById(nav.moduleId)) nav = { ...ROOT, tab: nav.tab };
+  if (nav.view !== 'root' && loaded.mods && !moduleById(nav.moduleId)) nav = { ...ROOT, tab: nav.tab, solo: nav.solo };
   renderHead();
   renderMain();
 }
@@ -278,10 +279,10 @@ function renderHead() {
 
   let tabs = '', pills = '';
   if (nav.view === 'root') {
-    elBrandIcon.className = 'fa-solid fa-book-open';
-    elTitle.textContent = 'AResources';
+    elBrandIcon.className = nav.solo ? 'fa-solid fa-file-pen' : 'fa-solid fa-book-open';
+    elTitle.textContent = nav.solo ? 'Exams' : 'AResources';
     elSub.textContent = '';
-    tabs = tabsHtml([
+    if (!nav.solo) tabs = tabsHtml([
       { key: 'books', icon: 'fa-solid fa-book', label: 'ABooks', count: loaded.books ? BOOKS.length : null },
       { key: 'videos', icon: 'fa-solid fa-play', label: 'AVideos', count: loaded.videos ? VIDEOS.length : null },
       { key: 'quizzes', icon: 'fa-solid fa-circle-question', label: 'AQuizzes', count: loaded.quizzes ? QUIZZES.length : null }
@@ -629,6 +630,7 @@ elHead.addEventListener('click', e => {
 
 /* ---- swipe left/right between tabs (ABooks <-> AVideos, All <-> Lecturers) ---- */
 function swipeTabs() {
+  if (nav.solo) return null;
   if (nav.view === 'root') return { keys: ['books', 'videos', 'quizzes'], cur: nav.tab, set: k => go({ tab: k }) };
   if (nav.view === 'module' && nav.tab === 'videos') return { keys: ['all', 'lect'], cur: nav.vtab, set: k => go({ vtab: k }) };
   return null;
