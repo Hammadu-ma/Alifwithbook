@@ -401,9 +401,7 @@ function renderRoot(tab) {
 
   const total = list.length;
   const word = isQuizzes ? 'quiz' : isBooks ? 'book' : 'video';
-  const lead = `<p class="res-lead">${total
-    ? `Choose a module to browse its ${isQuizzes ? 'quizzes' : isBooks ? 'books' : 'lectures'} <span>· ${plural(total, word)} available</span>`
-    : (dataReady ? `No ${isQuizzes ? 'quizzes' : isBooks ? 'books' : 'videos'} have been added yet — check back soon.` : 'Loading…')}</p>`;
+  const lead = total ? '' : `<p class="res-lead">${dataReady ? `No ${isQuizzes ? 'quizzes' : isBooks ? 'books' : 'videos'} have been added yet — check back soon.` : 'Loading…'}</p>`;
 
   elMain.innerHTML = lead + `<div class="res-grid res-grid-module">${rows.map((r, idx) => {
     const cover = isQuizzes ? moduleCoverUrl(r.m, [], 'book') : moduleCoverUrl(r.m, list, isBooks ? 'book' : 'video');
@@ -526,7 +524,7 @@ function renderList({ animate = true } = {}) {
       const order = new Map(SUBJ.map((x, i) => [x.id, i]));
       const ids = [...new Set(inModule.map(x => x.subjectId))].sort((a, b) => (order.get(a) ?? 999) - (order.get(b) ?? 999));
       host.innerHTML = ids.length
-        ? `<p class="res-lead">Choose a subject <span>· ${plural(ids.length, 'subject')}</span></p><div class="res-grid res-grid-module">${ids.map((id, idx) => {
+        ? `<div class="res-grid res-grid-module">${ids.map((id, idx) => {
             const n = inModule.filter(x => x.subjectId === id).length;
             const col = subjectColorFor(id);
             let ic = 'fa-solid fa-book-medical'; try { ic = subjectIcon(subjectName(id)); } catch (_) {}
