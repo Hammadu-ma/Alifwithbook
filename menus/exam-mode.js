@@ -92,7 +92,7 @@ function closeExam(fromBack) {
   EXAM_STATE = null;
   if (!fromBack) popModalState(onBack);
   const ret = window.__alifReturn;
-  if (ret) { window.__alifReturn = null; try { ret(); } catch (_) {} }
+  if (ret) { try { ret(); } catch (_) {} }
 }
 
 // Hardware / browser back: on setup + results it simply leaves; mid-exam it asks to submit
