@@ -343,9 +343,14 @@ function emptyHtml(icon, title, text) {
   return `<div class="res-empty"><div class="res-empty-ico"><i class="${icon}"></i></div><h4>${esc(title)}</h4><p>${esc(text)}</p></div>`;
 }
 
+/* cards animate in only the first time a view is shown; re-renders / revisits stay still */
+const seenViews = new Set();
+const viewKey = () => [nav.tab, nav.view, nav.moduleId, nav.subject, nav.vtab, nav.lecturer].join('|');
+const markSeen = () => seenViews.add(viewKey());
+
 function renderMain() {
   const isBooks = nav.tab === 'books';
-  elMain.className = `res-main lay-${layout}`;
+  elMain.className = `res-main lay-${layout}${seenViews.has(viewKey()) ? ' noanim' : ''}`;
   if (loadFailed && !MODS.length) {
     elMain.innerHTML = emptyHtml('fa-solid fa-signal', 'Couldn’t load resources', 'Check your connection and try again.');
     return;
@@ -403,6 +408,7 @@ function renderRoot(tab) {
   const word = isQuizzes ? 'quiz' : isBooks ? 'book' : 'video';
   const lead = total ? '' : `<p class="res-lead">${dataReady ? `No ${isQuizzes ? 'quizzes' : isBooks ? 'books' : 'videos'} have been added yet — check back soon.` : 'Loading…'}</p>`;
 
+  if (dataReady || MODS.length) markSeen();
   elMain.innerHTML = lead + `<div class="res-grid res-grid-module">${rows.map((r, idx) => {
     const cover = isQuizzes ? moduleCoverUrl(r.m, [], 'book') : moduleCoverUrl(r.m, list, isBooks ? 'book' : 'video');
     const meta = r.n
@@ -511,10 +517,15 @@ function quizCard(q, i) {
 
 const matches = (it, q, fields) => !q || fields.some(f => norm(it[f]).includes(q));
 
-function renderList({ animate = true } = {}) {
+function renderList(o) {
+  renderListImpl(o);
+  const h = $('resList');
+  if (h && h.querySelector('.res-grid > :not(.res-sk)')) markSeen();
+}
+function renderListImpl({ animate = true } = {}) {
   const host = $('resList');
   if (!host) return;
-  host.classList.toggle('noanim', !animate);
+  host.classList.toggle('noanim', !animate || seenViews.has(viewKey()));
   const isBooks = nav.tab === 'books';
   const q = norm(query);
   if (nav.tab === 'quizzes') {
