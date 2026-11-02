@@ -172,6 +172,13 @@ async function ensureQuizzes(force = false) {
   queueRender();
 }
 function openQuiz(el) { openQuizBy(el.dataset.qsub, el.dataset.qid, el); }
+/* Back from a quiz/exam opened here returns to this exact Resources view, not the old Exams page. */
+function setReturn(keep) {
+  window.__alifKeep = !!keep;
+  const saved = { ...nav }, solo = !!nav.solo;
+  window.__alifReturn = () => { openResources({ solo }); go(saved); };
+  if (keep) window.__alifKeep = true;
+}
 function prepQuiz(list) {
   const add = (list || QUIZZES).filter(q => !ALL_QUIZZES.some(x => x.id === q.id && x.subjectId === q.subjectId));
   if (add.length) setALL_QUIZZES(ALL_QUIZZES.concat(add));
@@ -185,6 +192,7 @@ function openQuizBy(subjectId, quizId, el) {
   // the Exams code looks the quiz up in its own list: make sure it is there, then use its normal opening steps
   // (that path also handles exam mode, link quizzes and locks exactly like the Exams page)
   if (!ALL_QUIZZES.some(x => x.id === q.id && x.subjectId === q.subjectId)) setALL_QUIZZES(ALL_QUIZZES.concat([q]));
+  setReturn(true);
   closeResources();
   startQuizFromCard(q.subjectId, q.id);
 }
@@ -551,7 +559,7 @@ function renderListImpl({ animate = true } = {}) {
       prepQuiz(items);
       wireQuizCards(host, openQuizBy);
       const grid = host.querySelector('.quiz-grid');
-      if (grid) attachExamCards(grid, (sid, qid) => { prepQuiz(); closeResources(); });
+      if (grid) attachExamCards(grid, () => { prepQuiz(); setReturn(false); closeResources(); });
     }
     return;
   }

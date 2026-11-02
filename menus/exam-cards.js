@@ -224,6 +224,7 @@ function resetCard(card) {
 const beforeOpen = new WeakMap();
 function prep(card) {
   for (let h = card.parentElement; h; h = h.parentElement) { const f = beforeOpen.get(h); if (f) { try { f(card.dataset.subject, card.dataset.quiz); } catch (_) {} return; } }
+  window.__alifReturn = null;
 }
 function launchExam(card) {
   prep(card);
@@ -278,7 +279,7 @@ function init(grid) {
     const card = opt.closest('.quiz-card');
     if (!card) return;
     if (opt.dataset.exm === 'exam') launchExam(card);
-    else { prep(card); startQuizFromCard(card.dataset.subject, card.dataset.quiz); }
+    else { prep(card); if (window.__alifReturn) window.__alifKeep = true; startQuizFromCard(card.dataset.subject, card.dataset.quiz); }
   }, true);
 
   // Keyboard: Enter = quiz (default), Shift+Enter = exam.
