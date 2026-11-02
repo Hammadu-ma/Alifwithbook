@@ -41,7 +41,7 @@ import {
   collection, query, where, orderBy, limit, getDocs, getDoc, doc,
   collectionGroup, addDoc, serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
-import { getStoredStudent } from './auth.js';
+import { getStoredStudent, getAuthUser } from './auth.js';
 import { ttlRead, dropRead } from './read-cache.js';
 // Use the app's already-authenticated Firestore. The old separate 'buyModal' app never signed in,
 // so every request arrived unauthenticated and the security rules rejected it.
@@ -104,7 +104,70 @@ async function getTelegramSettings() {
   return TELEGRAM_SETTINGS_PROMISE;
 }
 
-async function sendReceiptToTelegram({ offer, senderName, file, student, bankAccount }) {
+/* Shrink phone photos before upload: keeps the request small enough for the relay and inside Telegram's photo limits. */
+function compressReceipt(file, maxSide = 1600, quality = 0.82) {
+  return new Promise((resolve) => {
+    const fail = () => resolve(file);
+    try {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const k = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+          const w = Math.max(1, Math.round(img.naturalWidth * k)), h = Math.max(1, Math.round(img.naturalHeight * k));
+          const c = document.createElement('canvas'); c.width = w; c.height = h;
+          const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(url);
+          c.toBlob((b) => resolve(b && b.size < file.size ? new File([b], (file.name || 'receipt').replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' }) : file), 'image/jpeg', quality);
+        } catch (_) { fail(); }
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); fail(); };
+      img.src = url;
+    } catch (_) { fail(); }
+  });
+}
+const fileToBase64 = (f) => new Promise((res, rej) => {
+  const r = new FileReader();
+  r.onload = () => res(String(r.result).split(',')[1] || '');
+  r.onerror = () => rej(new Error('Could not read the receipt image'));
+  r.readAsDataURL(f);
+});
+
+/* Preferred path: our own server relay (/api/telegram-receipt). Returns null when the relay is not deployed/configured. */
+async function sendViaRelay({ offer, senderName, file, student, bankAccount }) {
+  const user = getAuthUser();
+  if (!user) throw new Error('Please sign in again before paying.');
+  const idToken = await user.getIdToken();
+  const small = await compressReceipt(file);
+  const base64 = await fileToBase64(small);
+  let res;
+  try {
+    res = await fetch('/api/telegram-receipt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+      body: JSON.stringify({
+        base64, fileName: small.name || 'receipt.jpg', mimeType: small.type || 'image/jpeg',
+        offer: { name: offer.name, type: offer.type, price: offer.price },
+        senderName,
+        bankAccount: bankAccount ? { bankName: bankAccount.bankName, accountName: bankAccount.accountName, accountNumber: bankAccount.accountNumber } : null,
+        studentName: student.name, studentId: student.studentId || student.ID || null, batch: student.batch, email: student.email,
+      }),
+    });
+  } catch (_) { return null; }
+  if (res.status === 404 || res.status === 503 || res.status === 405) return null;
+  let data = {};
+  try { data = await res.json(); } catch (_) {}
+  if (!res.ok) throw new Error(data.error || `Receipt upload failed (${res.status})`);
+  return { telegramFileId: data.telegramFileId || null, telegramMessageId: data.telegramMessageId || null };
+}
+
+async function sendReceiptToTelegram(args) {
+  const viaRelay = await sendViaRelay(args);
+  if (viaRelay) return viaRelay;
+  return sendReceiptDirect(args);
+}
+
+async function sendReceiptDirect({ offer, senderName, file, student, bankAccount }) {
   const settings = await getTelegramSettings();
   if (!settings.botToken || !settings.chatId) {
     throw new Error('Telegram is not configured yet.');
