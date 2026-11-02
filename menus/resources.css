@@ -876,3 +876,39 @@ body.rq-embedded .jump-fab { z-index: 440; }
 .res-quiz.locked { opacity: .72; }
 .res-lock.inline { position: static; flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink-soft); }
 .noanim .res-quiz { animation: none; }
+
+/* search bar: the inner input must not draw a second bar */
+.res-search { border-radius: 999px; cursor: text; }
+.res-search input, .res-search input:focus { background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; outline: 0 !important; cursor: text; }
+.res-search:focus-within { box-shadow: none; border-color: var(--card-border); }
+
+/* full-screen search overlay with live suggestions */
+.res-sov { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; background: var(--paper); opacity: 0; transform: translateY(10px); transition: opacity .2s var(--ease), transform .26s var(--ease); }
+.res-sov.show { opacity: 1; transform: none; }
+.res-sov.hidden { display: none; }
+.res-sov-bar { display: flex; align-items: center; gap: 10px; padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 10px; border-bottom: 1px solid var(--card-border); }
+.res-sov-back { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--card-border); background: var(--card); color: var(--ink); display: grid; place-items: center; cursor: pointer; }
+.res-sov-field { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 0 8px 0 14px; height: 44px; border-radius: 999px; background: var(--card); border: 1px solid var(--card-border); color: var(--ink-faint); }
+.res-sov-field:focus-within { border-color: var(--primary); }
+.res-sov-field input, .res-sov-field input:focus { flex: 1; min-width: 0; background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; outline: 0 !important; color: var(--ink); font-size: 16px; padding: 0; }
+.res-sov-clear { flex: none; width: 30px; height: 30px; border: 0; border-radius: 50%; background: color-mix(in srgb, var(--ink) 10%, transparent); color: var(--ink-soft); cursor: pointer; }
+.res-sov-list { flex: 1; overflow-y: auto; padding: 8px 12px calc(24px + env(safe-area-inset-bottom, 0px)); -webkit-overflow-scrolling: touch; }
+.res-sov-h { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-faint); padding: 12px 6px 6px; }
+.res-sov-row, .res-sov-recent { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 9px 8px; border: 0; border-radius: 14px; background: none; color: var(--ink); cursor: pointer; font-family: inherit; }
+.res-sov-row:hover, .res-sov-recent:hover, .res-sov-row:active, .res-sov-recent:active { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.res-sov-th { position: relative; flex: none; width: 64px; height: 42px; border-radius: 10px; overflow: hidden; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, #0070f3, #00dfd8); }
+.res-sov-th.book { width: 36px; height: 48px; border-radius: 7px; }
+.res-sov-th.quiz { width: 42px; height: 42px; }
+.res-sov-th img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.res-sov-th i { position: relative; font-size: 13px; text-shadow: 0 1px 5px rgba(0,0,0,.4); }
+.res-sov-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.res-sov-tx b { font-size: 14px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.res-sov-tx small { font-size: 12px; color: var(--ink-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.res-sov mark { background: color-mix(in srgb, var(--primary) 22%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+.res-sov-recent > i:first-child { width: 36px; text-align: center; color: var(--ink-faint); }
+.res-sov-recent span { flex: 1; min-width: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.res-sov-fillico { flex: none; color: var(--ink-faint); font-size: 12px; opacity: .7; }
+.res-sov-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 60px 20px; color: var(--ink-faint); text-align: center; }
+.res-sov-empty i { font-size: 28px; opacity: .6; }
+@media (prefers-reduced-motion: reduce) { .res-sov { transition: none; } }
+.res-sov-fillico.fa-arrow-up { transform: rotate(-45deg); }

@@ -367,7 +367,7 @@ function renderMain() {
   }
   elMain.innerHTML = `
     <label class="res-search"><i class="fa-solid fa-magnifying-glass"></i>
-      <input id="resSearch" type="search" inputmode="search" autocomplete="off" placeholder="${nav.tab === 'quizzes' ? 'Search quizzes…' : isBooks ? 'Search books or authors…' : 'Search videos or lecturers…'}" value="${esc(query)}"></label>
+      <input id="resSearch" type="search" inputmode="search" autocomplete="off" readonly placeholder="${nav.tab === 'quizzes' ? 'Search quizzes…' : isBooks ? 'Search books or authors…' : 'Search videos or lecturers…'}" value="${esc(query)}"></label>
     <div id="resList"></div>`;
   renderList();
 }
@@ -632,7 +632,7 @@ function swipeTabs() {
   const reset = () => { elMain.style.transition = ''; elMain.style.transform = '';  };
 
   screen.addEventListener('touchstart', e => {
-    if (e.touches.length !== 1 || e.target.closest('#resHead, .res-head, .res-sheet, .res-player, [role="dialog"], input, textarea, select')) { t0 = null; return; }
+    if (e.touches.length !== 1 || e.target.closest('#resHead, .res-head, .res-sheet, .res-sov, .res-player, [role="dialog"], input, textarea, select')) { t0 = null; return; }
     sw = swipeTabs();
     if (!sw) { t0 = null; return; }
     const t = e.touches[0];
@@ -820,6 +820,107 @@ document.addEventListener('keydown', e => {
   else if (elSheet.classList.contains('show')) closeSheet();
 });
 
+
+
+/* ------------------------------------------------ full-screen search with live suggestions */
+const LS_RECENT = 'alif_res_recent_v1';
+const recents = () => { try { return JSON.parse(localStorage.getItem(LS_RECENT) || '[]').slice(0, 6); } catch (_) { return []; } };
+const saveRecent = t => { t = String(t || '').trim(); if (!t) return; try { localStorage.setItem(LS_RECENT, JSON.stringify([t, ...recents().filter(x => x !== t)].slice(0, 6))); } catch (_) {} };
+const elSov = document.createElement('div');
+elSov.className = 'res-sov hidden';
+elSov.innerHTML = `<div class="res-sov-bar">
+    <button type="button" class="res-sov-back" data-sov-close aria-label="Close search"><i class="fa-solid fa-arrow-left"></i></button>
+    <label class="res-sov-field"><i class="fa-solid fa-magnifying-glass"></i><input id="resSovInput" type="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Search…"><button type="button" class="res-sov-clear" data-sov-clear aria-label="Clear"><i class="fa-solid fa-xmark"></i></button></label>
+  </div><div class="res-sov-list" id="resSovList"></div>`;
+screen.appendChild(elSov);
+const sovInput = elSov.querySelector('#resSovInput'), sovList = elSov.querySelector('#resSovList');
+
+function searchPool() {
+  if (nav.tab === 'books') return { kind: 'book', items: itemsIn(BOOKS, nav.moduleId), f: ['title', 'author', 'description'], ph: 'Search books or authors…' };
+  if (nav.tab === 'quizzes') {
+    const all = itemsIn(QUIZZES, nav.moduleId);
+    return { kind: 'quiz', items: nav.view === 'qsubject' ? all.filter(x => x.subjectId === nav.subject) : all, f: ['name', 'subjectName'], ph: 'Search quizzes…' };
+  }
+  let vids = itemsIn(VIDEOS, nav.moduleId);
+  if (nav.view === 'lecturer') { const g = groupLecturers(vids).find(x => x.key === nav.lecturer); vids = g ? g.videos : []; }
+  return { kind: 'video', items: vids, f: ['title', 'lecturer', 'description'], ph: 'Search videos or lecturers…' };
+}
+const hl = (text, q) => {
+  const t = String(text || ''), i = q ? norm(t).indexOf(q) : -1;
+  return i < 0 ? esc(t) : esc(t.slice(0, i)) + '<mark>' + esc(t.slice(i, i + q.length)) + '</mark>' + esc(t.slice(i + q.length));
+};
+function renderSov() {
+  const pool = searchPool(), q = norm(sovInput.value);
+  elSov.querySelector('[data-sov-clear]').style.visibility = q ? 'visible' : 'hidden';
+  if (!q) {
+    const r = recents();
+    sovList.innerHTML = r.length
+      ? `<div class="res-sov-h">Recent</div>${r.map(t => `<button type="button" class="res-sov-recent" data-sov-fill="${esc(t)}"><i class="fa-solid fa-clock-rotate-left"></i><span>${esc(t)}</span><i class="fa-solid fa-arrow-up res-sov-fillico"></i></button>`).join('')}`
+      : `<div class="res-sov-empty"><i class="fa-solid fa-magnifying-glass"></i><p>${esc(pool.ph)}</p></div>`;
+    return;
+  }
+  const scored = pool.items.map(it => {
+    const first = norm(it[pool.f[0]]);
+    const hit = pool.f.some(f => norm(it[f]).includes(q));
+    return hit ? { it, r: first.startsWith(q) ? 0 : first.includes(q) ? 1 : 2 } : null;
+  }).filter(Boolean).sort((a, b) => a.r - b.r).slice(0, 40);
+  if (!scored.length) { sovList.innerHTML = `<div class="res-sov-empty"><i class="fa-solid fa-face-meh"></i><p>No results for “${esc(sovInput.value.trim())}”</p></div>`; return; }
+  sovList.innerHTML = `<div class="res-sov-h">${plural(scored.length, 'result')}</div>` + scored.map(({ it }) => {
+    const sub = pool.kind === 'book' ? it.author : pool.kind === 'video' ? it.lecturer : subjectName(it.subjectId);
+    const thumb = pool.kind === 'book' ? thumbSrc(it.thumbUrl) : pool.kind === 'video' ? videoThumb(it) : '';
+    const ico = pool.kind === 'book' ? 'fa-book' : pool.kind === 'video' ? 'fa-play' : 'fa-circle-question';
+    const title = pool.kind === 'quiz' ? it.name : it.title;
+    return `<button type="button" class="res-sov-row" data-k="${pool.kind}" data-id="${esc(it.id)}" data-qsub="${esc(it.subjectId || '')}" data-qid="${esc(it.id)}">
+      <span class="res-sov-th ${pool.kind}">${thumb ? `<img src="${esc(thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}<i class="fa-solid ${ico}"></i></span>
+      <span class="res-sov-tx"><b>${hl(title || 'Untitled', q)}</b>${sub ? `<small>${hl(sub, q)}</small>` : ''}</span>
+      <i class="fa-solid fa-arrow-up res-sov-fillico"></i></button>`;
+  }).join('');
+}
+function openSov() {
+  if (!elSov.classList.contains('hidden')) return;
+  const pool = searchPool();
+  sovInput.placeholder = pool.ph;
+  sovInput.value = query;
+  elSov.classList.remove('hidden');
+  void elSov.offsetWidth;
+  elSov.classList.add('show');
+  pushModalState(closeSov);
+  renderSov();
+  setTimeout(() => { sovInput.focus(); sovInput.setSelectionRange(sovInput.value.length, sovInput.value.length); }, 60);
+}
+function closeSov() {
+  if (elSov.classList.contains('hidden')) return;
+  elSov.classList.remove('show');
+  elSov.classList.add('hidden');
+  sovInput.blur();
+  popModalState(closeSov);
+}
+function applySov() {
+  query = sovInput.value.trim();
+  saveRecent(query);
+  const inp = $('resSearch'); if (inp) inp.value = query;
+  closeSov();
+  renderList({ animate: false });
+}
+sovInput.addEventListener('input', renderSov);
+sovInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); applySov(); } });
+elSov.addEventListener('click', e => {
+  if (e.target.closest('[data-sov-close]')) { closeSov(); return; }
+  if (e.target.closest('[data-sov-clear]')) { sovInput.value = ''; renderSov(); sovInput.focus(); return; }
+  const fill = e.target.closest('[data-sov-fill]');
+  if (fill) { sovInput.value = fill.dataset.sovFill; renderSov(); sovInput.focus(); return; }
+  const row = e.target.closest('.res-sov-row');
+  if (!row) return;
+  saveRecent(sovInput.value);
+  const k = row.dataset.k, id = row.dataset.id;
+  if (k === 'quiz') { closeSov(); openQuiz(row); return; }
+  closeSov();
+  if (k === 'book') { const b = BOOKS.find(x => x.id === id); if (b) openBook(b); }
+  else { const v = VIDEOS.find(x => x.id === id); if (v) openVideo(v); }
+});
+elMain.addEventListener('click', e => { if (e.target.closest('.res-search')) { e.preventDefault(); openSov(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !elSov.classList.contains('hidden')) closeSov(); });
+new MutationObserver(() => { if (!isOpen()) closeSov(); }).observe(screen, { attributes: true, attributeFilter: ['class'] });
 
 /* ------------------------------------------------ hook for the quiz sidebar ("Related videos & books") */
 window.__alifRes = {
