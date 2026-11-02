@@ -75,12 +75,12 @@ if(sb){
   /* practising all bookmarked questions needs room: open full screen on phones */
   document.addEventListener("click",ev=>{if(ev.target.closest&&ev.target.closest("#practiceAllBtn")&&matchMedia("(max-width:880px)").matches)sb.classList.add("sb-full")});
 }}
-/* The sidebar's Back button only closes the sidebar; it no longer leaves the quiz. */
+/* Sidebar Back button: on phones it only closes the drawer; on PC it goes back to the quizzes page. */
 document.addEventListener("click",ev=>{
   const b=ev.target.closest&&ev.target.closest("#switchQuizBtn");if(!b)return;
+  if(!matchMedia("(max-width:880px)").matches)return;
   ev.preventDefault();ev.stopImmediatePropagation();
-  if(matchMedia("(max-width:880px)").matches){__sbClose(true);try{e()}catch(_){}}
-  else{const t=document.getElementById("sidebarEdgeToggle");t&&t.click()}
+  __sbClose(true);try{e()}catch(_){}
 },true);
 /* Browse-by-category and Bookmarked live INSIDE the sidebar: the main sidebar content slides away and the panel slides in. */
 const __SBP={
