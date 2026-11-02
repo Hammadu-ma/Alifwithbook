@@ -1573,6 +1573,9 @@ const LOCKED_CARD_CONFIGS = [
   { selector: '.subject-card.locked', nameSel: '.subject-name', priceSel: null, type: 'subject', label: 'subject' },
   { selector: '.quiz-card.locked',    nameSel: 'h3',            priceSel: null, type: 'quiz',    label: 'quiz'    },
   { selector: '.pill.locked',         nameSel: null,            priceSel: null, type: 'quiz',    label: 'item'    },
+  // Resources tab (AQuizzes / ABooks / AVideos): same lock overlay + Buy flow as Home and Exams.
+  { selector: '.res-mod.locked',      nameSel: '.res-mod-name', priceSel: null, type: 'module',  label: 'module'  },
+  { selector: '.res-quiz.locked',     nameSel: '.res-quiz-title', priceSel: null, type: 'quiz',  label: 'quiz'    },
   // Bundles (stored as offerType 'package'): the locked card on Home, and the locked button inside its details overlay.
   { selector: '.package-card.locked', nameSel: 'h4', priceSel: '.pk-price-now',  type: 'package', typeLabel: 'Bundle', label: 'bundle' },
   { selector: '.pkd-cta-btn.locked',  nameSel: 'h3', priceSel: '.pkd-price-now', type: 'package', typeLabel: 'Bundle', label: 'bundle', scopeSel: '#packageOverlayCard' },
