@@ -176,7 +176,7 @@ function openQuiz(el) { openQuizBy(el.dataset.qsub, el.dataset.qid, el); }
 function setReturn(keep) {
   window.__alifKeep = !!keep;
   const saved = { ...nav }, solo = !!nav.solo;
-  window.__alifReturn = () => { openResources({ solo }); go(saved); };
+  window.__alifReturn = () => { openResources({ solo }); go(saved); logicalBack = true; };
   if (keep) window.__alifKeep = true;
 }
 function prepQuiz(list) {
@@ -204,7 +204,9 @@ function hideSiblings() {
     .forEach(el => el && el.classList.add('hidden'));
 }
 
+let logicalBack = false;
 export function openResources({ skipHistory = false, solo = false } = {}) {
+  logicalBack = false;
   const student = getStoredStudent();
   if (!student) return;
   hideSiblings();
@@ -249,7 +251,7 @@ function go(next, { push = false } = {}) {
 
 function goBack() {
   if (nav.view === 'root') return;
-  if (history.state && history.state.rv && history.state.rv.view !== 'root') { history.back(); return; }
+  if (!logicalBack && history.state && history.state.rv && history.state.rv.view !== 'root') { history.back(); return; }
   go(nav.view === 'qsubject' ? { view: 'module', subject: null } : nav.view === 'lecturer' ? { view: 'module', lecturer: null, vtab: 'lect' } : { ...ROOT, tab: nav.tab, solo: nav.solo });
 }
 
