@@ -48,7 +48,13 @@
 
 /* underline tabs */
 .res-tabs { padding: 0 8px; }
-.res-tabs-in { position: relative; display: grid; grid-template-columns: repeat(var(--n, 2), 1fr); }
+.res-tabs-in { position: relative; display: flex; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
+.res-tabs-in::-webkit-scrollbar { display: none; }
+.res-tabs-in .res-tab { flex: 1 0 auto; min-width: 96px; white-space: nowrap; padding-left: 16px; padding-right: 16px; }
+.res-tabs-in .res-tab em { display: none; }
+.res-tabs-in .res-tab::after { content: ''; position: absolute; left: 22%; right: 22%; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: var(--artery); transform: scaleX(0); transition: transform .3s var(--ease); box-shadow: 0 -2px 10px color-mix(in srgb, var(--artery) 45%, transparent); }
+.res-tabs-in .res-tab.active::after { transform: scaleX(1); }
+.res-tabs-in .res-tab-ind { display: none; }
 .res-tab {
   position: relative; display: flex; align-items: center; justify-content: center; gap: 8px;
   padding: 13px 8px 12px; border: 0; background: none;

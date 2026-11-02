@@ -30,7 +30,7 @@ import { getEffectiveLockMessage, isResourceLocked } from './lock.js';
 import { popModalState, pushModalState } from './modal-backbutton.js';
 import { loadModules, loadSubjects } from './onboarding-tour.js';
 import {
-  ACTIVE_UNIVERSITY_ID, ALL_QUIZZES, setALL_QUIZZES, initials, moduleColorFor, moduleIcon,
+  ACTIVE_UNIVERSITY_ID, ALL_QUIZZES, setALL_QUIZZES, initials, subjectIcon, moduleColorFor, moduleIcon,
   modulesScreenEl, subjectColorFor, subjectsScreenEl, universitiesScreenEl
 } from './picker-screen.js';
 import { progressScreen } from './progress-page.js';
@@ -69,12 +69,12 @@ let QUIZZES = [];
 let loaded = { mods: false, books: false, videos: false, quizzes: false };
 let loadFailed = false;
 
-const ROOT = { tab: 'books', view: 'root', moduleId: null, vtab: 'all', lecturer: null };
+const ROOT = { tab: 'books', view: 'root', moduleId: null, vtab: 'all', lecturer: null, subject: null };
 let nav = { ...ROOT };
 let subjectId = 'all';   // transient filters (not kept in history)
 let query = '';
 
-const snap = () => ({ tab: nav.tab, view: nav.view, moduleId: nav.moduleId, vtab: nav.vtab, lecturer: nav.lecturer });
+const snap = () => ({ tab: nav.tab, view: nav.view, moduleId: nav.moduleId, vtab: nav.vtab, lecturer: nav.lecturer, subject: nav.subject });
 const isOpen = () => screen && !screen.classList.contains('hidden');
 
 function bookTypeLabel(b) {
@@ -234,7 +234,7 @@ function go(next, { push = false } = {}) {
 function goBack() {
   if (nav.view === 'root') return;
   if (history.state && history.state.rv && history.state.rv.view !== 'root') { history.back(); return; }
-  go(nav.view === 'lecturer' ? { view: 'module', lecturer: null, vtab: 'lect' } : { ...ROOT, tab: nav.tab });
+  go(nav.view === 'qsubject' ? { view: 'module', subject: null } : nav.view === 'lecturer' ? { view: 'module', lecturer: null, vtab: 'lect' } : { ...ROOT, tab: nav.tab });
 }
 
 /* ------------------------------------------------------------- rendering */
@@ -250,7 +250,7 @@ function tabsHtml(items, active) {
   const idx = Math.max(0, items.findIndex(t => t.key === active));
   return `<div class="res-tabs-in" data-n="${items.length}" data-idx="${idx}" style="--n:${items.length};--idx:${idx}">
     ${items.map(t => `<button type="button" class="res-tab${t.key === active ? ' active' : ''}" data-tab="${t.key}" role="tab" aria-selected="${t.key === active}">
-      <i class="${t.icon}"></i><span>${t.label}</span>${t.count != null ? `<em>${t.count}</em>` : ''}</button>`).join('')}
+      <i class="${t.icon}"></i><span>${t.label}</span></button>`).join('')}
     <span class="res-tab-ind"></span></div>`;
 }
 
@@ -292,8 +292,7 @@ function renderHead() {
     elTitle.textContent = m ? m.name : (isQuizzes ? 'AQuizzes' : isBooks ? 'ABooks' : 'AVideos');
     if (isQuizzes) {
       const qs = itemsIn(QUIZZES, nav.moduleId);
-      elSub.textContent = `AQuizzes · ${plural(qs.length, 'quiz')}`;
-      pills = subjectPillsHtml(qs);
+      elSub.textContent = `AQuizzes · ${plural(new Set(qs.map(x => x.subjectId)).size, 'subject')} · ${plural(qs.length, 'quiz')}`;
     } else if (isBooks) {
       const n = itemsIn(BOOKS, nav.moduleId).length;
       elSub.textContent = `ABooks · ${plural(n, 'book')}`;
@@ -307,6 +306,11 @@ function renderHead() {
       ], nav.vtab);
       if (nav.vtab === 'all') pills = subjectPillsHtml(vids);
     }
+  } else if (nav.view === 'qsubject') {
+    const n = QUIZZES.filter(x => x.moduleId === nav.moduleId && x.subjectId === nav.subject).length;
+    elBrandIcon.className = 'fa-solid fa-circle-question';
+    elTitle.textContent = subjectName(nav.subject) || 'Quizzes';
+    elSub.textContent = `${m ? m.name + ' · ' : ''}${plural(n, 'quiz')}`;
   } else { // lecturer
     const g = groupLecturers(itemsIn(VIDEOS, nav.moduleId)).find(x => x.key === nav.lecturer);
     elBrandIcon.className = 'fa-solid fa-user-graduate';
@@ -316,6 +320,7 @@ function renderHead() {
   elTabs.innerHTML = tabs;
   elTabs.classList.toggle('hidden', !tabs);
   const inner = elTabs.firstElementChild;
+  if (inner) { const a = inner.querySelector('.res-tab.active'); if (a && inner.scrollWidth > inner.clientWidth) inner.scrollLeft = Math.max(0, a.offsetLeft - (inner.clientWidth - a.offsetWidth) / 2); }
   if (inner) {   // slide the underline from the previous tab instead of jumping
     const group = nav.view + ':' + nav.tab, n = +inner.dataset.n, idx = +inner.dataset.idx;
     if (lastTabs.group === group && lastTabs.n === n && lastTabs.idx !== idx) {
@@ -350,7 +355,7 @@ function renderMain() {
   const m = moduleById(nav.moduleId);
   if (!m) { elMain.innerHTML = skeleton(nav.tab === 'quizzes' ? 'book' : isBooks ? 'book' : 'video'); return; }
 
-  if (nav.view === 'lecturer') {
+  if (nav.view === 'lecturer' || (nav.tab === 'quizzes' && nav.view === 'module')) {
     elMain.innerHTML = '<div id="resList"></div>';
     renderList();
     return;
@@ -516,13 +521,29 @@ function renderList({ animate = true } = {}) {
   const q = norm(query);
   if (nav.tab === 'quizzes') {
     if (!loaded.quizzes && !QUIZZES.length) { host.innerHTML = skeleton('book'); return; }
-    let items = itemsIn(QUIZZES, nav.moduleId);
-    if (subjectId !== 'all') items = items.filter(x => x.subjectId === subjectId);
-    items = items.filter(x => matches(x, q, ['name', 'subjectName']));
+    const inModule = itemsIn(QUIZZES, nav.moduleId);
+    if (nav.view === 'module') {     // subject cards (like module cards) -> tap to open that subject's quizzes
+      const order = new Map(SUBJ.map((x, i) => [x.id, i]));
+      const ids = [...new Set(inModule.map(x => x.subjectId))].sort((a, b) => (order.get(a) ?? 999) - (order.get(b) ?? 999));
+      host.innerHTML = ids.length
+        ? `<p class="res-lead">Choose a subject <span>· ${plural(ids.length, 'subject')}</span></p><div class="res-grid res-grid-module">${ids.map((id, idx) => {
+            const n = inModule.filter(x => x.subjectId === id).length;
+            const col = subjectColorFor(id);
+            let ic = 'fa-solid fa-book-medical'; try { ic = subjectIcon(subjectName(id)); } catch (_) {}
+            return `<button type="button" class="res-mod" data-sid="${esc(id)}" style="--accent:${col};--i:${Math.min(idx, 14)}">
+              <div class="res-mod-cover"><i class="${ic} res-mod-glyph"></i><span class="res-mod-count"><i class="fa-solid fa-circle-question"></i>${n}</span></div>
+              <div class="res-mod-body"><div class="res-mod-name">${esc(subjectName(id) || 'Subject')}</div><div class="res-mod-meta">${esc(plural(n, 'quiz'))}</div></div>
+              <i class="fa-solid fa-chevron-right res-mod-chev"></i></button>`;
+          }).join('')}</div>`
+        : emptyHtml('fa-solid fa-circle-question', 'No quizzes yet', 'Quizzes for this module will appear here.');
+      return;
+    }
+    let items = inModule.filter(x => x.subjectId === nav.subject);
+    items = items.filter(x => matches(x, q, ['name']));
     host.innerHTML = items.length
       ? `<div class="res-grid res-grid-quiz">${items.map(quizCard).join('')}</div>`
-      : (q || subjectId !== 'all'
-        ? emptyHtml('fa-solid fa-magnifying-glass', 'No quizzes found', 'Try a different search or subject.')
+      : (q
+        ? emptyHtml('fa-solid fa-magnifying-glass', 'No quizzes found', 'Try a different search.')
         : emptyHtml('fa-solid fa-circle-question', 'No quizzes yet', 'Quizzes for this module will appear here.'));
     return;
   }
@@ -669,6 +690,8 @@ elMain.addEventListener('input', e => {
 });
 
 elMain.addEventListener('click', e => {
+  const sj = e.target.closest('.res-mod[data-sid]');
+  if (sj) { go({ view: 'qsubject', subject: sj.dataset.sid }, { push: true }); return; }
   const mod = e.target.closest('.res-mod');
   if (mod) {
     const m = moduleById(mod.dataset.mid);
@@ -683,7 +706,7 @@ elMain.addEventListener('click', e => {
       setTimeout(() => mod.classList.remove('shake'), 500);
       return;
     }
-    go({ view: 'module', moduleId: m.id, vtab: 'all', lecturer: null }, { push: true });
+    go({ view: 'module', moduleId: m.id, vtab: 'all', lecturer: null, subject: null }, { push: true });
     return;
   }
   const lect = e.target.closest('.res-lect');
