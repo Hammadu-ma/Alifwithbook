@@ -110,7 +110,7 @@ style.id = 'alifExamCardsStyle';
 style.textContent = CSS;
 document.head.appendChild(style);
 
-const grid = document.getElementById('quizGrid');
+const mainGrid = document.getElementById('quizGrid');
 
 function quizOf(card) {
   return ALL_QUIZZES.find(q => q.id === card.dataset.quiz && q.subjectId === card.dataset.subject);
@@ -149,14 +149,14 @@ function decorate(card) {
     </span>`);
 }
 
-function decorateAll() {
+function decorateIn(grid) {
   grid.querySelectorAll('.quiz-card').forEach(decorate);
-  maybeShowHint();
+  maybeShowHint(grid);
 }
 
 /* ---------- one-time swipe hint (touch devices) ---------- */
 let hintDone = false;
-function maybeShowHint() {
+function maybeShowHint(grid) {
   if (hintDone || !matchMedia('(pointer:coarse)').matches) return;
   try { if (localStorage.getItem(HINT_KEY)) { hintDone = true; return; } } catch (_) {}
   const card = grid.querySelector('.quiz-card.exm-dual');
@@ -218,13 +218,18 @@ function resetCard(card) {
   resetVars(card);
 }
 
+const beforeOpen = new WeakMap();
+function prep(card) {
+  for (let h = card.parentElement; h; h = h.parentElement) { const f = beforeOpen.get(h); if (f) { try { f(card.dataset.subject, card.dataset.quiz); } catch (_) {} return; } }
+}
 function launchExam(card) {
+  prep(card);
   startExam(card.dataset.subject, card.dataset.quiz);
 }
 
-function init() {
-  new MutationObserver(decorateAll).observe(grid, { childList: true });
-  decorateAll();
+function init(grid) {
+  new MutationObserver(() => decorateIn(grid)).observe(grid, { childList: true });
+  decorateIn(grid);
 
   ['pointerover', 'pointerdown'].forEach(ev => grid.addEventListener(ev, e => {
     if (e.target.closest && e.target.closest('.quiz-card.exm-dual')) loadExam().catch(() => {});
@@ -270,7 +275,7 @@ function init() {
     const card = opt.closest('.quiz-card');
     if (!card) return;
     if (opt.dataset.exm === 'exam') launchExam(card);
-    else startQuizFromCard(card.dataset.subject, card.dataset.quiz);
+    else { prep(card); startQuizFromCard(card.dataset.subject, card.dataset.quiz); }
   }, true);
 
   // Keyboard: Enter = quiz (default), Shift+Enter = exam.
@@ -283,4 +288,12 @@ function init() {
   }, true);
 }
 
-if (grid) init();
+const attached = new WeakSet();
+/* Reuse the same Quiz/Exam chooser (hover on PC, swipe right on mobile) on any other list of .quiz-card (Resources, Exams tab). */
+export function attachExamCards(host, before) {
+  if (before) beforeOpen.set(host, before);
+  if (!host || attached.has(host)) { if (host) decorateIn(host); return; }
+  attached.add(host);
+  init(host);
+}
+if (mainGrid) attachExamCards(mainGrid);

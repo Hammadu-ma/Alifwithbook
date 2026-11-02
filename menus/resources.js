@@ -24,6 +24,7 @@ import { forceUnlockBodyScroll, lockBodyScroll } from './cache.js';
 import { closeChatScreen } from './class-chat.js';
 import { db } from './cloud-sync.js';
 import { homeScreen, pickerScreen } from './gate-screen.js';
+import { attachExamCards } from './exam-cards.js';
 import { quizCardsHtml, startQuizFromCard, triggerLockResponse, wireQuizCards } from './home-screen.js';
 import { cacheState, getCachedWithTTL, setCachedWithTTL } from './loaders.js';
 import { getEffectiveLockMessage, isResourceLocked } from './lock.js';
@@ -171,6 +172,10 @@ async function ensureQuizzes(force = false) {
   queueRender();
 }
 function openQuiz(el) { openQuizBy(el.dataset.qsub, el.dataset.qid, el); }
+function prepQuiz(list) {
+  const add = (list || QUIZZES).filter(q => !ALL_QUIZZES.some(x => x.id === q.id && x.subjectId === q.subjectId));
+  if (add.length) setALL_QUIZZES(ALL_QUIZZES.concat(add));
+}
 function openQuizBy(subjectId, quizId, el) {
   const q = QUIZZES.find(x => x.id === quizId && x.subjectId === subjectId);
   if (!q) return;
@@ -542,7 +547,12 @@ function renderListImpl({ animate = true } = {}) {
       : (q
         ? emptyHtml('fa-solid fa-magnifying-glass', 'No quizzes found', 'Try a different search.')
         : emptyHtml('fa-solid fa-circle-question', 'No quizzes yet', 'Quizzes for this module will appear here.'));
-    if (items.length) wireQuizCards(host, openQuizBy);
+    if (items.length) {
+      prepQuiz(items);
+      wireQuizCards(host, openQuizBy);
+      const grid = host.querySelector('.quiz-grid');
+      if (grid) attachExamCards(grid, (sid, qid) => { prepQuiz(); closeResources(); });
+    }
     return;
   }
   const ready = isBooks ? loaded.books : loaded.videos;
