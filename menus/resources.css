@@ -845,3 +845,28 @@ body.rq-embedded .jump-fab { z-index: 440; }
 @keyframes plPulse { 0%, 100% { transform: scale(.92); opacity: .85; } 50% { transform: scale(1.08); opacity: 1; } }
 @keyframes plIn { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .pl-rot, .pl-glyph { animation-duration: 3s; } }
+
+/* ---- AQuizzes ---- */
+.res-grid-quiz { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.lay-list .res-grid-quiz { grid-template-columns: 1fr; gap: 10px; }
+.res-quiz {
+  --accent: var(--primary);
+  display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; cursor: pointer;
+  padding: 14px; border-radius: 20px; background: var(--card); color: var(--ink);
+  border: 1px solid var(--card-border); font-family: inherit;
+  animation: res-up .5s var(--ease) both; animation-delay: calc(var(--i, 0) * 38ms);
+  transition: transform .2s var(--ease), border-color .2s var(--ease);
+}
+.res-quiz:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--accent) 45%, var(--card-border)); }
+.res-quiz:active { transform: scale(.985); }
+.res-quiz-ico {
+  flex: none; width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; font-size: 18px;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.res-quiz-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.res-quiz-title { font-weight: 700; font-size: 14.5px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.res-quiz-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 12px; color: var(--ink-faint); }
+.res-quiz-meta em { font-style: normal; }
+.res-quiz.locked { opacity: .72; }
+.res-lock.inline { position: static; flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink-soft); }
+.noanim .res-quiz { animation: none; }

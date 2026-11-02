@@ -24,19 +24,20 @@ import { forceUnlockBodyScroll, lockBodyScroll } from './cache.js';
 import { closeChatScreen } from './class-chat.js';
 import { db } from './cloud-sync.js';
 import { homeScreen, pickerScreen } from './gate-screen.js';
-import { triggerLockResponse } from './home-screen.js';
+import { startQuizFromCard, triggerLockResponse } from './home-screen.js';
 import { cacheState, getCachedWithTTL, setCachedWithTTL } from './loaders.js';
 import { getEffectiveLockMessage, isResourceLocked } from './lock.js';
 import { popModalState, pushModalState } from './modal-backbutton.js';
 import { loadModules, loadSubjects } from './onboarding-tour.js';
 import {
-  ACTIVE_UNIVERSITY_ID, initials, moduleColorFor, moduleIcon,
+  ACTIVE_UNIVERSITY_ID, ALL_QUIZZES, setALL_QUIZZES, initials, moduleColorFor, moduleIcon,
   modulesScreenEl, subjectColorFor, subjectsScreenEl, universitiesScreenEl
 } from './picker-screen.js';
 import { progressScreen } from './progress-page.js';
 import { pushAppState } from './progress-rings.js';
 import { collection, getDocs } from './runtime-ext.js';
 import { mountPlayer } from './resources-player.js';
+import { loadQuizzesOf, lockMessage } from './resources-quiz.js';
 import { mountReader } from './resources-reader.js';
 import { esc, driveId, fileExt, norm, plural, safeUrl, thumbSrc, videoThumb } from './resources-util.js';
 
@@ -64,7 +65,8 @@ let MODS = [];
 let SUBJ = [];
 let BOOKS = [];
 let VIDEOS = [];
-let loaded = { mods: false, books: false, videos: false };
+let QUIZZES = [];
+let loaded = { mods: false, books: false, videos: false, quizzes: false };
 let loadFailed = false;
 
 const ROOT = { tab: 'books', view: 'root', moduleId: null, vtab: 'all', lecturer: null };
@@ -137,15 +139,49 @@ function ensureData() {
     setTimeout(res, 1500);
   });
   const pSubj = new Promise(res => {
-    const set = list => { SUBJ = list || []; queueRender(); };
+    const set = list => { SUBJ = list || []; queueRender(); ensureQuizzes(); };
     loadSubjects(set, set, () => {}, true);
     setTimeout(res, 1500);
   });
   const pBooks = loadList('books', l => { BOOKS = l; queueRender(); }).then(() => { loaded.books = true; });
   const pVids = loadList('videos', l => { VIDEOS = l; queueRender(); }).then(() => { loaded.videos = true; });
-  Promise.all([pMods, pSubj, pBooks, pVids]).then(queueRender);
+  Promise.all([pMods, pSubj, pBooks, pVids]).then(() => { queueRender(); ensureQuizzes(); });
 }
-window.addEventListener('atlas:content-updated', () => { if (isOpen()) ensureData(); });
+
+/* AQuizzes: the same quizzes the Exams tab lists (same per-subject cache), grouped by module */
+let quizzesLoading = false;
+async function ensureQuizzes(force = false) {
+  if (quizzesLoading || (loaded.quizzes && !force)) return;
+  if (!SUBJ.length) return;
+  quizzesLoading = true;
+  const out = [];
+  const queue = SUBJ.slice();
+  const worker = async () => {
+    while (queue.length) {
+      const sj = queue.shift();
+      try {
+        (await loadQuizzesOf(sj.id)).forEach(q => { if (q.active !== false) out.push({ ...q, subjectId: sj.id, subjectName: sj.name, moduleId: sj.moduleId }); });
+      } catch (_) {}
+    }
+  };
+  await Promise.all([worker(), worker(), worker(), worker()]);
+  QUIZZES = out;
+  loaded.quizzes = true;
+  quizzesLoading = false;
+  queueRender();
+}
+function openQuiz(el) {
+  const q = QUIZZES.find(x => x.id === el.dataset.qid && x.subjectId === el.dataset.qsub);
+  if (!q) return;
+  const msg = isResourceLocked({ ...q }, getStoredStudent(), 'quiz')
+    ? lockMessage({ quiz: q, subjectId: q.subjectId }, getStoredStudent()) : '';
+  if (msg) { triggerLockResponse(el, msg); return; }
+  // the Exams code looks the quiz up in its own list: make sure it is there, then use its normal opening steps
+  if (!ALL_QUIZZES.some(x => x.id === q.id && x.subjectId === q.subjectId)) setALL_QUIZZES(ALL_QUIZZES.concat([q]));
+  closeResources();
+  startQuizFromCard(q.subjectId, q.id);
+}
+window.addEventListener('atlas:content-updated', () => { if (isOpen()) { ensureData(); loaded.quizzes = false; } });
 
 /* --------------------------------------------------------------- opening */
 function hideSiblings() {
@@ -247,12 +283,18 @@ function renderHead() {
     elSub.textContent = '';
     tabs = tabsHtml([
       { key: 'books', icon: 'fa-solid fa-book', label: 'ABooks', count: loaded.books ? BOOKS.length : null },
-      { key: 'videos', icon: 'fa-solid fa-play', label: 'AVideos', count: loaded.videos ? VIDEOS.length : null }
+      { key: 'videos', icon: 'fa-solid fa-play', label: 'AVideos', count: loaded.videos ? VIDEOS.length : null },
+      { key: 'quizzes', icon: 'fa-solid fa-circle-question', label: 'AQuizzes', count: loaded.quizzes ? QUIZZES.length : null }
     ], nav.tab);
   } else if (nav.view === 'module') {
-    elBrandIcon.className = isBooks ? 'fa-solid fa-book' : 'fa-solid fa-play';
-    elTitle.textContent = m ? m.name : (isBooks ? 'ABooks' : 'AVideos');
-    if (isBooks) {
+    const isQuizzes = nav.tab === 'quizzes';
+    elBrandIcon.className = isQuizzes ? 'fa-solid fa-circle-question' : isBooks ? 'fa-solid fa-book' : 'fa-solid fa-play';
+    elTitle.textContent = m ? m.name : (isQuizzes ? 'AQuizzes' : isBooks ? 'ABooks' : 'AVideos');
+    if (isQuizzes) {
+      const qs = itemsIn(QUIZZES, nav.moduleId);
+      elSub.textContent = `AQuizzes · ${plural(qs.length, 'quiz')}`;
+      pills = subjectPillsHtml(qs);
+    } else if (isBooks) {
       const n = itemsIn(BOOKS, nav.moduleId).length;
       elSub.textContent = `ABooks · ${plural(n, 'book')}`;
       pills = subjectPillsHtml(itemsIn(BOOKS, nav.moduleId));
@@ -303,24 +345,24 @@ function renderMain() {
     elMain.innerHTML = emptyHtml('fa-solid fa-signal', 'Couldn’t load resources', 'Check your connection and try again.');
     return;
   }
-  if (nav.view === 'root') { renderRoot(isBooks); return; }
+  if (nav.view === 'root') { renderRoot(nav.tab); return; }
 
   const m = moduleById(nav.moduleId);
-  if (!m) { elMain.innerHTML = skeleton(isBooks ? 'book' : 'video'); return; }
+  if (!m) { elMain.innerHTML = skeleton(nav.tab === 'quizzes' ? 'book' : isBooks ? 'book' : 'video'); return; }
 
   if (nav.view === 'lecturer') {
     elMain.innerHTML = '<div id="resList"></div>';
     renderList();
     return;
   }
-  if (!isBooks && nav.vtab === 'lect') {
+  if (nav.tab === 'videos' && nav.vtab === 'lect') {
     elMain.innerHTML = '<div id="resList"></div>';
     renderList();
     return;
   }
   elMain.innerHTML = `
     <label class="res-search"><i class="fa-solid fa-magnifying-glass"></i>
-      <input id="resSearch" type="search" inputmode="search" autocomplete="off" placeholder="${isBooks ? 'Search books or authors…' : 'Search videos or lecturers…'}" value="${esc(query)}"></label>
+      <input id="resSearch" type="search" inputmode="search" autocomplete="off" placeholder="${nav.tab === 'quizzes' ? 'Search quizzes…' : isBooks ? 'Search books or authors…' : 'Search videos or lecturers…'}" value="${esc(query)}"></label>
     <div id="resList"></div>`;
   renderList();
 }
@@ -336,10 +378,11 @@ function moduleCoverUrl(m, list, thumbKey) {
   return '';
 }
 
-function renderRoot(isBooks) {
+function renderRoot(tab) {
+  const isBooks = tab === 'books', isQuizzes = tab === 'quizzes';
   const student = getStoredStudent();
-  const list = isBooks ? BOOKS : VIDEOS;
-  const dataReady = loaded.mods && (isBooks ? loaded.books : loaded.videos);
+  const list = isQuizzes ? QUIZZES : isBooks ? BOOKS : VIDEOS;
+  const dataReady = loaded.mods && (isQuizzes ? loaded.quizzes : isBooks ? loaded.books : loaded.videos);
   if (!dataReady && !MODS.length) { elMain.innerHTML = skeleton('module'); return; }
   if (!MODS.length) { elMain.innerHTML = emptyHtml('fa-solid fa-layer-group', 'No modules yet', 'Modules will appear here once they are added.'); return; }
 
@@ -352,21 +395,21 @@ function renderRoot(isBooks) {
   rows.sort((a, b) => rank(a) - rank(b) || a.i - b.i);
 
   const total = list.length;
-  const word = isBooks ? 'book' : 'video';
+  const word = isQuizzes ? 'quiz' : isBooks ? 'book' : 'video';
   const lead = `<p class="res-lead">${total
-    ? `Choose a module to browse its ${isBooks ? 'books' : 'lectures'} <span>· ${plural(total, word)} available</span>`
-    : (dataReady ? `No ${isBooks ? 'books' : 'videos'} have been added yet — check back soon.` : 'Loading…')}</p>`;
+    ? `Choose a module to browse its ${isQuizzes ? 'quizzes' : isBooks ? 'books' : 'lectures'} <span>· ${plural(total, word)} available</span>`
+    : (dataReady ? `No ${isQuizzes ? 'quizzes' : isBooks ? 'books' : 'videos'} have been added yet — check back soon.` : 'Loading…')}</p>`;
 
   elMain.innerHTML = lead + `<div class="res-grid res-grid-module">${rows.map((r, idx) => {
-    const cover = moduleCoverUrl(r.m, list, isBooks ? 'book' : 'video');
+    const cover = isQuizzes ? moduleCoverUrl(r.m, [], 'book') : moduleCoverUrl(r.m, list, isBooks ? 'book' : 'video');
     const meta = r.n
       ? `${plural(r.n, word)}${r.subs ? ` · ${plural(r.subs, 'subject')}` : ''}`
-      : 'Coming soon';
-    return `<button type="button" class="res-mod${r.locked ? ' locked' : ''}${r.n ? '' : ' empty'}" data-mid="${esc(r.m.id)}" style="--accent:${accentFor(r.m.id)};--i:${Math.min(idx, 14)}">
+      : (isQuizzes && !loaded.quizzes ? 'Loading…' : 'Coming soon');
+    return `<button type="button" class="res-mod${r.locked ? ' locked' : ''}${r.n || (isQuizzes && !loaded.quizzes) ? '' : ' empty'}" data-mid="${esc(r.m.id)}" style="--accent:${accentFor(r.m.id)};--i:${Math.min(idx, 14)}">
       <div class="res-mod-cover">
         ${cover ? `<img src="${esc(cover)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
         <i class="${iconFor(r.m)} res-mod-glyph"></i>
-        ${r.n ? `<span class="res-mod-count"><i class="fa-solid ${isBooks ? 'fa-book' : 'fa-play'}"></i>${r.n}</span>` : ''}
+        ${r.n ? `<span class="res-mod-count"><i class="fa-solid ${isQuizzes ? 'fa-circle-question' : isBooks ? 'fa-book' : 'fa-play'}"></i>${r.n}</span>` : ''}
         ${r.locked ? '<span class="res-lock"><i class="fa-solid fa-lock"></i></span>' : ''}
       </div>
       <div class="res-mod-body">
@@ -446,6 +489,23 @@ function lecturerCard(g, i) {
   </button>`;
 }
 
+function quizCard(q, i) {
+  const color = q.subjectId ? subjectColorFor(q.subjectId) : accentFor(q.moduleId);
+  const sub = subjectName(q.subjectId);
+  const locked = isResourceLocked({ ...q }, getStoredStudent(), 'quiz');
+  const link = !!(q.linkUrl || q.type === 'link');
+  const cnt = q.questionCount ?? q.totalQuestions ?? q.count ?? q.numQuestions ?? null;
+  const badge = q.isExam ? '<span class="res-chip solid">Exam</span>' : link ? '<span class="res-chip solid">Link</span>' : '';
+  return `<button type="button" class="res-quiz${locked ? ' locked' : ''}" data-qid="${esc(q.id)}" data-qsub="${esc(q.subjectId)}" style="--accent:${color};--i:${Math.min(i, 14)}">
+    <span class="res-quiz-ico"><i class="fa-solid ${q.isExam ? 'fa-stopwatch' : link ? 'fa-link' : 'fa-circle-question'}"></i></span>
+    <span class="res-quiz-body">
+      <span class="res-quiz-title">${esc(q.name || 'Quiz')}</span>
+      <span class="res-quiz-meta">${sub ? `<span class="res-tag"><span class="dot"></span>${esc(sub)}</span>` : ''}${cnt ? `<em>${plural(Number(cnt) || 0, 'question')}</em>` : ''}${badge}</span>
+    </span>
+    ${locked ? '<span class="res-lock inline"><i class="fa-solid fa-lock"></i></span>' : '<i class="fa-solid fa-chevron-right res-mod-chev"></i>'}
+  </button>`;
+}
+
 const matches = (it, q, fields) => !q || fields.some(f => norm(it[f]).includes(q));
 
 function renderList({ animate = true } = {}) {
@@ -454,6 +514,18 @@ function renderList({ animate = true } = {}) {
   host.classList.toggle('noanim', !animate);
   const isBooks = nav.tab === 'books';
   const q = norm(query);
+  if (nav.tab === 'quizzes') {
+    if (!loaded.quizzes && !QUIZZES.length) { host.innerHTML = skeleton('book'); return; }
+    let items = itemsIn(QUIZZES, nav.moduleId);
+    if (subjectId !== 'all') items = items.filter(x => x.subjectId === subjectId);
+    items = items.filter(x => matches(x, q, ['name', 'subjectName']));
+    host.innerHTML = items.length
+      ? `<div class="res-grid res-grid-quiz">${items.map(quizCard).join('')}</div>`
+      : (q || subjectId !== 'all'
+        ? emptyHtml('fa-solid fa-magnifying-glass', 'No quizzes found', 'Try a different search or subject.')
+        : emptyHtml('fa-solid fa-circle-question', 'No quizzes yet', 'Quizzes for this module will appear here.'));
+    return;
+  }
   const ready = isBooks ? loaded.books : loaded.videos;
   if (!ready && !(isBooks ? BOOKS : VIDEOS).length) { host.innerHTML = skeleton(isBooks ? 'book' : 'video'); return; }
 
@@ -527,7 +599,7 @@ elHead.addEventListener('click', e => {
 
 /* ---- swipe left/right between tabs (ABooks <-> AVideos, All <-> Lecturers) ---- */
 function swipeTabs() {
-  if (nav.view === 'root') return { keys: ['books', 'videos'], cur: nav.tab, set: k => go({ tab: k }) };
+  if (nav.view === 'root') return { keys: ['books', 'videos', 'quizzes'], cur: nav.tab, set: k => go({ tab: k }) };
   if (nav.view === 'module' && nav.tab === 'videos') return { keys: ['all', 'lect'], cur: nav.vtab, set: k => go({ vtab: k }) };
   return null;
 }
@@ -618,6 +690,8 @@ elMain.addEventListener('click', e => {
   if (lect) { go({ view: 'lecturer', lecturer: lect.dataset.lect }, { push: true }); return; }
   const book = e.target.closest('.res-book');
   if (book) { const b = BOOKS.find(x => x.id === book.dataset.id); if (b) openBook(b); return; }
+  const qz = e.target.closest('.res-quiz');
+  if (qz) { openQuiz(qz); return; }
   const vid = e.target.closest('.res-vid');
   if (vid) { const v = VIDEOS.find(x => x.id === vid.dataset.id); if (v) openVideo(v); }
 });
