@@ -17,7 +17,7 @@
 
    Firestore / Auth / push-API traffic is never touched by this worker.
    ========================================================================= */
-const BUILD = '8e2363e0d926';
+const BUILD = '2b4694f69c1d';
 /*SHELL_START*/
 const SHELL = [
   "/assets/amoled-dark.css",

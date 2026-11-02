@@ -46,7 +46,7 @@ export function cacheState(entry,kind){
   if(entry.ts<min)return"invalidated";
   /* When the admin content stamp is live (window.__alifCV), the stamp is the source of truth:
      content only re-downloads after the admin actually changes it. TTL is just a long safety net. */
-  const ttl=window.__alifCV?("q"===kind?QUESTIONS_TTL_LONG:CATALOG_TTL_LONG):("q"===kind?QUESTIONS_TTL:CATALOG_TTL);
+  const stamped=window.__alifCV||!!localStorage.getItem(VER_KEY),ttl=stamped?("q"===kind?QUESTIONS_TTL_LONG:CATALOG_TTL_LONG):("q"===kind?QUESTIONS_TTL:CATALOG_TTL);
   return Date.now()-entry.ts<ttl?"fresh":"expired";
 }
 export function isFresh(entry,kind){return"fresh"===cacheState(entry,kind)}

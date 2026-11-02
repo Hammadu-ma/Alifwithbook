@@ -341,10 +341,10 @@ async function loadAccess(student, el) {
   const empty = msg => `<div class="pf-empty">${msg}</div>`;
   const countLabel = (n, word) => n === 0 ? `No ${word}s` : (n === 1 ? `1 ${word}` : `${n} ${word}s`);
   try {
-    const packages = await ttlRead('packages', 6 * 36e5, async () => (await getDocs(query(collection(db, 'packages')))).docs.map(d => ({ id: d.id, ...d.data() })));
+    const packages = await ttlRead('packages', 3 * 24 * 36e5, async () => (await getDocs(query(collection(db, 'packages')))).docs.map(d => ({ id: d.id, ...d.data() })));
     const locks = student.userLocks || {};
     const bundles = packages.filter(p => locks[p.id] === false && p.type !== 'module');
-    const modules = (await ttlRead('modules_all', 6 * 36e5, async () => (await getDocs(query(collection(db, 'modules')))).docs.map(d => ({ id: d.id, ...d.data() }))))
+    const modules = (await ttlRead('modules_all', 3 * 24 * 36e5, async () => (await getDocs(query(collection(db, 'modules')))).docs.map(d => ({ id: d.id, ...d.data() }))))
       .filter(m => (m.universityId || 'jimma') === ACTIVE_UNIVERSITY_ID)
       .filter(m => !isItemLockedForUser(m, student));
 

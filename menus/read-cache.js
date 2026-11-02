@@ -17,4 +17,4 @@ export async function ttlRead(key,ttlMs,fetcher){
 }
 export function dropRead(key){try{localStorage.removeItem(PFX+key)}catch(_){}}
 
-if(typeof window!=='undefined')window.addEventListener('atlas:content-updated',()=>{dropRead('packages');dropRead('modules_all')});
+if(typeof window!=='undefined')window.addEventListener('atlas:content-updated',()=>{dropRead('packages');dropRead('modules_all');dropRead('bank_accounts')});
