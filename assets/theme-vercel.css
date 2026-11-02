@@ -225,3 +225,6 @@ body.dark .pf-hero { background-image: var(--hero-deco-sm), radial-gradient(80% 
 .home-hero-card .home-hero-inner :is(h1, p.sub, .eyebrow), .pf-hero :is(.pf-name, .pf-email) { text-shadow: none !important; }
 body .home-hero-card .home-hero-inner .home-hero-cta { box-shadow: none !important; }
 .home-hero-card .home-hero-inner .home-hero-cta-ghost { box-shadow: none !important; }
+
+/* home quick-action icons: no outline ring */
+.quick-action-btn .qa-icon { box-shadow: none !important; border: 0 !important; outline: 0 !important; }
