@@ -381,10 +381,13 @@ async function loadAccess(student, el) {
     modulesSub.textContent = countLabel(modules.length, 'module');
 
     bundlesEl.innerHTML = bundles.length ? bundles.map(b => `
-      <div class="pf-item">
-        <span class="pf-item-ico" style="--tone:${esc(b.color || 'var(--artery)')}"><i class="fa-solid ${esc(b.icon || 'fa-box')}"></i></span>
-        <span class="pf-item-name">${esc(b.name || 'Untitled bundle')}</span>
-        <i class="fa-solid fa-circle-check pf-ok"></i>
+      <div class="pf-bundle" style="--tone:${esc(b.color || 'var(--artery)')}">
+        <span class="pf-bundle-ico"><i class="fa-solid ${esc(b.icon || 'fa-box')}"></i></span>
+        <span class="pf-bundle-body">
+          <span class="pf-bundle-name">${esc(b.name || 'Untitled bundle')}</span>
+          ${b.description ? `<span class="pf-bundle-desc">${esc(b.description)}</span>` : ''}
+          <span class="pf-bundle-tag"><i class="fa-solid fa-circle-check"></i> Unlocked</span>
+        </span>
       </div>`).join('') : empty('No bundles yet');
 
     modulesEl.innerHTML = modules.length ? modules.map(m => `
