@@ -915,3 +915,6 @@ body.rq-embedded .jump-fab { z-index: 440; }
 
 /* old Exams-page quiz cards reused inside Resources */
 .res-main .quiz-grid.res-qgrid { margin: 4px 0 0; padding: 0; }
+
+/* layout toggle button hidden (functionality kept in JS) */
+#resLayoutBtn { display: none !important; }

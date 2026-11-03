@@ -61,6 +61,8 @@ const elReader = $('resReader');
 const LS_LAYOUT = 'alif_res_layout_v1';
 let layout = 'grid';
 try { layout = localStorage.getItem(LS_LAYOUT) === 'list' ? 'list' : 'grid'; } catch (_) {}
+// The toggle button is hidden; phones always get the list layout, larger screens keep their saved/default layout.
+try { if (matchMedia('(max-width: 880px)').matches) layout = 'list'; } catch (_) {}
 
 let MODS = [];
 let SUBJ = [];
