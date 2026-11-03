@@ -236,3 +236,30 @@ body .home-hero-card .home-hero-inner .home-hero-cta { box-shadow: none !importa
 
 /* header profile icon: flat, no shadow */
 .profile-btn:not(.signup-btn), .profile-btn:not(.signup-btn):hover, .profile-btn:not(.signup-btn):active { box-shadow: none !important; }
+
+/* update prompt card (shared by the service-worker notice and the admin push) */
+.alif-upd{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 68px);z-index:99999;width:min(360px,calc(100vw - 24px));
+  display:flex;align-items:center;gap:12px;padding:10px 10px 10px 14px;border-radius:18px;
+  background:color-mix(in srgb,var(--card,#fff) 92%,transparent);color:var(--ink,#111);
+  border:1px solid var(--card-border,rgba(0,0,0,.08));box-shadow:0 14px 34px -14px rgba(0,0,0,.35),0 2px 8px rgba(0,0,0,.06);
+  -webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);
+  font:600 13.5px/1.25 Inter,system-ui,sans-serif;transform:translate(-50%,-14px);opacity:0;
+  transition:transform .4s cubic-bezier(.2,.9,.3,1.1),opacity .3s ease}
+.alif-upd.in{transform:translate(-50%,0);opacity:1}
+.alif-upd.out{transform:translate(-50%,-14px);opacity:0}
+.alif-upd-ic{width:30px;height:30px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:var(--primary-soft,rgba(0,112,243,.1));color:var(--primary,#0070f3);position:relative}
+.alif-upd-ic svg{width:16px;height:16px}
+.alif-upd-tx{flex:1;min-width:0}
+.alif-upd-tx small{display:block;font-weight:500;opacity:.6;font-size:11.5px;margin-top:1px}
+.alif-upd-btn{border:0;border-radius:999px;padding:8px 15px;font:inherit;font-weight:700;cursor:pointer;background:var(--primary,#0070f3);color:#fff;transition:transform .15s,opacity .2s}
+.alif-upd-btn:active{transform:scale(.95)}
+.alif-upd-x{border:0;background:transparent;color:inherit;opacity:.5;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;line-height:1}
+.alif-upd.busy .alif-upd-btn,.alif-upd.busy .alif-upd-x{display:none}
+.alif-upd.busy .alif-upd-ic::after{content:'';position:absolute;inset:-4px;border-radius:50%;
+  border:2px solid transparent;border-top-color:var(--primary,#0070f3);border-right-color:color-mix(in srgb,var(--primary,#0070f3) 35%,transparent);
+  animation:alifUpdSpin 1.4s cubic-bezier(.5,.1,.5,.9) infinite;opacity:.85}
+.alif-upd.busy .alif-upd-ic svg{animation:alifUpdPulse 1.8s ease-in-out infinite}
+@keyframes alifUpdSpin{to{transform:rotate(360deg)}}
+@keyframes alifUpdPulse{50%{opacity:.45;transform:scale(.88)}}
+@media (prefers-reduced-motion:reduce){.alif-upd,.alif-upd *{animation-duration:3s!important;transition:none!important}}
