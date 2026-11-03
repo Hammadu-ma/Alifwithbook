@@ -64,17 +64,53 @@ let bannerShown = false;
 function showBanner(version) {
   if (bannerShown) return;
   bannerShown = true;
+  if (!document.getElementById('alifUpdCss')) {
+    const st = document.createElement('style');
+    st.id = 'alifUpdCss';
+    st.textContent = `
+.alif-upd{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 68px);z-index:99999;width:min(360px,calc(100vw - 24px));
+  display:flex;align-items:center;gap:12px;padding:10px 10px 10px 14px;border-radius:18px;
+  background:color-mix(in srgb,var(--card,#fff) 92%,transparent);color:var(--ink,#111);
+  border:1px solid var(--card-border,rgba(0,0,0,.08));box-shadow:0 14px 34px -14px rgba(0,0,0,.35),0 2px 8px rgba(0,0,0,.06);
+  -webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);
+  font:600 13.5px/1.25 Inter,system-ui,sans-serif;transform:translate(-50%,-14px);opacity:0;
+  transition:transform .4s cubic-bezier(.2,.9,.3,1.1),opacity .3s ease}
+.alif-upd.in{transform:translate(-50%,0);opacity:1}
+.alif-upd.out{transform:translate(-50%,-14px);opacity:0}
+.alif-upd-ic{width:30px;height:30px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:var(--primary-soft,rgba(0,112,243,.1));color:var(--primary,#0070f3);position:relative}
+.alif-upd-ic svg{width:16px;height:16px}
+.alif-upd-tx{flex:1;min-width:0}
+.alif-upd-tx small{display:block;font-weight:500;opacity:.6;font-size:11.5px;margin-top:1px}
+.alif-upd-btn{border:0;border-radius:999px;padding:8px 15px;font:inherit;font-weight:700;cursor:pointer;background:var(--primary,#0070f3);color:#fff;transition:transform .15s,opacity .2s}
+.alif-upd-btn:active{transform:scale(.95)}
+.alif-upd-x{border:0;background:transparent;color:inherit;opacity:.5;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;line-height:1}
+.alif-upd.busy .alif-upd-btn,.alif-upd.busy .alif-upd-x{display:none}
+.alif-upd.busy .alif-upd-ic::after{content:'';position:absolute;inset:-4px;border-radius:50%;
+  border:2px solid transparent;border-top-color:var(--primary,#0070f3);border-right-color:color-mix(in srgb,var(--primary,#0070f3) 35%,transparent);
+  animation:alifUpdSpin 1.4s cubic-bezier(.5,.1,.5,.9) infinite;opacity:.85}
+.alif-upd.busy .alif-upd-ic svg{animation:alifUpdPulse 1.8s ease-in-out infinite}
+@keyframes alifUpdSpin{to{transform:rotate(360deg)}}
+@keyframes alifUpdPulse{50%{opacity:.45;transform:scale(.88)}}
+@media (prefers-reduced-motion:reduce){.alif-upd,.alif-upd *{animation-duration:3s!important;transition:none!important}}`;
+    document.head.appendChild(st);
+  }
   const bar = document.createElement('div');
+  bar.className = 'alif-upd';
   bar.setAttribute('role', 'status');
-  bar.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:99999;' +
-    'display:flex;gap:10px;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:14px;' +
-    'background:#1b1b1f;color:#fff;font:600 14px/1.3 system-ui,sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.35)';
-  bar.innerHTML = '<span>A new version is available.</span><span style="display:flex;gap:8px">' +
-    '<button type="button" data-later style="background:transparent;color:#bbb;border:0;font:inherit;padding:6px 8px">Later</button>' +
-    '<button type="button" data-now style="background:#fff;color:#111;border:0;border-radius:10px;font:inherit;padding:8px 14px">Update</button></span>';
-  bar.querySelector('[data-later]').onclick = () => bar.remove();
-  bar.querySelector('[data-now]').onclick = () => { setSeen(version); hardRefresh(); };
+  bar.innerHTML = '<span class="alif-upd-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></span>' +
+    '<span class="alif-upd-tx"><span data-t>New update available</span><small data-s>Refresh to get the latest</small></span>' +
+    '<button type="button" class="alif-upd-btn" data-now>Refresh</button><button type="button" class="alif-upd-x" data-later aria-label="Later">&times;</button>';
+  bar.querySelector('[data-later]').onclick = () => { bar.classList.remove('in'); bar.classList.add('out'); setTimeout(() => bar.remove(), 350); };
+  bar.querySelector('[data-now]').onclick = () => {
+    setSeen(version);
+    bar.classList.add('busy');
+    bar.querySelector('[data-t]').textContent = 'Updating…';
+    bar.querySelector('[data-s]').textContent = 'Just a moment';
+    hardRefresh();
+  };
   document.body.appendChild(bar);
+  requestAnimationFrame(() => requestAnimationFrame(() => bar.classList.add('in')));
 }
 
 if (db) {
