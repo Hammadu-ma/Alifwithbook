@@ -233,3 +233,6 @@ body .home-hero-card .home-hero-inner .home-hero-cta { box-shadow: none !importa
 .people-row .pr-avatar, .group-member-row .pr-avatar { position: relative; overflow: visible; }
 .pr-online { position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 50%;
   background: #22c55e; border: 2px solid var(--card, var(--paper)); box-sizing: border-box; }
+
+/* header profile icon: flat, no shadow */
+.profile-btn:not(.signup-btn), .profile-btn:not(.signup-btn):hover, .profile-btn:not(.signup-btn):active { box-shadow: none !important; }
