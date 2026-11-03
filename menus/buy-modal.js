@@ -290,7 +290,6 @@ async function loadPendingSubmissions() {
     const snap = await getDocs(query(
       collection(db, 'paymentSubmissions'),
       where('uid', '==', myUid),
-      where('studentId', '==', student.id),   // the read rule also checks the student's own record key
       where('status', '==', 'pending'),
     ));
     snap.docs.forEach((d) => {
@@ -1476,10 +1475,9 @@ overlay.querySelector('#bmSubmitBtn').addEventListener('click', async () => {
       bankAccountNumber: bankAccount ? bankAccount.accountNumber : null,
       telegramFileId: telegramFileId || null,
       telegramMessageId: telegramMessageId || null,
-      // Firestore rules bind `studentId` to the signed-in account's own record key (users/{uid}.studentId),
-      // so that is what must be stored here. The human-facing ID (ALIF-XXXXXXXX) goes in `studentCode`.
-      studentId: student.id || null,
-      studentCode: student.studentId || null,
+      // Human-facing student ID; fall back to the internal record key only
+      // for legacy data that truly has no separate student ID.
+      studentId: student.studentId || null,
       studentRecordId: student.id || null,
       studentName: student.name || null,
       studentBatch: student.batch || null,

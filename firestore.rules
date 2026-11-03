@@ -418,14 +418,19 @@ service cloud.firestore {
     // pending/previous submissions. Approval remains an admin operation.
     // =====================================================================
     match /paymentSubmissions/{id} {
+      // `studentId` on a submission may be the account's record key OR the human-facing ID (secretkeys.ID, ALIF-XXXXXXXX).
+      function ownStudentRef(sid) {
+        return sid == currentStudentId()
+          || sid == get(/databases/$(database)/documents/secretkeys/$(currentStudentId())).data.ID;
+      }
+
       allow read: if adminCan('payments') || (
         isActiveStudent() && resource.data.uid == request.auth.uid
-        && resource.data.studentId == currentStudentId()
       );
 
       allow create: if isActiveStudent()
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.studentId == currentStudentId()
+        && ownStudentRef(request.resource.data.studentId)
         && request.resource.data.status == 'pending';
 
       allow update, delete: if adminCan('payments');
