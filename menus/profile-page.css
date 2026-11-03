@@ -343,3 +343,23 @@
   .pf-expand { transition: none; }
   .pf-chev { transition: none; }
 }
+/* ----- sub-screens (Bundles, Modules, Devices, Change password) slide in from the right ----- */
+.pf-subscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 910;
+  background: var(--paper);
+  color: var(--ink);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  transform: translateX(100%);
+  opacity: 0;
+  transition: transform .3s var(--ease), opacity .22s ease;
+}
+.pf-subscreen.hidden { display: none; }
+.pf-subscreen.open { transform: none; opacity: 1; }
+.pf-subscreen .pf-sub-body { margin-top: 4px; }
+.pf-subscreen .pf-list { padding: 0; }
+@media (prefers-reduced-motion: reduce) { .pf-subscreen { transition: none; } }

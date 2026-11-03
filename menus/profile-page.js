@@ -140,9 +140,20 @@ export async function openProfilePage({ doLogout } = {}) {
       </section>
 
       <h2 class="pf-section-title">Devices</h2>
-      <section class="pf-card pf-card-pad">
-        <div class="pf-sub-head"><i class="fa-solid fa-mobile-screen-button"></i>Signed-in devices<span class="pf-count" id="devSessCount">…</span></div>
-        <div class="pf-list" id="devSessList"><div class="pf-empty">Loading devices…</div></div>
+      <section class="pf-card">
+        <div class="pf-access-group">
+          <button type="button" class="pf-action" id="pfDevicesBtn">
+            <span class="pf-ico" style="--tone:#14b8a6"><i class="fa-solid fa-mobile-screen-button"></i></span>
+            <span class="pf-row-text">
+              <span class="pf-row-title">Signed-in devices</span>
+              <span class="pf-row-sub"><span class="pf-count" id="devSessCount">…</span> active</span>
+            </span>
+            <i class="fa-solid fa-chevron-right pf-chev"></i>
+          </button>
+          <div class="pf-expand" id="devicesExpand"><div class="pf-expand-inner">
+            <div class="pf-list" id="devSessList"><div class="pf-empty">Loading devices…</div></div>
+          </div></div>
+        </div>
       </section>
 
       <h2 class="pf-section-title">Security</h2>
@@ -238,18 +249,39 @@ export async function openProfilePage({ doLogout } = {}) {
   });
 
   // --- expandable access rows ------------------------------------------
-  const wireExpand = (btnSel, boxSel) => {
+  // Each row opens its own full screen (slides in from the right); the content is moved there from the hidden box.
+  const subs = [];
+  const closeSub = (sub) => {
+    if (!sub.classList.contains('open')) return;
+    sub.classList.remove('open');
+    popModalState(sub._close);
+    setTimeout(() => { if (!sub.classList.contains('open')) sub.classList.add('hidden'); }, 300);
+  };
+  const wireSub = (btnSel, boxSel, title) => {
     const btn = el.querySelector(btnSel);
     const box = el.querySelector(boxSel);
+    const sub = document.createElement('div');
+    sub.className = 'pf-subscreen hidden';
+    sub.innerHTML = `<div class="pf-topbar"><button type="button" class="pf-back" aria-label="Back"><i class="fa-solid fa-arrow-left"></i></button><div class="pf-topbar-title"></div><span class="pf-topbar-spacer"></span></div><main class="pf-main"><section class="pf-card pf-card-pad pf-sub-body"></section></main>`;
+    sub.querySelector('.pf-topbar-title').textContent = title;
+    sub.querySelector('.pf-sub-body').append(...box.querySelector('.pf-expand-inner').children);
+    el.appendChild(sub);
+    sub._close = () => closeSub(sub);
+    sub.querySelector('.pf-back').addEventListener('click', () => closeSub(sub));
     btn.addEventListener('click', () => {
-      const open = !box.classList.contains('open');
-      box.classList.toggle('open', open);
-      btn.setAttribute('aria-expanded', String(open));
+      sub.classList.remove('hidden');
+      sub.scrollTop = 0;
+      pushModalState(sub._close);
+      requestAnimationFrame(() => requestAnimationFrame(() => sub.classList.add('open')));
     });
+    subs.push(sub);
+    return sub;
   };
-  wireExpand('#pfBundlesBtn', '#bundlesExpand');
-  wireExpand('#pfModulesBtn', '#modulesExpand');
-  wireExpand('#pfPasswordBtn', '#passwordExpand');
+  wireSub('#pfBundlesBtn', '#bundlesExpand', 'Bundles');
+  wireSub('#pfModulesBtn', '#modulesExpand', 'Modules');
+  wireSub('#pfDevicesBtn', '#devicesExpand', 'Signed-in devices');
+  const pwSub = wireSub('#pfPasswordBtn', '#passwordExpand', 'Change password');
+  el._closePwSub = () => closeSub(pwSub);
   wirePasswordForm(el);
 
   el.querySelector('#pfLogoutBtn').addEventListener('click', () => {
@@ -293,8 +325,6 @@ function wirePasswordForm(el) {
   const next = el.querySelector('#pfNewPw');
   const conf = el.querySelector('#pfConfPw');
   const msg = el.querySelector('#pfPwMsg');
-  const btn = el.querySelector('#pfPasswordBtn');
-  const box = el.querySelector('#passwordExpand');
   const submit = el.querySelector('#pfPwSubmit');
   const label = submit.querySelector('.pf-submit-label');
   const say = (text, kind = 'bad') => { msg.textContent = text; msg.className = 'pf-form-msg' + (text ? ' show ' + kind : ''); };
@@ -321,8 +351,7 @@ function wirePasswordForm(el) {
       await changeStudentPassword(a, b);
       cur.value = next.value = conf.value = '';
       showToast('Password updated', { icon: 'fa-solid fa-circle-check' });
-      box.classList.remove('open');
-      btn.setAttribute('aria-expanded', 'false');
+      if (el._closePwSub) el._closePwSub();
     } catch (err) {
       console.error('[profile] password change failed', err);
       say(passwordErrorMessage(err));
