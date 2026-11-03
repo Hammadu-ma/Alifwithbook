@@ -228,3 +228,8 @@ body .home-hero-card .home-hero-inner .home-hero-cta { box-shadow: none !importa
 
 /* home quick-action icons: no outline ring */
 .quick-action-btn .qa-icon { box-shadow: none !important; border: 0 !important; outline: 0 !important; }
+
+/* chat: online dot (seen within 3 hours) */
+.people-row .pr-avatar, .group-member-row .pr-avatar { position: relative; overflow: visible; }
+.pr-online { position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 50%;
+  background: #22c55e; border: 2px solid var(--card, var(--paper)); box-sizing: border-box; }
