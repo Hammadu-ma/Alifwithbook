@@ -918,3 +918,6 @@ body.rq-embedded .jump-fab { z-index: 440; }
 
 /* layout toggle button hidden (functionality kept in JS) */
 #resLayoutBtn { display: none !important; }
+
+/* quizzes module/subject headers: just the title */
+.res-head.plain .res-brand-ico, .res-head.plain .res-sub { display: none !important; }
