@@ -6,6 +6,7 @@ import { ALL_MODULES, ALL_QUIZZES, SUBJECTS_CACHE, subjectColorFor } from './pic
 import { getQuizProgressPct, getSubjectProgressPct, ringColorVar, scanLocalProgress } from './progress-rings.js';
 import { pushModalState, popModalState } from './modal-backbutton.js';
 import { loadQuestions } from './onboarding-tour.js';
+import { renderInline, renderRich } from './text-render.js';
 
 const pct = n => Math.max(0, Math.min(100, Math.round(n || 0)));
 const col = n => ringColorVar(n, false);
@@ -177,13 +178,21 @@ function quizDetailHtml(quiz, questions, entry) {
     const opts = q.options.map((o, oi) => {
       const isRight = oi === q.answerIndex, isPick = a && a.selected === oi;
       const cls = isRight ? 'right' : (isPick ? 'wrong' : '');
-      return `<div class="pgq-opt ${cls}"><b>${L(oi)}</b><span>${esc(String(o))}</span>${isRight ? '<i class="fa-solid fa-check"></i>' : isPick ? '<i class="fa-solid fa-xmark"></i>' : ''}</div>`;
+      return `<div class="pgq-opt ${cls}"><b>${L(oi)}</b><span class="markdown-body">${renderInline(String(o))}</span>${isRight ? '<i class="fa-solid fa-check"></i>' : isPick ? '<i class="fa-solid fa-xmark"></i>' : ''}</div>`;
     }).join('');
-    const expl = q.explanation ? `<div class="pgq-expl"><i class="fa-solid fa-lightbulb"></i> ${esc(String(q.explanation).replace(/[*_`#>]/g, '').slice(0, 420))}${String(q.explanation).length > 420 ? '…' : ''}</div>` : '';
+    // same panels as the normal question page: Explanation + Why not the others
+    let why = '';
+    q.options.forEach((o, oi) => {
+      if (oi === q.answerIndex) return;
+      const w = q.whyNot && q.whyNot[String(oi)] || '';
+      why += `<div class="why-item"><b>${L(oi)} — ${renderInline(String(o))}</b><div class="markdown-body">${renderRich(w)}</div></div>`;
+    });
+    const expl = (q.explanation ? `<div class="panel" data-panel="exp"><h4>Explanation</h4><div class="markdown-body">${renderRich(q.explanation)}</div></div>` : '')
+      + (why && q.options.length > 1 && Object.keys(q.whyNot || {}).length ? `<div class="panel" data-panel="why"><h4>Why not the others</h4>${why}</div>` : '');
     return `<div class="pgq-q ${r.state}" data-state="${r.state}">
       <button type="button" class="pgq-q-head"><span class="pgq-num">${r.i + 1}</span><span class="pgq-qt">${esc(q.question)}</span>
         <span class="pgq-st ${r.state}"><i class="fa-solid ${r.state === 'ok' ? 'fa-check' : r.state === 'bad' ? 'fa-xmark' : 'fa-minus'}"></i></span></button>
-      <div class="pgq-q-body">${q.category ? `<div class="pgq-qcat">${esc(q.categoryLabel || q.category)}</div>` : ''}${opts}${expl}</div></div>`;
+      <div class="pgq-q-body">${q.category ? `<div class="pgq-qcat">${esc(q.categoryLabel || q.category)}</div>` : ''}<div class="pgq-qfull markdown-body">${renderRich(q.question)}</div>${opts}${expl}</div></div>`;
   }).join('');
   return `<div class="pgm-hero"><div class="pgm-ring" style="background:conic-gradient(${col(acc)} ${3.6 * acc}deg, var(--card-border) 0deg)"><div class="pgm-ring-in"><b>${acc}%</b><small>accuracy</small></div></div>
       <div class="pgm-hero-tx"><div class="pgm-hero-name">${esc(quiz.name)}</div><div class="pgm-meta">${answered}/${rows.length} answered${entry && entry.completed ? ' · Completed' : ''}</div></div></div>
