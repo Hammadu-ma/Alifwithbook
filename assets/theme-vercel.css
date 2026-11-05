@@ -372,3 +372,6 @@ body .home-hero-card .home-hero-inner .home-hero-cta { box-shadow: none !importa
 .cs-box .cs-in, .cs-box .cs-in:focus, .cs-box .cs-in:hover, .cs-box .cs-in:focus-visible {
   border: 0 !important; outline: 0 !important; box-shadow: none !important; background: transparent !important;
   border-radius: 0 !important; padding: 0 !important; margin: 0 !important; width: auto; -webkit-appearance: none; appearance: none; }
+
+/* subject analysis cards: no solid colour strip on the left */
+.pgm-subj::before { display: none !important; }
