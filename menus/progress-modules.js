@@ -5,6 +5,7 @@ import { isResourceLocked } from './lock.js';
 import { ALL_MODULES, ALL_QUIZZES, SUBJECTS_CACHE, subjectColorFor } from './picker-screen.js';
 import { getQuizProgressPct, getSubjectProgressPct, ringColorVar, scanLocalProgress } from './progress-rings.js';
 import { pushModalState, popModalState } from './modal-backbutton.js';
+import { loadQuestions } from './onboarding-tour.js';
 
 const pct = n => Math.max(0, Math.min(100, Math.round(n || 0)));
 const col = n => ringColorVar(n, false);
@@ -103,8 +104,8 @@ function detailHtml(g, student) {
         const p = getQuizProgressPct(student.id, q.subjectId, q.id);
         const state = p.pct >= 100 || (p.inProgress === false && p.pct > 0) ? 'done' : (p.inProgress || p.answeredCount) ? 'going' : 'new';
         const label = state === 'done' ? 'Completed' : state === 'going' ? 'In progress' : 'Not started';
-        return `<div class="pgm-quiz"><span class="pgm-qname">${esc(q.name)}</span><span class="pgm-chip ${state}">${label}</span>
-          <span class="pgm-qpct">${pct(p.pct)}%</span></div>`;
+        return `<button type="button" class="pgm-quiz" data-qs="${esc(q.subjectId)}" data-qid="${esc(q.id)}"><span class="pgm-qname">${esc(q.name)}</span><span class="pgm-chip ${state}">${label}</span>
+          <span class="pgm-qpct">${pct(p.pct)}%</span><i class="fa-solid fa-chevron-right pgm-qchev"></i></button>`;
       }).join('') || '<div class="pgm-none">No quizzes yet</div>'}</div></div>`;
   }).join('');
 
@@ -137,6 +138,7 @@ function openDetail(g, student) {
     setTimeout(() => sub.remove(), 320);
   };
   sub.querySelector('.pgm-back').addEventListener('click', close);
+  sub.querySelectorAll('.pgm-quiz[data-qid]').forEach(b => b.addEventListener('click', () => openQuizDetail(b.dataset.qs, b.dataset.qid, student)));
   pushModalState(close);
   requestAnimationFrame(() => requestAnimationFrame(() => sub.classList.add('open')));
 }
@@ -146,4 +148,80 @@ export function pgWireModules(root, data, student) {
     const g = data.moduleBreakdown.find(x => x.id === btn.dataset.mod);
     if (g) openDetail(g, student);
   }));
+}
+
+
+/* ---------- question-level analysis for one quiz ---------- */
+function quizDetailHtml(quiz, questions, entry) {
+  const ans = (entry && entry.answers) || {};
+  const rows = questions.map((q, i) => {
+    const a = ans[q.id];
+    return { q, i, a, state: !a ? 'skip' : a.correct ? 'ok' : 'bad' };
+  });
+  const answered = rows.filter(r => r.a).length;
+  const ok = rows.filter(r => r.state === 'ok').length;
+  const bad = rows.filter(r => r.state === 'bad').length;
+  const skip = rows.length - answered;
+  const acc = answered ? Math.round(ok / answered * 100) : 0;
+  const cats = {};
+  rows.forEach(r => {
+    const k = r.q.categoryLabel || r.q.category || 'General';
+    const c = cats[k] || (cats[k] = { ok: 0, bad: 0, skip: 0, t: 0 });
+    c.t++; c[r.state === 'ok' ? 'ok' : r.state === 'bad' ? 'bad' : 'skip']++;
+  });
+  const catHtml = Object.entries(cats).map(([name, c]) => `<div class="pgq-cat"><div class="pgq-cat-head"><span>${esc(name)}</span><b>${c.ok}/${c.t}</b></div>
+    <div class="pgq-stack"><span class="ok" style="width:${c.ok / c.t * 100}%"></span><span class="bad" style="width:${c.bad / c.t * 100}%"></span></div></div>`).join('');
+  const L = i => String.fromCharCode(65 + i);
+  const qHtml = rows.map(r => {
+    const q = r.q, a = r.a;
+    const opts = q.options.map((o, oi) => {
+      const isRight = oi === q.answerIndex, isPick = a && a.selected === oi;
+      const cls = isRight ? 'right' : (isPick ? 'wrong' : '');
+      return `<div class="pgq-opt ${cls}"><b>${L(oi)}</b><span>${esc(String(o))}</span>${isRight ? '<i class="fa-solid fa-check"></i>' : isPick ? '<i class="fa-solid fa-xmark"></i>' : ''}</div>`;
+    }).join('');
+    const expl = q.explanation ? `<div class="pgq-expl"><i class="fa-solid fa-lightbulb"></i> ${esc(String(q.explanation).replace(/[*_`#>]/g, '').slice(0, 420))}${String(q.explanation).length > 420 ? '…' : ''}</div>` : '';
+    return `<div class="pgq-q ${r.state}" data-state="${r.state}">
+      <button type="button" class="pgq-q-head"><span class="pgq-num">${r.i + 1}</span><span class="pgq-qt">${esc(q.question)}</span>
+        <span class="pgq-st ${r.state}"><i class="fa-solid ${r.state === 'ok' ? 'fa-check' : r.state === 'bad' ? 'fa-xmark' : 'fa-minus'}"></i></span></button>
+      <div class="pgq-q-body">${q.category ? `<div class="pgq-qcat">${esc(q.categoryLabel || q.category)}</div>` : ''}${opts}${expl}</div></div>`;
+  }).join('');
+  return `<div class="pgm-hero"><div class="pgm-ring" style="background:conic-gradient(${col(acc)} ${3.6 * acc}deg, var(--card-border) 0deg)"><div class="pgm-ring-in"><b>${acc}%</b><small>accuracy</small></div></div>
+      <div class="pgm-hero-tx"><div class="pgm-hero-name">${esc(quiz.name)}</div><div class="pgm-meta">${answered}/${rows.length} answered${entry && entry.completed ? ' · Completed' : ''}</div></div></div>
+    <div class="pgm-stats">
+      <div class="pgm-stat"><b style="color:var(--right)">${ok}</b><span>Correct</span></div>
+      <div class="pgm-stat"><b style="color:var(--wrong)">${bad}</b><span>Wrong</span></div>
+      <div class="pgm-stat"><b>${skip}</b><span>Unanswered</span></div>
+      <div class="pgm-stat"><b>${rows.length}</b><span>Total</span></div></div>
+    <div class="pgm-sec"><h3>By category</h3>${catHtml}</div>
+    <div class="pgm-sec"><h3>Questions</h3>
+      <div class="pgq-filters"><button type="button" class="on" data-f="all">All</button><button type="button" data-f="bad">Wrong</button><button type="button" data-f="ok">Correct</button><button type="button" data-f="skip">Unanswered</button></div>
+      <div class="pgq-list">${qHtml}</div></div>`;
+}
+
+async function openQuizDetail(subjectId, quizId, student) {
+  const quiz = ALL_QUIZZES.find(q => q.id === quizId && q.subjectId === subjectId);
+  if (!quiz) return;
+  const sub = document.createElement('div');
+  sub.className = 'pgm-sub pgm-sub2';
+  sub.innerHTML = `<div class="pgm-topbar"><button type="button" class="pgm-back" aria-label="Back"><i class="fa-solid fa-arrow-left"></i></button><div class="pgm-topbar-title">${esc(quiz.name)}</div><span style="width:40px"></span></div><main class="pgm-main"><div class="pgm-none" style="text-align:center;padding:40px 0"><i class="fa-solid fa-circle-notch fa-spin"></i></div></main>`;
+  document.body.appendChild(sub);
+  let closed = false;
+  const close = () => { if (closed) return; closed = true; sub.classList.remove('open'); popModalState(close); setTimeout(() => sub.remove(), 320); };
+  sub.querySelector('.pgm-back').addEventListener('click', close);
+  pushModalState(close);
+  requestAnimationFrame(() => requestAnimationFrame(() => sub.classList.add('open')));
+  const main = sub.querySelector('.pgm-main');
+  try {
+    const questions = await loadQuestions(subjectId, quizId);
+    const entry = scanLocalProgress(student.id).find(e => e.subjectId === subjectId && e.quizId === quizId);
+    main.innerHTML = quizDetailHtml(quiz, questions, entry);
+    main.querySelectorAll('.pgq-q-head').forEach(h => h.addEventListener('click', () => h.parentElement.classList.toggle('open')));
+    const filters = main.querySelectorAll('.pgq-filters button');
+    filters.forEach(b => b.addEventListener('click', () => {
+      filters.forEach(x => x.classList.toggle('on', x === b));
+      main.querySelectorAll('.pgq-q').forEach(q => { q.style.display = b.dataset.f === 'all' || q.dataset.state === b.dataset.f ? '' : 'none'; });
+    }));
+  } catch (_) {
+    main.innerHTML = '<div class="pgm-none" style="text-align:center;padding:40px 12px">Couldn’t load this quiz’s questions. Check your connection and try again.</div>';
+  }
 }
