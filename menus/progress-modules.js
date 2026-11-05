@@ -1,7 +1,7 @@
 /* ALIF Med — Progress page: "Progress by module" as a settings-style list of the student's unlocked / enrolled
    modules. Tapping one slides in a full screen with that module's complete progress detail. */
 import { escapeHtml as esc } from './loaders.js';
-import { isItemLockedForUser } from './lock.js';
+import { isResourceLocked } from './lock.js';
 import { ALL_MODULES, ALL_QUIZZES, SUBJECTS_CACHE } from './picker-screen.js';
 import { getQuizProgressPct, getSubjectProgressPct, ringColorVar, scanLocalProgress } from './progress-rings.js';
 import { pushModalState, popModalState } from './modal-backbutton.js';
@@ -14,7 +14,8 @@ function visibleModules(data, student) {
   return data.moduleBreakdown.filter(g => {
     if (g.id === '__unassigned') return true;
     const m = ALL_MODULES.find(x => x.id === g.id);
-    try { return !m || !isItemLockedForUser(m, student); } catch (_) { return true; }
+    // honours enrolments / access grants, like Home
+    try { return !m || !isResourceLocked(m, student, 'module'); } catch (_) { return true; }
   });
 }
 
