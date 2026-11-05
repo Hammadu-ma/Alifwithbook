@@ -295,8 +295,8 @@ function renderHead() {
   elLayoutBtn.title = layout === 'grid' ? 'Switch to list' : 'Switch to grid';
   elBack.classList.toggle('hidden', nav.view === 'root');
   elHead.classList.toggle('compact', nav.view !== 'root');
-  // Quizzes flow (module + subject pages): title only - no icon, no stats line.
-  elHead.classList.toggle('plain', nav.tab === 'quizzes' && (nav.view === 'module' || nav.view === 'qsubject'));
+  // Every inner page (module, subject, lecturer; books, videos and quizzes): title only - no icon, no stats line.
+  elHead.classList.toggle('plain', nav.view !== 'root');
 
   let tabs = '', pills = '';
   if (nav.view === 'root') {
