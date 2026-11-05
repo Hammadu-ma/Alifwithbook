@@ -187,8 +187,8 @@ function quizDetailHtml(quiz, questions, entry) {
       const w = q.whyNot && q.whyNot[String(oi)] || '';
       why += `<div class="why-item"><b>${L(oi)} — ${renderInline(String(o))}</b><div class="markdown-body">${renderRich(w)}</div></div>`;
     });
-    const expl = (q.explanation ? `<div class="panel" data-panel="exp"><h4>Explanation</h4><div class="markdown-body">${renderRich(q.explanation)}</div></div>` : '')
-      + (why && q.options.length > 1 && Object.keys(q.whyNot || {}).length ? `<div class="panel" data-panel="why"><h4>Why not the others</h4>${why}</div>` : '');
+    const expl = (q.explanation ? `<div class="panel show" data-panel="exp"><h4>Explanation</h4><div class="markdown-body">${renderRich(q.explanation)}</div></div>` : '')
+      + (why && q.options.length > 1 && Object.keys(q.whyNot || {}).length ? `<div class="panel show" data-panel="why"><h4>Why not the others</h4>${why}</div>` : '');
     return `<div class="pgq-q ${r.state}" data-state="${r.state}">
       <button type="button" class="pgq-q-head"><span class="pgq-num">${r.i + 1}</span><span class="pgq-qt">${esc(q.question)}</span>
         <span class="pgq-st ${r.state}"><i class="fa-solid ${r.state === 'ok' ? 'fa-check' : r.state === 'bad' ? 'fa-xmark' : 'fa-minus'}"></i></span></button>

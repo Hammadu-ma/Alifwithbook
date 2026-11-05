@@ -414,3 +414,4 @@ button.pgm-quiz:active { opacity: .6; }
 .pgq-q-body .panel { margin: 10px 0 0; }
 .pgq-opt .markdown-body { font-size: 13px; }
 .pgq-opt .markdown-body p { margin: 0; }
+.pgq-q-body .panel { padding: 16px 16px 18px; font-size: 14.5px; line-height: 1.7; }
