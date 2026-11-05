@@ -310,3 +310,18 @@ body .home-hero-card .home-hero-inner .home-hero-cta { box-shadow: none !importa
 .pgm-chip.new { color: var(--ink-soft); background: color-mix(in srgb, var(--ink) 7%, transparent); }
 .pgm-qpct { flex: none; width: 38px; text-align: right; font-weight: 800; font-size: 12.5px; }
 .pgm-none { font-size: 13px; color: var(--ink-soft); padding: 10px 2px; }
+
+/* ===== quiz sidebar: breadcrumb under the title + universal close button; page breadcrumb removed ===== */
+#appScreen #heroEyebrow { display: none !important; }
+#appScreen #switchQuizBtn { display: none !important; }
+.sidebar-head-btns { display: flex; align-items: center; gap: 6px; flex: none; margin-right: -4px; }
+.sidebar-close-btn { width: 30px; height: 30px; flex: none; border-radius: 50%; border: 1px solid var(--card-border); background: var(--card);
+  color: var(--ink-soft); display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer;
+  transition: background .2s, color .2s, transform .2s; }
+.sidebar-close-btn:hover { background: var(--paper-2); color: var(--ink); transform: rotate(90deg); }
+.sidebar-close-btn:active { transform: scale(.9); }
+@media (max-width: 880px) { #collapseSidebarBtn { display: none !important; } }
+.sidebar-crumb { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 6px; margin-top: -2px; font-size: 12px; line-height: 1.35; color: var(--ink-soft); }
+.sidebar-crumb:empty { display: none; }
+.sidebar-crumb .crumb-sep { font-style: normal; opacity: .5; font-size: 13px; }
+.sidebar-crumb .crumb-cur { color: var(--ink); font-weight: 700; }
