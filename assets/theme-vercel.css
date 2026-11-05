@@ -325,3 +325,21 @@ body .home-hero-card .home-hero-inner .home-hero-cta { box-shadow: none !importa
 .sidebar-crumb:empty { display: none; }
 .sidebar-crumb .crumb-sep { font-style: normal; opacity: .5; font-size: 13px; }
 .sidebar-crumb .crumb-cur { color: var(--ink); font-weight: 700; }
+
+/* ===== chat: modern people search ===== */
+.cs-box { position: sticky; top: 0; z-index: 4; display: flex; align-items: center; gap: 8px; margin: 0 0 8px; padding: 0 6px 0 14px; height: 44px;
+  border-radius: 999px; background: color-mix(in srgb, var(--card) 88%, transparent); border: 1px solid var(--card-border);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); transition: border-color .2s, box-shadow .2s, background .2s; }
+.cs-box:focus-within { border-color: var(--primary, #0070f3); box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary, #0070f3) 14%, transparent); background: var(--card); }
+.cs-ic { width: 17px; height: 17px; flex: none; color: var(--ink-faint, var(--ink-soft)); transition: color .2s; }
+.cs-box:focus-within .cs-ic { color: var(--primary, #0070f3); }
+.cs-in { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; color: var(--ink); font: 500 14.5px Inter, system-ui, sans-serif; }
+.cs-in::placeholder { color: var(--ink-faint, var(--ink-soft)); font-weight: 400; }
+.cs-in::-webkit-search-cancel-button, .cs-in::-webkit-search-decoration { -webkit-appearance: none; display: none; }
+.cs-x { flex: none; width: 28px; height: 28px; border: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;
+  color: var(--ink-soft); background: color-mix(in srgb, var(--ink) 8%, transparent); opacity: 0; transform: scale(.6); pointer-events: none; transition: opacity .18s, transform .18s; }
+.cs-x svg { width: 12px; height: 12px; }
+.cs-box.has-text .cs-x { opacity: 1; transform: none; pointer-events: auto; }
+.cs-empty { text-align: center; padding: 30px 16px; color: var(--ink-soft); font-size: 13.5px; }
+.cs-empty i { display: block; font-size: 24px; margin-bottom: 8px; opacity: .45; }
+#peopleList > .cs-box { margin: 4px 12px 8px; }

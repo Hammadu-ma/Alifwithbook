@@ -31,6 +31,7 @@ import "./resources.js";
 import"./quiz-engine.js";
 import"./learn-mode.js";
 import"./exam-cards.js";
+import"./chat-search.js";
 import"./ask-ai.js";
 import"./submit-summary.js";
 import"./class-chat.js";
