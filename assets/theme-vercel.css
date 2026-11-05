@@ -367,3 +367,8 @@ body .home-hero-card .home-hero-inner .home-hero-cta { box-shadow: none !importa
 .pgm-subj .pgm-quizzes { margin-top: 6px; }
 .pgm-subj .pgm-quiz { border-top-color: color-mix(in srgb, var(--tone) 16%, var(--card-border)); }
 .pgm-subj .pgm-qpct { color: var(--tone); }
+
+/* chat search: one single bar - strip any global input chrome from the inner field */
+.cs-box .cs-in, .cs-box .cs-in:focus, .cs-box .cs-in:hover, .cs-box .cs-in:focus-visible {
+  border: 0 !important; outline: 0 !important; box-shadow: none !important; background: transparent !important;
+  border-radius: 0 !important; padding: 0 !important; margin: 0 !important; width: auto; -webkit-appearance: none; appearance: none; }
