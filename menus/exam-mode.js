@@ -207,8 +207,8 @@ export async function startExam(subjectId, quizId) {
     startBtn.innerHTML = resumable ? '<i class="fa-solid fa-play"></i> Resume exam' : '<i class="fa-solid fa-play"></i> Start exam';
     showScreen('setupScreen');
   } catch (e) {
-    const noQ = e && e.message === 'NO_QUESTIONS';
-    showQuizState(noQ ? 'empty' : 'offline', {
+    // Quizzes are never published without questions, so any failure to get them is a connection/loading problem.
+    showQuizState('offline', {
       title: CURRENT_QUIZ_NAME,
       onBack: () => closeExam(),
       onRetry: () => { closeExam(); return startExam(subjectId, quizId); }
