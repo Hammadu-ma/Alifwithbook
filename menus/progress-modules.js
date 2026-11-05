@@ -2,7 +2,7 @@
    modules. Tapping one slides in a full screen with that module's complete progress detail. */
 import { escapeHtml as esc } from './loaders.js';
 import { isResourceLocked } from './lock.js';
-import { ALL_MODULES, ALL_QUIZZES, SUBJECTS_CACHE } from './picker-screen.js';
+import { ALL_MODULES, ALL_QUIZZES, SUBJECTS_CACHE, subjectColorFor } from './picker-screen.js';
 import { getQuizProgressPct, getSubjectProgressPct, ringColorVar, scanLocalProgress } from './progress-rings.js';
 import { pushModalState, popModalState } from './modal-backbutton.js';
 
@@ -66,15 +66,45 @@ function detailHtml(g, student) {
 
   const subjectsHtml = g.subjects.map(s => {
     const qs = quizzes.filter(q => q.subjectId === s.id);
-    return `<div class="pgm-subj"><div class="pgm-subj-head"><span class="pgm-subj-name">${esc(s.name)}</span>
-        <span class="pgm-subj-pct" style="color:${col(s.pct)}">${pct(s.pct)}%</span></div>
-      <div class="bar-track"><div class="bar-fill-right" style="width:${pct(s.pct)}%;background:${col(s.pct)}"></div></div>
+    const tone = (() => { try { return subjectColorFor(s.id) || g.color; } catch (_) { return g.color; } })();
+    const se = entries.filter(e => e.subjectId === s.id);
+    let sAns = 0, sOk = 0, sDone = 0, sStart = 0;
+    const sc = {};
+    se.forEach(e => {
+      const ans = e.answers || {}, n = Object.keys(ans).length;
+      if (!n) return;
+      sStart++; if (e.completed) sDone++;
+      Object.values(ans).forEach(a => {
+        sAns++; if (a.correct) sOk++;
+        if (a.category) { const c = sc[a.category] || { ok: 0, t: 0 }; c.t++; if (a.correct) c.ok++; sc[a.category] = c; }
+      });
+    });
+    const sAcc = sAns ? Math.round(sOk / sAns * 100) : 0;
+    const cl = Object.entries(sc).map(([name, c]) => ({ name, pct: c.ok / c.t * 100, t: c.t })).filter(c => c.t >= 2);
+    const best = cl.slice().sort((x, y) => y.pct - x.pct)[0];
+    const worst = cl.slice().sort((x, y) => x.pct - y.pct)[0];
+    const insight = !sAns ? 'Not started yet — answer a few questions to see your analysis.'
+      : sAcc >= 75 ? 'Strong command of this subject. Keep revising to stay sharp.'
+      : sAcc >= 50 ? 'Solid base — a bit more practice will lift the weaker areas.'
+      : 'Needs attention — review the explanations and retry the quizzes.';
+    const catPill = (c, kind) => c && cl.length > 1 ? `<span class="pgm-pill ${kind}"><i class="fa-solid ${kind === 'best' ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'}"></i> ${esc(c.name)} · ${pct(c.pct)}%</span>` : '';
+    return `<div class="pgm-subj" style="--tone:${tone}">
+      <div class="pgm-subj-head"><span class="pgm-subj-dot"></span><span class="pgm-subj-name">${esc(s.name)}</span>
+        <span class="pgm-subj-pct">${pct(s.pct)}%</span></div>
+      <div class="pgm-subj-bar"><span style="width:${pct(s.pct)}%"></span></div>
+      <div class="pgm-subj-stats">
+        <div><b>${sDone}/${qs.length}</b><span>Completed</span></div>
+        <div><b>${sAns}</b><span>Answered</span></div>
+        <div><b>${sOk}</b><span>Correct</span></div>
+        <div><b>${sAcc}%</b><span>Accuracy</span></div></div>
+      <div class="pgm-subj-note">${esc(insight)}</div>
+      ${catPill(best, 'best')}${catPill(worst, 'weak')}
       <div class="pgm-quizzes">${qs.map(q => {
         const p = getQuizProgressPct(student.id, q.subjectId, q.id);
         const state = p.pct >= 100 || (p.inProgress === false && p.pct > 0) ? 'done' : (p.inProgress || p.answeredCount) ? 'going' : 'new';
         const label = state === 'done' ? 'Completed' : state === 'going' ? 'In progress' : 'Not started';
         return `<div class="pgm-quiz"><span class="pgm-qname">${esc(q.name)}</span><span class="pgm-chip ${state}">${label}</span>
-          <span class="pgm-qpct" style="color:${col(p.pct)}">${pct(p.pct)}%</span></div>`;
+          <span class="pgm-qpct">${pct(p.pct)}%</span></div>`;
       }).join('') || '<div class="pgm-none">No quizzes yet</div>'}</div></div>`;
   }).join('');
 
@@ -87,7 +117,7 @@ function detailHtml(g, student) {
       <div class="pgm-stat"><b>${started}</b><span>Started</span></div>
       <div class="pgm-stat"><b>${answered}</b><span>Answered</span></div>
       <div class="pgm-stat"><b>${acc}%</b><span>Accuracy</span></div></div>
-    <div class="pgm-sec"><h3>Subjects</h3>${subjectsHtml}</div>
+    <div class="pgm-sec"><h3>Subject analysis</h3>${subjectsHtml}</div>
     <div class="pgm-sec"><h3>Strongest categories</h3><div class="pg-cat-list">${catRows(strong, 'Answer a few more questions to unlock this.')}</div></div>
     <div class="pgm-sec"><h3>Needs work</h3><div class="pg-cat-list">${catRows(weak, 'Answer a few more questions to unlock this.')}</div></div>
     <div class="pgm-sec"><h3>Recent activity</h3>${recent.length ? recent.slice(0, 8).map(r => `<div class="pg-activity-row"><span class="act-dot ${r.ok ? 'ok' : 'no'}"></span><span class="act-txt">${esc(r.name)}</span><span class="act-time">${ago(r.t)}</span></div>`).join('') : '<div class="pgm-none">No activity in this module yet.</div>'}</div>`;

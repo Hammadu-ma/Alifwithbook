@@ -343,3 +343,27 @@ body .home-hero-card .home-hero-inner .home-hero-cta { box-shadow: none !importa
 .cs-empty { text-align: center; padding: 30px 16px; color: var(--ink-soft); font-size: 13.5px; }
 .cs-empty i { display: block; font-size: 24px; margin-bottom: 8px; opacity: .45; }
 #peopleList > .cs-box { margin: 4px 12px 8px; }
+
+/* ===== module detail: per-subject analysis cards, tinted by the subject colour ===== */
+.pgm-subj { --tone: var(--primary); position: relative; overflow: hidden; padding: 15px 15px 12px; border-radius: 20px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--tone) 11%, var(--card)) 0%, var(--card) 62%);
+  border: 1px solid color-mix(in srgb, var(--tone) 24%, var(--card-border)); }
+.pgm-subj::before { content: ''; position: absolute; left: 0; top: 14px; bottom: 14px; width: 3px; border-radius: 0 3px 3px 0; background: var(--tone); }
+.pgm-subj-head { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+.pgm-subj-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--tone); box-shadow: 0 0 0 4px color-mix(in srgb, var(--tone) 18%, transparent); flex: none; }
+.pgm-subj-name { flex: 1; min-width: 0; font-weight: 700; font-size: 15px; }
+.pgm-subj-pct { font-weight: 800; font-size: 15px; color: var(--tone); }
+.pgm-subj-bar { height: 7px; border-radius: 99px; background: color-mix(in srgb, var(--tone) 14%, var(--card-border)); overflow: hidden; }
+.pgm-subj-bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, color-mix(in srgb, var(--tone) 70%, #fff), var(--tone)); }
+.pgm-subj-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 12px; }
+.pgm-subj-stats > div { text-align: center; padding: 8px 2px; border-radius: 12px; background: color-mix(in srgb, var(--tone) 8%, transparent); }
+.pgm-subj-stats b { display: block; font-size: 14.5px; color: var(--ink); }
+.pgm-subj-stats span { font-size: 10.5px; color: var(--ink-soft); }
+.pgm-subj-note { margin: 11px 0 6px; font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); }
+.pgm-pill { display: inline-flex; align-items: center; gap: 6px; margin: 0 6px 6px 0; padding: 4px 10px; border-radius: 99px; font-size: 11.5px; font-weight: 700; max-width: 100%; }
+.pgm-pill i { font-size: 10px; }
+.pgm-pill.best { color: #16a34a; background: color-mix(in srgb, #22c55e 13%, transparent); }
+.pgm-pill.weak { color: #dc2626; background: color-mix(in srgb, #ef4444 12%, transparent); }
+.pgm-subj .pgm-quizzes { margin-top: 6px; }
+.pgm-subj .pgm-quiz { border-top-color: color-mix(in srgb, var(--tone) 16%, var(--card-border)); }
+.pgm-subj .pgm-qpct { color: var(--tone); }
