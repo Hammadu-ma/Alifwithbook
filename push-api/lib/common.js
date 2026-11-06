@@ -55,4 +55,16 @@ function handler(fn) {
   };
 }
 
-module.exports = { init, verify, isAdminToken, handler };
+// uid -> { studentId, name } from users/{uid}. One Firestore read, then cached for the life of the function instance.
+const profileCache = new Map();
+async function profileOf(uid) {
+  const hit = profileCache.get(uid);
+  if (hit && Date.now() - hit.t < 10 * 60 * 1000) return hit.v;
+  const snap = await admin.firestore().doc(`users/${uid}`).get();
+  const d = snap.exists ? snap.data() : {};
+  const v = { studentId: d.studentId || null, name: d.name || 'Classmate', active: d.role === 'student' && d.status === 'active' };
+  profileCache.set(uid, { t: Date.now(), v });
+  return v;
+}
+
+module.exports = { init, verify, isAdminToken, handler, profileOf, admin };

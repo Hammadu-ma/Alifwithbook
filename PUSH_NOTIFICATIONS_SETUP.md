@@ -85,3 +85,20 @@ iOS only delivers web push to ALIF installed via Share -> Add to Home Screen (iO
 
 ## Admin file
 `adu.html` (deployed) and `admin/ALIF_Med_Admin.html` now both include the Notifications tab. `admin-notifications.js` exists at the project root (deployed) and in `admin/`.
+
+## Message notifications (private chats + groups)
+
+When a student sends a private or group message, their app calls `push-api` -> `POST /api/push/message`.
+The server verifies the Firebase ID token, checks the sender is a member of that chat, finds the other members'
+subscriptions in Supabase (`push_subscriptions.student_id`) and sends a Web Push. Nothing runs on Firebase
+Cloud Functions, so it works on the free Spark plan. Cost: about 1-2 Firestore reads per message (chat
+membership, cached 5 minutes in the function instance).
+
+One-time setup after pulling this change:
+1. Run the new lines at the bottom of `push-api/schema.sql` in the Supabase SQL editor (adds `student_id`).
+2. Redeploy the `push-api` Vercel project (it now has `api/push/message.js` and an updated `subscribe.js`).
+3. Students open the app once (the subscription is refreshed with their student ID) and tap **Turn on** in the
+   prompt that appears under the chat header. iPhone needs the app added to the Home Screen first.
+
+The notification is skipped while the app is open and focused, and is collapsed per chat (one notification per
+conversation). The class-wide community chat does not send notifications.

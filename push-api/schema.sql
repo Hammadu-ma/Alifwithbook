@@ -10,3 +10,7 @@ create index if not exists push_subscriptions_uid_idx on public.push_subscriptio
 alter table public.push_subscriptions enable row level security;
 -- The browser never queries this table directly. Only the service-role API uses it.
 -- No client policies are intentionally created.
+
+-- Message notifications: which student a subscription belongs to (filled in by /api/push/subscribe).
+alter table public.push_subscriptions add column if not exists student_id text;
+create index if not exists push_subscriptions_student_idx on public.push_subscriptions(student_id);

@@ -17,7 +17,7 @@
 
    Firestore / Auth / push-API traffic is never touched by this worker.
    ========================================================================= */
-const BUILD = '974be886aed2';
+const BUILD = '5abf7ceb3f8b';
 /*SHELL_START*/
 const SHELL = [
   "/assets/amoled-dark.css",
@@ -290,6 +290,18 @@ self.addEventListener('push', event => {
     try { data = { body: event.data ? event.data.text() : '' }; } catch (_) {}
   }
   const title = data.title || 'ALIF';
+  if (data.kind === 'chat') {
+    // The student is looking at the app right now -> the in-app chat already shows the message.
+    event.waitUntil((async () => {
+      const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      if (wins.some(w => w.visibilityState === 'visible' && w.focused)) return;
+      await self.registration.showNotification(title, {
+        body: data.body || '', icon: data.icon || '/logo.png', badge: data.badge || '/logo.png',
+        tag: data.tag || 'alif-chat', data: { url: data.url || '/' }, renotify: true, vibrate: [90, 40, 90]
+      });
+    })());
+    return;
+  }
   const options = {
     body: data.body || '',
     icon: data.icon || '/logo.png',
