@@ -28,6 +28,7 @@ function cors(res) {
 }
 
 async function verify(req) {
+  init(); // make sure the Firebase Admin app exists before verifying
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   if (!token) throw new Error('Missing Firebase ID token');
   return admin.auth().verifyIdToken(token);
