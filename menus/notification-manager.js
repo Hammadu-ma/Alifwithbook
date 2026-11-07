@@ -52,6 +52,17 @@ async function ensureSubscription(){
   registration = registration || await navigator.serviceWorker.register('/sw.js',{scope:'/'});
   await navigator.serviceWorker.ready;
   let sub = await registration.pushManager.getSubscription();
+  if(sub){
+    // A subscription made with a different VAPID key can never receive pushes: drop it and subscribe again.
+    try{
+      const cur = sub.options && sub.options.applicationServerKey;
+      const want = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+      if(cur){
+        const a = new Uint8Array(cur);
+        if(a.length !== want.length || a.some((v,i)=>v!==want[i])){ await sub.unsubscribe(); sub = null; }
+      }
+    }catch(_){}
+  }
   if(!sub) sub = await registration.pushManager.subscribe({
     userVisibleOnly:true,
     applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)

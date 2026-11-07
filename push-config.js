@@ -5,4 +5,4 @@ window.ALIF_PUSH_API_BASE =
   'https://alif-push-api.vercel.app';
 
 window.ALIF_VAPID_PUBLIC_KEY =
-  'BLbC0c-ozUs2mRiTXc6rPtitot8zvdGVeLC4gHlP0qJa9lx8-Fbydz-C2U9F719lNq8d9HUVS61BptlPorYKo7A';
+  'BPEhgZwMiALdNEe_PQG0bTzQKcscfFNCvaV9yqjxFH3WNmpiEcANE9iF_v90NAhPWe8dsyxyNjvFM8Wiqbjqgu0';
