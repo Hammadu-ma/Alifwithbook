@@ -19,7 +19,7 @@ Redeploy after changing them.
 ```json
 [
   {
-    "AllowedOrigins": ["https://alifwithbook.vercel.app", "https://alifmed.com", "https://alifmeta.vercel.app"],
+    "AllowedOrigins": ["https://alifwithbook.vercel.app", "https://alifmed.vercel.app", "https://alifmeta.vercel.app"],
     "AllowedMethods": ["GET", "PUT", "HEAD"],
     "AllowedHeaders": ["*"],
     "ExposeHeaders": ["Content-Length", "Content-Range", "ETag"],
