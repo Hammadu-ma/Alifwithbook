@@ -122,10 +122,14 @@ export function applyOwnAvatar() {
 
 /* hydrate the header once the student is known (login can finish after page load) */
 let tries = 0;
-(function boot() {
-  applyOwnAvatar();
-  if (sidOf()) loadOwnAvatar().then(applyOwnAvatar);
+function boot() {
+  try {
+    applyOwnAvatar();
+    if (sidOf()) loadOwnAvatar().then(applyOwnAvatar).catch(() => {});
+  } catch (_) { /* never let a photo problem touch the app */ }
   if (++tries < 12) setTimeout(boot, tries < 4 ? 1500 : 5000);
-})();
-window.addEventListener('focus', () => { applyOwnAvatar(); });
+}
+// NOT run at import time: this module is part of an import cycle with auth.js, so its imports may not be ready yet.
+setTimeout(boot, 800);
+window.addEventListener('focus', () => { try { applyOwnAvatar(); } catch (_) {} });
 window.__alifAvatar = { applyOwnAvatar, loadOwnAvatar, setOwnAvatar, removeOwnAvatar, ownAvatar };
