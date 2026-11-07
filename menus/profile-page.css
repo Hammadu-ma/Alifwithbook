@@ -390,3 +390,17 @@
   align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; margin-top: 1px; padding: 2px 8px; border-radius: 999px;
   font-size: 10.5px; font-weight: 700; color: #16a34a; background: color-mix(in srgb, #22c55e 14%, transparent);
 }
+
+
+/* ---- profile photos (R2) ---- */
+.av-photo{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block}
+.profile-btn.has-photo{padding:0;overflow:hidden}
+.profile-btn.has-photo .av-photo{border-radius:50%}
+.pr-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.people-row .pr-avatar,.group-member-row .pr-avatar{position:relative}
+.pf-avatar-wrap{position:relative;width:92px;margin:0 auto 14px}
+.pf-avatar-wrap .pf-avatar{margin:0;overflow:hidden;cursor:pointer}
+.pf-avatar.busy{opacity:.55}
+.pf-avatar-edit{position:absolute;right:-4px;bottom:-2px;width:30px;height:30px;border-radius:50%;border:2px solid #fff;background:#0070f3;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.pf-avatar-edit:disabled{opacity:.6}
+.pf-avatar-remove{display:block;margin:-6px auto 10px;background:none;border:0;color:rgba(255,255,255,.8);font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px}

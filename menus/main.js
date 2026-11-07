@@ -40,7 +40,7 @@ import"./class-chat.js";
 import"./onboarding-tour.js";
 import"./lock.js";
 import"./scroll-guard.js";
-import"./boot.js";
+import"./boot.js";import"./avatar.js";
 
 // Deferred: not needed for first paint. Loaded when the browser is idle (and instantly on first touch/keypress),
 // straight from the service-worker cache after the first visit.

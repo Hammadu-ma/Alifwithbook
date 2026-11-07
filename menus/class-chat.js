@@ -3,4 +3,4 @@ import{jumpToQuestion as e}from"./ask-ai.js";import{getStoredStudent as t,storeS
 function __seenMs(e){const v=e&&e.lastSeen;return v?(v.toMillis?v.toMillis():v.seconds?v.seconds*1e3:+v||0):0}
 function __chatVisible(e){return __seenMs(e)>=Date.now()-30*864e5}
 function __byLastSeen(a,b){return __seenMs(b)-__seenMs(a)||(a.name||"").localeCompare(b.name||"")}
-function __onlineDot(e){return __seenMs(e)>=Date.now()-3*36e5?'<span class="pr-online" title="Online"></span>':""}
+function __onlineDot(e){return(e&&e.avatarUrl?'<img class="pr-photo" src="'+String(e.avatarUrl).replace(/"/g,"&quot;")+'" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">':"")+(__seenMs(e)>=Date.now()-3*36e5?'<span class="pr-online" title="Online"></span>':"")}

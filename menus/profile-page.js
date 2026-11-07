@@ -16,6 +16,7 @@ import { ACTIVE_UNIVERSITY_ID, initials } from './picker-screen.js';
 import { THEME_KEY, applyTheme, getEffectiveTheme, switchTheme } from './theme.js';
 import { getChatNotifyEnabled, setChatNotifyEnabled, setAppearInChat } from './class-chat.js';
 import { showToast } from './ui-feedback.js';
+import { ownAvatar, loadOwnAvatar, setOwnAvatar, removeOwnAvatar, avatarImg } from './avatar.js';
 
 const DEVICE_CACHE = {};
 let screen = null;
@@ -80,7 +81,12 @@ export async function openProfilePage({ doLogout } = {}) {
 
     <main class="pf-main">
       <section class="pf-hero">
-        <div class="pf-avatar">${esc(initials(student.name))}</div>
+        <div class="pf-avatar-wrap">
+          <div class="pf-avatar" id="pfAvatar">${ownAvatar() ? avatarImg(ownAvatar().url, 'av-photo') : esc(initials(student.name))}</div>
+          <button type="button" class="pf-avatar-edit" id="pfAvatarBtn" aria-label="Change profile photo"><i class="fa-solid fa-camera"></i></button>
+          <input type="file" id="pfAvatarFile" accept="image/*" hidden />
+        </div>
+        <button type="button" class="pf-avatar-remove" id="pfAvatarRemove" style="${ownAvatar() ? '' : 'display:none'}">Remove photo</button>
         <h1 class="pf-name">${esc(student.name || 'Student')}</h1>
         <div class="pf-chips">
           ${student.ID ? `<span class="pf-chip"><i class="fa-solid fa-id-card"></i>${esc(student.ID)}</span>` : ''}
@@ -213,6 +219,29 @@ export async function openProfilePage({ doLogout } = {}) {
 
   // --- wiring -----------------------------------------------------------
   el.querySelector('#pfBackBtn').addEventListener('click', closeProfilePage);
+
+  /* profile photo (stored in R2) */
+  {
+    const av = el.querySelector('#pfAvatar'), file = el.querySelector('#pfAvatarFile'), rm = el.querySelector('#pfAvatarRemove'), btn = el.querySelector('#pfAvatarBtn');
+    const paint = () => { const a = ownAvatar(); av.innerHTML = a ? avatarImg(a.url, 'av-photo') : esc(initials(student.name)); rm.style.display = a ? '' : 'none'; };
+    loadOwnAvatar().then(paint).catch(() => {});
+    btn.addEventListener('click', () => file.click());
+    av.addEventListener('click', () => file.click());
+    file.addEventListener('change', async () => {
+      const f = file.files && file.files[0]; file.value = '';
+      if (!f) return;
+      btn.disabled = true; av.classList.add('busy');
+      try { await setOwnAvatar(f); paint(); showToast('Profile photo updated', 'success'); }
+      catch (e) { showToast(e.message || 'Could not update the photo', 'error'); }
+      finally { btn.disabled = false; av.classList.remove('busy'); }
+    });
+    rm.addEventListener('click', async () => {
+      rm.disabled = true;
+      try { await removeOwnAvatar(); paint(); showToast('Profile photo removed', 'success'); }
+      catch (e) { showToast(e.message || 'Could not remove the photo', 'error'); }
+      finally { rm.disabled = false; }
+    });
+  }
 
   {
     const { dark, isSystem } = getEffectiveTheme();

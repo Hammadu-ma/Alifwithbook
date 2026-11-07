@@ -12,12 +12,14 @@
      GET  /api/r2?key=books/<file>          302 → short-lived signed download URL (used as the stored file URL)
      POST /api/r2 {action:'upload', folder, fileName, contentType, size}   admin only → { uploadUrl, key, url }
      POST /api/r2 {action:'delete', key}                                    admin only
+     POST /api/r2 {action:'avatar-upload', size}   signed-in (non-anonymous) → { uploadUrl, key, url }
+     POST /api/r2 {action:'avatar-delete', key}    only your own avatars/<uid>_… objects
 */
 const crypto = require('node:crypto');
 
 const FIREBASE_PROJECT = 'exam-d9415';
 const FOLDERS = ['books', 'notes', 'pdfexams', 'videos', 'thumbs'];
-const KEY_RE = /^(books|notes|pdfexams|videos|thumbs)\/[A-Za-z0-9._-]{1,220}$/;
+const KEY_RE = /^(books|notes|pdfexams|videos|thumbs|avatars)\/[A-Za-z0-9._-]{1,220}$/;
 const MAX_BYTES = 600 * 1024 * 1024;
 
 const hmac = (key, data) => crypto.createHmac('sha256', key).update(data).digest();
@@ -55,7 +57,7 @@ function presign(c, method, key, expires) {
   return `https://${host}${uri}?${query}&X-Amz-Signature=${sig}`;
 }
 
-async function adminOnly(req) {
+async function verifyToken(req) {
   const authz = req.headers.authorization || '';
   const idToken = authz.startsWith('Bearer ') ? authz.slice(7).trim() : '';
   if (!idToken) throw Object.assign(new Error('Authentication required'), { status: 401 });
@@ -66,9 +68,13 @@ async function adminOnly(req) {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken })
   });
   const data = await v.json().catch(() => ({}));
-  const uid = data && data.users && data.users[0] && data.users[0].localId;
-  if (!v.ok || !uid) throw Object.assign(new Error('Invalid authentication token'), { status: 401 });
+  const user = data && data.users && data.users[0];
+  if (!v.ok || !user || !user.localId) throw Object.assign(new Error('Invalid authentication token'), { status: 401 });
+  return { uid: user.localId, email: user.email || '', idToken };
+}
 
+async function adminOnly(req, who) {
+  const { uid, idToken } = who || await verifyToken(req);
   // The caller's own admin document, read with THEIR token, so Firestore rules decide (non-admins get 403).
   const r = await fetch(`https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT}/databases/(default)/documents/admin/${encodeURIComponent(uid)}`, {
     headers: { Authorization: `Bearer ${idToken}` }
@@ -99,9 +105,25 @@ module.exports = async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
     res.setHeader('Cache-Control', 'no-store');
     if (!c) return res.status(503).json({ error: 'File storage is not configured' });
-    await adminOnly(req);
-
+    const who = await verifyToken(req);
     const b = req.body || {};
+
+    // ---- profile photos: any signed-in account with an email (anonymous guests are refused) ----
+    if (b.action === 'avatar-upload') {
+      if (!who.email) return res.status(403).json({ error: 'Sign in to set a profile photo' });
+      if (!(Number(b.size) > 0) || Number(b.size) > 1024 * 1024) return res.status(413).json({ error: 'Photo is too large' });
+      const key = `avatars/${who.uid}_${crypto.randomBytes(5).toString('hex')}.jpg`;
+      return res.status(200).json({ ok: true, key, uploadUrl: presign(c, 'PUT', key, 300), url: `/api/r2?key=${encodeURIComponent(key)}` });
+    }
+    if (b.action === 'avatar-delete') {
+      const key = String(b.key || '');
+      if (!KEY_RE.test(key) || !key.startsWith(`avatars/${who.uid}_`)) return res.status(403).json({ error: 'Not your photo' });
+      const r = await fetch(presign(c, 'DELETE', key, 300), { method: 'DELETE' });
+      if (!r.ok && r.status !== 404) return res.status(502).json({ error: `Storage delete failed (${r.status})` });
+      return res.status(200).json({ ok: true });
+    }
+
+    await adminOnly(req, who);
     if (b.action === 'upload') {
       const folder = FOLDERS.includes(b.folder) ? b.folder : null;
       if (!folder) return res.status(400).json({ error: 'Invalid folder' });
