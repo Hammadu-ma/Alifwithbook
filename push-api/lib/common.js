@@ -20,8 +20,12 @@ function init() {
   return supabaseClient;
 }
 
-function cors(res) {
-  res.setHeader('Access-Control-Allow-Origin', process.env.ALIF_APP_ORIGIN || '*');
+function cors(req, res) {
+  // ALIF_APP_ORIGIN may hold several origins separated by commas; the header must echo exactly one.
+  const allowed = (process.env.ALIF_APP_ORIGIN || '*').split(',').map(s => s.trim()).filter(Boolean);
+  const origin = req.headers.origin;
+  const out = allowed.includes('*') ? '*' : (allowed.includes(origin) ? origin : allowed[0]);
+  res.setHeader('Access-Control-Allow-Origin', out);
   res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -44,7 +48,7 @@ function isAdminToken(decoded) {
 
 function handler(fn) {
   return async (req, res) => {
-    cors(res);
+    cors(req, res);
     if (req.method === 'OPTIONS') return res.status(204).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
     try {
