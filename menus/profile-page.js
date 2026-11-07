@@ -231,14 +231,14 @@ export async function openProfilePage({ doLogout } = {}) {
       const f = file.files && file.files[0]; file.value = '';
       if (!f) return;
       btn.disabled = true; av.classList.add('busy');
-      try { await setOwnAvatar(f); paint(); showToast('Profile photo updated', 'success'); }
-      catch (e) { showToast(e.message || 'Could not update the photo', 'error'); }
+      try { await setOwnAvatar(f); paint(); showToast('Profile photo updated'); }
+      catch (e) { console.error('[avatar]', e); showToast(e.message || 'Could not update the photo', { icon: 'fa-solid fa-circle-exclamation', duration: 6000 }); }
       finally { btn.disabled = false; av.classList.remove('busy'); }
     });
     rm.addEventListener('click', async () => {
       rm.disabled = true;
-      try { await removeOwnAvatar(); paint(); showToast('Profile photo removed', 'success'); }
-      catch (e) { showToast(e.message || 'Could not remove the photo', 'error'); }
+      try { await removeOwnAvatar(); paint(); showToast('Profile photo removed'); }
+      catch (e) { console.error('[avatar]', e); showToast(e.message || 'Could not remove the photo', { icon: 'fa-solid fa-circle-exclamation', duration: 6000 }); }
       finally { rm.disabled = false; }
     });
   }
