@@ -17,7 +17,7 @@
 
    Firestore / Auth / push-API traffic is never touched by this worker.
    ========================================================================= */
-const BUILD = '88c4d6aa1d1e';
+const BUILD = '6dd399c53cc0';
 /*SHELL_START*/
 const SHELL = [
   "/assets/amoled-dark.css",
@@ -212,6 +212,7 @@ self.addEventListener('fetch', event => {
 
   if (url.origin === self.location.origin) {
     if (url.pathname === '/sw.js') return;                      // always straight to network
+    if (url.pathname.startsWith('/api/')) return;               // serverless APIs (R2 file redirects) always go to the network
     if (req.mode === 'navigate') return void event.respondWith(handleNavigation(req, url));
     return void event.respondWith(handleSameOrigin(req, url));
   }

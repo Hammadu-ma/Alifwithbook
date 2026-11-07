@@ -13,6 +13,7 @@ import { getApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.
 import {
   getFirestore, collection, doc, getDocs, setDoc, deleteDoc, serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
+import { getAuth } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import {
   getStorage, ref as sRef, uploadBytesResumable, getDownloadURL, deleteObject
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js';
@@ -22,9 +23,10 @@ const db = getFirestore(app);
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const toast = (m, t = 'info') => window.toast ? window.toast(m, t) : console.log(m);
-const safeUrl = u => (/^https?:\/\//i.test(String(u || '').trim()) ? String(u).trim() : '');
+const safeUrl = u => (/^(https?:\/\/|\/api\/r2\?key=)/i.test(String(u || '').trim()) ? String(u).trim() : '');
 
 const LIMITS = { image: 8 * 1024 * 1024, book: 200 * 1024 * 1024, video: 500 * 1024 * 1024 };
+const FOLDERS = [['books', 'Books'], ['notes', 'Notes'], ['pdfexams', 'PDF exams']];
 
 let S = { kind: 'books', mods: [], subs: [], books: [], videos: [], loaded: false, q: '', mod: '', editing: null, qz: {}, cats: {} };
 let F = null;          // form state while the modal is open
@@ -190,7 +192,7 @@ function openForm(item) {
     keep: { file: it.sourceType === 'upload' ? { url: books ? it.fileUrl : it.videoUrl, path: it.filePath, name: it.fileName, size: it.fileSize } : null,
             thumb: it.thumbPath ? { url: it.thumbUrl, path: it.thumbPath } : null,
             photo: it.photoPath ? { url: it.lecturerPhoto, path: it.photoPath } : null },
-    files: {}, oldPaths: [],
+    files: {}, oldPaths: [], folder: FOLDERS.some(f => f[0] === it.storageFolder) ? it.storageFolder : 'books',
     rel: { videos: [...(it.related?.videos || [])], books: [...(it.related?.books || [])], quizzes: [...(it.related?.quizzes || [])] },
     linkedVideos: [...(it.linkedVideoIds || [])]
   };
@@ -213,6 +215,7 @@ function openForm(item) {
       <div class="form-group"><label>Subject <span style="font-weight:400">(optional)</span></label><select class="form-control" id="rsSub"></select></div>
     </div>
     <div class="rs-sec">${books ? 'Book file' : 'Video'}</div>
+    ${books ? `<div class="form-group"><label>Save uploads in</label><select class="form-control" id="rsFolder">${FOLDERS.map(f => `<option value="${f[0]}" ${f[0] === F.folder ? 'selected' : ''}>${f[1]}</option>`).join('')}</select><div class="help">Which R2 folder an uploaded file goes to. Links are not affected.</div></div>` : ''}
     ${srcField('file', books ? 'Book (PDF, DOC, PPT, EPUB…)' : 'Video', {
       required: true, accept: books ? '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.epub,application/pdf' : 'video/mp4,video/webm,video/ogg,video/quicktime',
       help: books ? 'Everything opens inside the app. Best reading experience: upload the PDF (max 200 MB) or use a direct PDF link. Google Drive links and Word/PowerPoint/Excel files open in a simpler viewer.'
@@ -288,15 +291,34 @@ function syncField(k, previewOnly) {
 function closeForm() { if (F?.busy) return; $('resAdmModal').classList.remove('show'); F = null; }
 
 /* ------------------------------------------------------------------ save */
-function uploadFile(file, path, key) {
-  return new Promise((resolve, reject) => {
-    const task = uploadBytesResumable(sRef(getStor(), path), file, { contentType: file.type || undefined });
-    const bar = $('rsForm').querySelector(`[data-prog="${key}"]`);
-    if (bar) bar.style.display = 'block';
-    task.on('state_changed', s => { if (bar) bar.firstElementChild.style.width = Math.round(s.bytesTransferred / s.totalBytes * 100) + '%'; },
-      reject, async () => resolve({ url: await getDownloadURL(task.snapshot.ref), path }));
-  });
+/* Files are stored in Cloudflare R2 through /api/r2 (signed upload). path is saved as "r2:<key>". */
+async function r2Call(body) {
+  const user = getAuth(app).currentUser;
+  if (!user) throw new Error('Sign in as an admin first.');
+  const token = await user.getIdToken();
+  const r = await fetch('/api/r2', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify(body) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || `Storage error (${r.status})`);
+  return d;
 }
+async function uploadFile(file, folder, key) {
+  const sig = await r2Call({ action: 'upload', folder, fileName: file.name, contentType: file.type || '', size: file.size });
+  const bar = $('rsForm').querySelector(`[data-prog="${key}"]`);
+  if (bar) bar.style.display = 'block';
+  await new Promise((resolve, reject) => {
+    const x = new XMLHttpRequest();
+    x.open('PUT', sig.uploadUrl);
+    if (file.type) x.setRequestHeader('Content-Type', file.type);
+    x.upload.onprogress = e => { if (bar && e.lengthComputable) bar.firstElementChild.style.width = Math.round(e.loaded / e.total * 100) + '%'; };
+    x.onload = () => (x.status >= 200 && x.status < 300 ? resolve() : reject(new Error(`Upload failed (${x.status}).`)));
+    x.onerror = () => reject(new Error('Upload blocked. Add this site to the R2 bucket CORS policy (see R2_SETUP.md).'));
+    x.send(file);
+  });
+  return { url: sig.url, path: 'r2:' + sig.key };
+}
+const deleteStored = p => (String(p).startsWith('r2:')
+  ? r2Call({ action: 'delete', key: String(p).slice(3) }).catch(() => {})
+  : deleteObject(sRef(getStor(), p)).catch(() => {}));
 const safeName = n => String(n || 'file').replace(/[^\w.\-]+/g, '_').slice(-80);
 
 /* resolve one field to {url, path?} according to its mode */
@@ -311,7 +333,7 @@ async function resolveField(k, base, kindLabel) {
   }
   if (F.files[k]) {
     if (F.keep[k]) F.oldPaths.push(F.keep[k].path);
-    return uploadFile(F.files[k], `resources/${S.kind}/${F.id}/${k}_${Date.now()}_${safeName(F.files[k].name)}`, k);
+    return uploadFile(F.files[k], k === 'file' ? (S.kind === 'books' ? F.folder : 'videos') : 'thumbs', k);
   }
   if (F.keep[k]) return { url: F.keep[k].url, path: F.keep[k].path };
   throw new Error(`${kindLabel}: choose a file to upload.`);
@@ -328,6 +350,7 @@ async function save() {
     const lecturer = books ? '' : $('rsLect').value.trim();
     if (!books && !lecturer) throw new Error('Lecturer is required.');
     F.busy = true; F.oldPaths = [];
+    if ($('rsFolder')) F.folder = $('rsFolder').value;
     $('rsSave').disabled = true; $('rsSave').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…';
 
     const file = await resolveField('file', 'file', books ? 'Book' : 'Video');
@@ -345,7 +368,7 @@ async function save() {
     };
     if (F.isNew) data.createdAt = serverTimestamp();
     if (books) {
-      Object.assign(data, { linkedVideoIds: F.linkedVideos, author: $('rsAuthor').value.trim(), fileUrl: file.url, filePath: file.path || '',
+      Object.assign(data, { linkedVideoIds: F.linkedVideos, author: $('rsAuthor').value.trim(), fileUrl: file.url, filePath: file.path || '', storageFolder: $('rsFolder') ? $('rsFolder').value : 'books',
         fileName: F.files.file ? F.files.file.name : (file.path ? (F.keep.file?.name || '') : ''),
         fileSize: F.files.file ? F.files.file.size : (file.path ? (F.keep.file?.size || 0) : 0) });
     } else {
@@ -354,7 +377,7 @@ async function save() {
     }
     await setDoc(doc(db, S.kind, F.id), data, { merge: true });
     // old uploads that were replaced/removed
-    await Promise.all(F.oldPaths.filter(Boolean).map(p => deleteObject(sRef(getStor(), p)).catch(() => {})));
+    await Promise.all(F.oldPaths.filter(Boolean).map(deleteStored));
     window.__markContentChanged?.('v');
     toast(`${books ? 'Book' : 'Video'} saved.`, 'success');
     F.busy = false; closeForm();
@@ -362,8 +385,6 @@ async function save() {
   } catch (e) {
     console.error(e);
     let msg = e.message || String(e);
-    if (/storage\/unauthorized/.test(msg)) msg = 'Upload not allowed — deploy storage.rules and make sure your admin account has the “AResources” permission.';
-    else if (/storage\/(unknown|retry-limit|bucket-not-found|project-not-found)|Blaze|billing/i.test(msg)) msg = 'Firebase Storage is not available for this project (it may need the Blaze plan). Use an external link instead.';
     err.textContent = msg;
     if (F) { F.busy = false; $('rsSave').disabled = false; $('rsSave').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save'; }
   }
@@ -373,7 +394,7 @@ async function removeItem(it) {
   if (!confirm(`Delete “${it.title}”? This cannot be undone.`)) return;
   try {
     await deleteDoc(doc(db, S.kind, it.id));
-    await Promise.all([it.filePath, it.thumbPath, it.photoPath].filter(Boolean).map(p => deleteObject(sRef(getStor(), p)).catch(() => {})));
+    await Promise.all([it.filePath, it.thumbPath, it.photoPath].filter(Boolean).map(deleteStored));
     window.__markContentChanged?.('v');
     S[S.kind] = S[S.kind].filter(x => x.id !== it.id);
     renderTable();

@@ -9,7 +9,7 @@ export const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i
 
 export function safeUrl(u) {
   const s = String(u || '').trim();
-  return /^https?:\/\//i.test(s) ? s : '';
+  return /^(https?:\/\/|\/api\/r2\?key=)/i.test(s) ? s : '';
 }
 export function driveId(u) {
   const m = String(u || '').match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:[^#]*&)?id=)([\w-]{10,})/i);

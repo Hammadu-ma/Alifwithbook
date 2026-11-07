@@ -29,15 +29,17 @@ function loadPdfjs() {
 }
 
 export function readerPlan(b) {
-  const url = safeUrl(b.fileUrl);
+  let url = safeUrl(b.fileUrl);
   if (!url) return { kind: 'none' };
+  const rel = url.startsWith('/');            // R2 files are served by our own /api/r2
+  const abs = rel ? new URL(url, location.origin).href : url;
   const d = driveId(url);
   if (d) return { kind: 'iframe', src: `https://drive.google.com/file/d/${d}/preview`, url };
   const ext = fileExt(b.fileName || url);
   if (ext === 'pdf' || (b.sourceType === 'upload' && !ext)) return { kind: 'pdf', url };
-  if (/^(docx?|pptx?|xlsx?|rtf|odt|odp|ods)$/.test(ext)) return { kind: 'iframe', src: `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(url)}`, url };
+  if (/^(docx?|pptx?|xlsx?|rtf|odt|odp|ods)$/.test(ext)) return { kind: 'iframe', src: `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(abs)}`, url };
   if (ext === 'epub') return { kind: 'unsupported' };
-  return { kind: 'iframe', src: url, url, loose: true };
+  return { kind: 'iframe', src: abs, url, loose: true };
 }
 
 /* ------------------------------------------------------------- icons */
