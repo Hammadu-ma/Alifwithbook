@@ -11,6 +11,7 @@
    every embedded viewer is sandboxed without pop-ups or top-level navigation.
    ======================================================================== */
 import { driveId, esc, fileExt, safeUrl } from './resources-util.js';
+import { isR2, savedBlobUrl, saveFile } from './offline-files.js';
 
 const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174';
 export const SANDBOX = 'allow-scripts allow-same-origin allow-presentation allow-forms';   // no popups, no top navigation
@@ -452,8 +453,18 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
     const loadbar = $('[data-loadbar]'), msg = $('[data-loadmsg]');
     try {
       const lib = await loadPdfjs();
-      const task = lib.getDocument({ url: plan.url });
-      task.onProgress = p => { if (p.total) { const v = Math.round((p.loaded / p.total) * 100); loadbar.style.width = v + '%'; msg.textContent = `Opening book… ${v}%`; } };
+      let src = plan.url;
+      if (isR2(plan.url)) {
+        // R2 books: use the offline copy when there is one, otherwise download once and keep it for next time
+        src = await savedBlobUrl(plan.url);
+        if (!src) {
+          msg.textContent = 'Downloading book…';
+          const blob = await saveFile(plan.url, v => { if (v >= 0) { loadbar.style.width = v + '%'; msg.textContent = `Downloading book… ${v}%`; } });
+          src = URL.createObjectURL(blob);
+        } else msg.textContent = 'Opening saved copy…';
+      }
+      const task = lib.getDocument({ url: src });
+      if (src === plan.url) task.onProgress = p => { if (p.total) { const v = Math.round((p.loaded / p.total) * 100); loadbar.style.width = v + '%'; msg.textContent = `Opening book… ${v}%`; } };
       const doc = await task.promise;
       if (dead) { doc.destroy(); return; }
       pdf = doc; n = doc.numPages;
@@ -468,6 +479,11 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
       stage.focus({ preventScroll: true });
     } catch (_) {
       if (dead) return;
+      if (isR2(plan.url) && navigator.onLine === false) {
+        root.classList.add('plain'); root.classList.remove('hide-ui');
+        root.innerHTML = `<div class="rd-top">${lead}${titleHtml}</div><div class="rd-frame" style="display:flex;align-items:center;justify-content:center;text-align:center;padding:24px"><p style="max-width:300px;line-height:1.5;color:inherit">You are offline and this book has not been saved yet. Open it once while online and it will be available offline after that.</p></div>`;
+        return;
+      }
       // CORS-blocked / unreadable PDF: fall back to an embedded (sandboxed) viewer, still inside the app
       root.classList.add('plain'); root.classList.remove('hide-ui');
       root.innerHTML = `<div class="rd-top">${lead}${titleHtml}</div><div class="rd-frame">${frameHtml(`https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(plan.url)}`, b.title || 'Book')}<div class="rd-frame-guard"></div></div>`;

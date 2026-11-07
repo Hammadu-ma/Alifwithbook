@@ -15,6 +15,7 @@ import { mountEmbeddedQuiz } from './resources-quizembed.js';
 import { mountReader, SANDBOX } from './resources-reader.js';
 import { loadCategoryQuestions, loadQuizQuestions, lockMessage, mountQuiz, resolveQuizLinks } from './resources-quiz.js';
 import { driveId, esc, plural, safeUrl, thumbSrc, videoThumb, vimeoParts, ytId, fileExt } from './resources-util.js';
+import { isR2, isSaved, savedBlobUrl, saveFile, removeFile, sizeLabel } from './offline-files.js';
 
 /* ------------------------------------------------------------------ icons */
 const I = {
@@ -251,6 +252,7 @@ export function mountPlayer(host, first, ctx) {
                 ${sub ? `<span class="res-chip"><i class="fa-solid fa-tag"></i>${esc(sub)}</span>` : ''}
                 ${v.duration ? `<span class="res-chip"><i class="fa-solid fa-clock"></i>${esc(v.duration)}</span>` : ''}
               </div>
+              ${info.kind === 'file' && isR2(info.src) ? '<button type="button" class="res-offl" data-offl></button>' : ''}
               ${v.description ? `<p class="res-sheet-desc">${esc(v.description)}</p>` : ''}
             </div>
           </div>
@@ -266,6 +268,7 @@ export function mountPlayer(host, first, ctx) {
     renderTabs(rel);
     renderPanel(rel);
     startStage(host.querySelector('[data-stage]'), info, v);
+    wireOffline(host.querySelector('[data-offl]'), info, v);
     // resolve quiz links in the background, then refresh the tab count
     if (rel.links.length) {
       quizP = resolveQuizLinks(rel.links, { subjects: ctx.data().SUBJ, student: ctx.student() }).catch(() => []);
@@ -275,6 +278,36 @@ export function mountPlayer(host, first, ctx) {
         if (!dead && video === v) { renderTabs(related(v)); if (tab === 'quizzes' && !panelHandle) renderPanel(related(v)); }
       });
     }
+  }
+
+  /* ---------- save a video for offline use (R2 files only) ---------- */
+  async function wireOffline(btn, info, v) {
+    if (!btn) return;
+    const url = info.src;
+    let busy = false;
+    const paint = async (pct) => {
+      if (dead || video !== v) return;
+      const saved = await isSaved(url);
+      btn.classList.toggle('on', saved);
+      btn.disabled = false;
+      if (busy) { btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving ${pct >= 0 ? pct + '%' : '…'}`; }
+      else if (saved) btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Saved for offline · tap to remove';
+      else btn.innerHTML = '<i class="fa-solid fa-download"></i> Save for offline';
+    };
+    btn.addEventListener('click', async () => {
+      if (busy) return;
+      if (await isSaved(url)) { await removeFile(url); paint(); return; }
+      busy = true; paint(0);
+      try {
+        const blob = await saveFile(url, p => { if (!dead) paint(p); });
+        busy = false; paint();
+        if (!dead && video === v) btn.title = sizeLabel(blob.size);
+      } catch (e) {
+        busy = false; await paint();
+        btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + (e.message || 'Could not save') + ' — tap to retry';
+      }
+    });
+    paint();
   }
 
   /* ---------- stage + engine ---------- */
@@ -292,7 +325,7 @@ export function mountPlayer(host, first, ctx) {
     stage.classList.add('loading');
     if (info.kind !== 'file') startRing(stage);      // autoplay engines: ring + progress until the first frame plays
     try {
-      engine = info.kind === 'file' ? htmlEngine(stage, info.src, poster)
+      engine = info.kind === 'file' ? htmlEngine(stage, (isR2(info.src) && await savedBlobUrl(info.src)) || info.src, poster)
         : info.kind === 'youtube' ? await youtubeEngine(stage, info.id)
         : await vimeoEngine(stage, info.id, info.h);
     } catch (_) {

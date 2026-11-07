@@ -921,3 +921,10 @@ body.rq-embedded .jump-fab { z-index: 440; }
 
 /* quizzes module/subject headers: just the title */
 .res-head.plain .res-brand-ico, .res-head.plain .res-sub { display: none !important; }
+
+
+/* ---- offline save button (R2 videos) ---- */
+.res-offl{display:inline-flex;align-items:center;gap:7px;margin:10px 0 2px;padding:8px 13px;border-radius:999px;border:1px solid var(--border,rgba(0,0,0,.14));background:transparent;color:inherit;font:600 12.5px/1 inherit;cursor:pointer}
+.res-offl.on{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.4);color:#059669}
+body.dark .res-offl.on{color:#34d399}
+.res-offl:disabled{opacity:.75;cursor:default}
