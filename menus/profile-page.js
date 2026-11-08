@@ -15,6 +15,9 @@ import { lockBodyScroll, unlockBodyScroll } from './cache.js';
 import { ACTIVE_UNIVERSITY_ID, initials } from './picker-screen.js';
 import { THEME_KEY, applyTheme, getEffectiveTheme, switchTheme } from './theme.js';
 import { getChatNotifyEnabled, setChatNotifyEnabled, setAppearInChat } from './class-chat.js';
+import { enableNotifications, notificationStatus } from './notification-manager.js';
+const pushState = () => { try { return notificationStatus(); } catch (_) { return 'unsupported'; } };
+const notifyOn = () => getChatNotifyEnabled() && (pushState() === 'on' || pushState() === 'unsupported');
 import { showToast } from './ui-feedback.js';
 import { ownAvatar, loadOwnAvatar, setOwnAvatar, removeOwnAvatar, avatarImg } from './avatar.js';
 
@@ -98,7 +101,7 @@ export async function openProfilePage({ doLogout } = {}) {
       <h2 class="pf-section-title">Preferences</h2>
       <section class="pf-card">
         ${row('fa-solid fa-users', '#0070f3', 'Appear in Class Chat', 'Let classmates find and message you.', toggle('appearInChatToggle', appearInChat), 'appearInChatToggle')}
-        ${row('fa-solid fa-bell', '#E8923B', 'Message notifications', 'Pop-up on this device for new messages.', toggle('chatNotifyToggle', getChatNotifyEnabled()), 'chatNotifyToggle')}
+        ${row('fa-solid fa-bell', '#E8923B', 'Message notifications', 'Chat messages and admin announcements, in the app and as phone notifications.', toggle('chatNotifyToggle', notifyOn()), 'chatNotifyToggle')}
       </section>
 
       <h2 class="pf-section-title">Appearance</h2>
@@ -271,10 +274,22 @@ export async function openProfilePage({ doLogout } = {}) {
   });
 
   const notify = el.querySelector('#chatNotifyToggle');
-  notify.addEventListener('change', () => {
-    setChatNotifyEnabled(notify.checked);
-    showToast(notify.checked ? 'Message notifications on' : 'Message notifications off',
-      { icon: notify.checked ? 'fa-solid fa-bell' : 'fa-solid fa-bell-slash' });
+  notify.addEventListener('change', async () => {
+    const want = notify.checked;
+    notify.disabled = true;
+    setChatNotifyEnabled(want);
+    try {
+      if (want) { await enableNotifications(); }
+      else if (window.__alifPushBeforeSignOut) { await window.__alifPushBeforeSignOut(); }
+      showToast(want ? 'Notifications on' : 'Notifications off',
+        { icon: want ? 'fa-solid fa-bell' : 'fa-solid fa-bell-slash' });
+    } catch (e) {
+      // in-app pop-ups still work when the phone permission is refused
+      notify.checked = pushState() === 'on' ? true : (pushState() === 'unsupported' ? want : false);
+      setChatNotifyEnabled(notify.checked);
+      showToast(e.message || 'Could not turn on phone notifications', { icon: 'fa-solid fa-circle-exclamation', duration: 6000 });
+    } finally { notify.disabled = false; window.__alifBell && window.__alifBell.refresh(); }
+  });
   });
 
   // --- expandable access rows ------------------------------------------
