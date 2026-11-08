@@ -3231,6 +3231,7 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
         <button data-tab="chat"><i class="fa-solid fa-comments"></i><span>Chat</span></button>
         <button data-tab="settings"><i class="fa-solid fa-gear"></i><span>Settings</span></button>
         <button data-tab="notifications"><i class="fa-solid fa-bell"></i><span>Notifications</span></button>
+        <button data-tab="resources"><i class="fa-solid fa-book-open"></i><span>AResources</span></button>
         <button data-tab="admins" style="display:none"><i class="fa-solid fa-user-shield"></i><span>Admins</span></button>
         <button data-tab="activity" style="display:none"><i class="fa-solid fa-clock-rotate-left"></i><span>Activity</span></button>
       </div>
@@ -3988,6 +3989,7 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
 
       <!-- Settings Tab -->
       <div class="tab-panel" id="tab-notifications"></div>
+      <div class="tab-panel" id="tab-resources"></div>
 
       <div class="tab-panel" id="tab-settings">
         <h2 class="page-title" style="margin-bottom:20px;">Settings</h2>
@@ -4970,7 +4972,7 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
       ['dashboard', 'Dashboard', 'fa-house'], ['students', 'Students', 'fa-users'], ['access', 'Access', 'fa-shield-halved'], ['programaccess', 'Program Access', 'fa-key'],
       ['enroll', 'Enroll', 'fa-user-check'], ['payments', 'Payments', 'fa-money-bill-wave'], ['pricing', 'Pricing', 'fa-tags'], ['bundles', 'Bundles', 'fa-box-open'], ['chat', 'Class chat', 'fa-comments'], ['live', 'Live quizzes', 'fa-tower-broadcast'], ['modules', 'Modules', 'fa-layer-group'], ['subjects', 'Subjects', 'fa-book'],
       ['quizzes', 'Quizzes', 'fa-list-check'], ['questions', 'Questions', 'fa-circle-question'], ['results', 'Results', 'fa-chart-column'], ['export', 'Export', 'fa-file-export'],
-      ['devices', 'Devices', 'fa-mobile-screen-button'], ['settings', 'Settings', 'fa-gear'], ['notifications', 'Notifications', 'fa-bell']
+      ['devices', 'Devices', 'fa-mobile-screen-button'], ['settings', 'Settings', 'fa-gear'], ['notifications', 'Notifications', 'fa-bell'], ['resources', 'AResources (books & videos)', 'fa-book-open']
     ];
     let adminProfile = { uid: null, role: 'owner', permissions: {} };
     let admRows = [];
@@ -8703,7 +8705,7 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
     function dashSetActiveTab(tabKey) {
       if (!admCan(tabKey)) { toast("You don't have access to this section.", 'error'); return; }
       tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tabKey));
-      const panels = { dashboard: $('tab-dashboard'), access: $('tab-access'), students: $('tab-students'), programaccess: $('tab-programaccess'), enroll: $('tab-enroll'), chat: $('tab-chat'), bundles: $('tab-bundles'), modules: $('tab-modules'), subjects: $('tab-subjects'), quizzes: $('tab-quizzes'), questions: $('tab-questions'), settings: $('tab-settings'), admins: $('tab-admins'), payments: $('tab-payments'), pricing: $('tab-pricing'), live: $('tab-live'), activity: $('tab-activity'), notifications: $('tab-notifications') };
+      const panels = { dashboard: $('tab-dashboard'), access: $('tab-access'), students: $('tab-students'), programaccess: $('tab-programaccess'), enroll: $('tab-enroll'), chat: $('tab-chat'), bundles: $('tab-bundles'), modules: $('tab-modules'), subjects: $('tab-subjects'), quizzes: $('tab-quizzes'), questions: $('tab-questions'), settings: $('tab-settings'), resources: $('tab-resources'), admins: $('tab-admins'), payments: $('tab-payments'), pricing: $('tab-pricing'), live: $('tab-live'), activity: $('tab-activity'), notifications: $('tab-notifications') };
       Object.keys(panels).forEach(key => panels[key].classList.toggle('active', key === tabKey));
     }
 
@@ -9669,7 +9671,7 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
         tabBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-        const panels = { dashboard: $('tab-dashboard'), access: $('tab-access'), students: $('tab-students'), programaccess: $('tab-programaccess'), enroll: $('tab-enroll'), chat: $('tab-chat'), bundles: $('tab-bundles'), modules: $('tab-modules'), subjects: $('tab-subjects'), quizzes: $('tab-quizzes'), questions: $('tab-questions'), results: $('tab-results'), export: $('tab-export'), devices: $('tab-devices'), settings: $('tab-settings'), admins: $('tab-admins'), payments: $('tab-payments'), pricing: $('tab-pricing'), live: $('tab-live'), activity: $('tab-activity'), notifications: $('tab-notifications') };
+        const panels = { dashboard: $('tab-dashboard'), access: $('tab-access'), students: $('tab-students'), programaccess: $('tab-programaccess'), enroll: $('tab-enroll'), chat: $('tab-chat'), bundles: $('tab-bundles'), modules: $('tab-modules'), subjects: $('tab-subjects'), quizzes: $('tab-quizzes'), questions: $('tab-questions'), results: $('tab-results'), export: $('tab-export'), devices: $('tab-devices'), settings: $('tab-settings'), resources: $('tab-resources'), admins: $('tab-admins'), payments: $('tab-payments'), pricing: $('tab-pricing'), live: $('tab-live'), activity: $('tab-activity'), notifications: $('tab-notifications') };
         Object.keys(panels).forEach(key => panels[key].classList.toggle('active', key === btn.dataset.tab));
         const tab = btn.dataset.tab;
         if (tab === 'dashboard') refreshDashboard();
@@ -9690,7 +9692,7 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
         else if (tab === 'payments') payOpen();
         else if (tab === 'pricing') prOpen();
         else if (tab === 'live') lvOpen();
-        else if (tab === 'activity') auOpen(); else if (tab === 'notifications') window.__alifInitNotificationsAdmin?.();
+        else if (tab === 'activity') auOpen(); else if (tab === 'notifications') window.__alifInitNotificationsAdmin?.(); else if (tab === 'resources') window.__alifInitResourcesAdmin?.();
       });
     });
 
@@ -11301,7 +11303,7 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
       tabBtns.forEach(b => b.classList.remove('active'));
       const paTabBtn = Array.from(tabBtns).find(b => b.dataset.tab === 'programaccess');
       if (paTabBtn) paTabBtn.classList.add('active');
-      const panels = { dashboard: $('tab-dashboard'), access: $('tab-access'), students: $('tab-students'), programaccess: $('tab-programaccess'), modules: $('tab-modules'), subjects: $('tab-subjects'), quizzes: $('tab-quizzes'), settings: $('tab-settings'), admins: $('tab-admins'), payments: $('tab-payments'), pricing: $('tab-pricing'), live: $('tab-live'), activity: $('tab-activity'), notifications: $('tab-notifications') };
+      const panels = { dashboard: $('tab-dashboard'), access: $('tab-access'), students: $('tab-students'), programaccess: $('tab-programaccess'), modules: $('tab-modules'), subjects: $('tab-subjects'), quizzes: $('tab-quizzes'), settings: $('tab-settings'), resources: $('tab-resources'), admins: $('tab-admins'), payments: $('tab-payments'), pricing: $('tab-pricing'), live: $('tab-live'), activity: $('tab-activity'), notifications: $('tab-notifications') };
       Object.keys(panels).forEach(key => panels[key].classList.toggle('active', key === 'programaccess'));
       if (student) $('paSearch').value = student.name || '';
       renderProgramAccess();
@@ -14824,7 +14826,7 @@ document.addEventListener('DOMContentLoaded',()=>document.querySelector('[data-t
  */
 import { getApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
 import { getAuth } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
-import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
+import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 
 const auth = getAuth(getApp());
 const API_BASE = (window.ALIF_PUSH_API_BASE || '').replace(/\/$/, '');
@@ -14840,7 +14842,7 @@ async function uidForStudentId(studentId){
   return uid;
 }
 async function sendPush(payload){if(!API_BASE)throw new Error('Push API is not configured.');if(!auth.currentUser)throw new Error('Sign in as an admin first.');const token=await auth.currentUser.getIdToken();const r=await fetch(`${API_BASE}/api/push/send`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify(payload)});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||`Push API error (${r.status})`);return data;}
-function bind(){const send=document.getElementById('alifNotifSend');if(!send||send.dataset.bound)return;if(send)send.dataset.bound='1';const target=document.getElementById('alifNotifTarget'),wrap=document.getElementById('alifStudentIdWrap'),studentId=document.getElementById('alifNotifStudentId'),title=document.getElementById('alifNotifTitle'),body=document.getElementById('alifNotifBody'),url=document.getElementById('alifNotifUrl'),pt=document.getElementById('alifNotifPreviewTitle'),pb=document.getElementById('alifNotifPreviewBody'),result=document.getElementById('alifNotifResult');target.addEventListener('change',()=>wrap.style.display=target.value==='STUDENT'?'':'none');const preview=()=>{pt.textContent=title.value.trim()||'Your notification title';pb.textContent=body.value.trim()||'Your message will appear here'};title.addEventListener('input',preview);body.addEventListener('input',preview);send.addEventListener('click',async()=>{const t=title.value.trim(),b=body.value.trim(),u=url.value.trim();if(!t||!b){result.textContent='Title and message are required.';return}send.disabled=true;result.textContent='Sending…';try{let targetUid='ALL';if(target.value==='STUDENT'){const sid=studentId.value.trim();if(!sid)throw new Error('Enter the Student ID.');targetUid=await uidForStudentId(sid)}const data=await sendPush({title:t,body:b,url:u||'/',targetUid});result.textContent=`✓ Sent to ${data.sent} subscribed device(s).${data.failed?` ${data.failed} failed.`:''}${data.removed?` Removed ${data.removed} expired subscription(s).`:''}${data.partial?' Stopped early (time limit) — send again to reach the rest.':''}`;title.value='';body.value='';url.value='';preview()}catch(e){console.error('[ALIF push admin]',e);result.textContent=`Could not send: ${e.message||e}`}finally{send.disabled=false}})}
+function bind(){const send=document.getElementById('alifNotifSend');if(!send||send.dataset.bound)return;if(send)send.dataset.bound='1';const target=document.getElementById('alifNotifTarget'),wrap=document.getElementById('alifStudentIdWrap'),studentId=document.getElementById('alifNotifStudentId'),title=document.getElementById('alifNotifTitle'),body=document.getElementById('alifNotifBody'),url=document.getElementById('alifNotifUrl'),pt=document.getElementById('alifNotifPreviewTitle'),pb=document.getElementById('alifNotifPreviewBody'),result=document.getElementById('alifNotifResult');target.addEventListener('change',()=>wrap.style.display=target.value==='STUDENT'?'':'none');const preview=()=>{pt.textContent=title.value.trim()||'Your notification title';pb.textContent=body.value.trim()||'Your message will appear here'};title.addEventListener('input',preview);body.addEventListener('input',preview);send.addEventListener('click',async()=>{const t=title.value.trim(),b=body.value.trim(),u=url.value.trim();if(!t||!b){result.textContent='Title and message are required.';return}send.disabled=true;result.textContent='Sending…';try{let targetUid='ALL';if(target.value==='STUDENT'){const sid=studentId.value.trim();if(!sid)throw new Error('Enter the Student ID.');targetUid=await uidForStudentId(sid)}const data=await sendPush({title:t,body:b,url:u||'/',targetUid});let saved=true;if(targetUid==='ALL'){try{await addDoc(collection(getFirestore(getApp()),'notifications'),{title:t,body:b,url:u||'/',createdAt:serverTimestamp(),by:auth.currentUser.uid})}catch(err){saved=false;console.warn('[ALIF push admin] could not save to the Notifications page',err)}}result.textContent=`✓ Sent to ${data.sent} subscribed device(s).${targetUid==='ALL'?(saved?' Also added to students’ Notifications page.':' Could not add it to the Notifications page (publish the updated Firestore rules).'):''}${data.failed?` ${data.failed} failed.`:''}${data.removed?` Removed ${data.removed} expired subscription(s).`:''}${data.partial?' Stopped early (time limit) — send again to reach the rest.':''}`;title.value='';body.value='';url.value='';preview()}catch(e){console.error('[ALIF push admin]',e);result.textContent=`Could not send: ${e.message||e}`}finally{send.disabled=false}})}
 function boot(){ensureStyles();injectUI();bind()}window.__alifInitNotificationsAdmin=boot;if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 
   </script>
@@ -16234,5 +16236,6 @@ window.refreshExportTab = async function refreshExportTab() {
 
   </script>
 
+  <script type="module" src="admin/resources-admin.js"></script>
 </body>
 </html>
