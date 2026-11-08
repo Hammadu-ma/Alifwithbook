@@ -3,7 +3,8 @@
    * Below: announcements sent by the admin (Firestore `notifications`, newest first, last 30),
      with unread highlighting. One small query, cached for 5 minutes and kept for offline. */
 import { db } from './cloud-sync.js';
-import { collection, getDocs, query, orderBy, limit } from './runtime-ext.js';
+import { collection, getDocs, query, orderBy, limit, where } from './runtime-ext.js';
+import { getAuthUser } from './auth.js';
 import { pushModalState, popModalState } from './modal-backbutton.js';
 import { lockBodyScroll, unlockBodyScroll } from './cache.js';
 
@@ -16,17 +17,38 @@ export function cachedItems() { const c = getJ(CACHE_KEY, null); return c && Arr
 export const seenMs = () => Number(getJ(SEEN_KEY, 0)) || 0;
 export const unreadCount = () => { const s = seenMs(); return cachedItems().filter(i => i.ms > s).length; };
 
-/* Fresh list (cache first unless force; falls back to the cache when offline). */
+/* Fresh list (cache first unless force; falls back to the cache when offline).
+   Two small sources, merged newest-first:
+     notifications      — broadcasts to everyone (admin → Notifications)
+     userNotifications  — messages meant for this student only: segments and automatic ones (payment, access) */
+async function personal(uid) {
+  const out = [];
+  const months = []; const d = new Date();
+  for (let i = 0; i < 2; i++) { months.push(new Date(d.getFullYear(), d.getMonth() - i, 1).toISOString().slice(0, 7)); }
+  const map = x => { const v = x.data() || {}; return { id: 'u' + x.id, title: v.title || '', body: v.body || '', url: v.url || '', kind: v.kind || '', ms: v.createdAt && v.createdAt.toMillis ? v.createdAt.toMillis() : 0 }; };
+  try {
+    const snaps = await Promise.all(months.map(ym => getDocs(query(collection(db, 'userNotifications'), where('uids', 'array-contains', uid), where('ym', '==', ym)))));
+    snaps.forEach(sn => sn.docs.forEach(x => out.push(map(x))));
+  } catch (_) {
+    try { (await getDocs(query(collection(db, 'userNotifications'), where('uids', 'array-contains', uid), limit(40)))).docs.forEach(x => out.push(map(x))); } catch (__) {}
+  }
+  return out;
+}
+
 export async function loadNotifications(force) {
   const c = getJ(CACHE_KEY, null);
   if (c && !force && Date.now() - (c.t || 0) < TTL) return c.items;
   try {
-    const snap = await getDocs(query(collection(db, 'notifications'), orderBy('createdAt', 'desc'), limit(30)));
+    const u = getAuthUser();
+    const [snap, mine] = await Promise.all([
+      getDocs(query(collection(db, 'notifications'), orderBy('createdAt', 'desc'), limit(30))),
+      u && !u.isAnonymous ? personal(u.uid) : Promise.resolve([])
+    ]);
     const items = snap.docs.map(d => {
       const x = d.data() || {};
       const ms = x.createdAt && x.createdAt.toMillis ? x.createdAt.toMillis() : 0;
       return { id: d.id, title: x.title || '', body: x.body || '', url: x.url || '', ms };
-    });
+    }).concat(mine).sort((a, b) => b.ms - a.ms).slice(0, 40);
     setJ(CACHE_KEY, { t: Date.now(), items });
     return items;
   } catch (e) {
@@ -47,10 +69,11 @@ function ago(ms) {
 
 let screen = null, isOpen = false, hideTimer = 0;
 
+const ICON = { 'payment-submitted': 'fa-receipt', 'payment-approved': 'fa-circle-check', 'payment-rejected': 'fa-circle-xmark', 'access-granted': 'fa-lock-open', 'access-revoked': 'fa-lock' };
 function itemHtml(i, seen) {
   const link = i.url && i.url !== '/';
   return `<${link ? 'button type="button"' : 'div'} class="nf-item${i.ms > seen ? ' unread' : ''}" ${link ? `data-url="${esc(i.url)}"` : ''}>
-    <span class="nf-ic"><i class="fa-solid fa-bullhorn"></i></span>
+    <span class="nf-ic"><i class="fa-solid ${ICON[i.kind] || 'fa-bullhorn'}"></i></span>
     <span class="nf-tx"><b>${esc(i.title)}</b><span class="nf-body">${esc(i.body)}</span><small>${esc(ago(i.ms))}</small></span>
     ${link ? '<i class="fa-solid fa-chevron-right nf-go"></i>' : ''}
   </${link ? 'button' : 'div'}>`;
@@ -113,5 +136,8 @@ function close() {
   unlockBodyScroll(); popModalState(close);
   hideTimer = setTimeout(() => { if (!isOpen) screen.classList.add('hidden'); }, 300);
 }
+
+/* push notification tapped → /?notifications=1 */
+try { if (new URLSearchParams(location.search).get('notifications') === '1') { history.replaceState(null, '', location.pathname); setTimeout(() => { try { openNotificationsPage(); } catch (_) {} }, 1800); } } catch (_) {}
 
 window.__alifNotifPage = { open: openNotificationsPage, unread: unreadCount, load: loadNotifications };

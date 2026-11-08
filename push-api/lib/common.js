@@ -72,4 +72,74 @@ async function profileOf(uid) {
   return v;
 }
 
-module.exports = { init, verify, isAdminToken, handler, profileOf, admin };
+/* ---- notification settings (Firestore settings/notifications, edited from Admin → Notifications) ----
+   { autoAll: bool, events: { paymentSubmitted, paymentApproved, paymentRejected, accessGranted, accessRevoked } }
+   An automatic notification is sent when its own switch is on OR the collective switch (autoAll) is on. */
+let settingsCache = { t: 0, v: null };
+async function notifSettings(force) {
+  if (!force && settingsCache.v && Date.now() - settingsCache.t < 30 * 1000) return settingsCache.v;
+  let v = { autoAll: false, events: {} };
+  try {
+    const snap = await admin.firestore().doc('settings/notifications').get();
+    if (snap.exists) { const d = snap.data() || {}; v = { autoAll: d.autoAll === true, events: d.events || {} }; }
+  } catch (e) { console.warn('[push] settings read', e.message); }
+  settingsCache = { t: Date.now(), v };
+  return v;
+}
+const autoEnabled = (st, key) => st.autoAll === true || (st.events && st.events[key] === true);
+
+/* Send one payload to every matching subscription row. `apply(q)` narrows the Supabase query. */
+const webpush = require('web-push');
+async function deliver(supabase, apply, payloadObj, { budgetMs = 50000, ttl = 60 * 60 * 24 * 3, urgency } = {}) {
+  const started = Date.now();
+  webpush.setVapidDetails(process.env.VAPID_SUBJECT, process.env.VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
+  const payload = JSON.stringify({ icon: '/logo.png', badge: '/logo.png', ...payloadObj });
+  const PAGE = 1000, CONC = 50;
+  let sent = 0, failed = 0, total = 0, partial = false;
+  const gone = [];
+  for (let from = 0; ; from += PAGE) {
+    let q = supabase.from('push_subscriptions').select('id,uid,subscription').order('id', { ascending: true });
+    q = apply(q);
+    const { data, error } = await q.range(from, from + PAGE - 1);
+    if (error) throw error;
+    if (!data || !data.length) break;
+    total += data.length;
+    for (let i = 0; i < data.length; i += CONC) {
+      if (Date.now() - started > budgetMs) { partial = true; break; }
+      const chunk = data.slice(i, i + CONC);
+      const results = await Promise.allSettled(chunk.map(r => webpush.sendNotification(r.subscription, payload, { TTL: ttl, ...(urgency ? { urgency } : {}) })));
+      results.forEach((r, idx) => {
+        if (r.status === 'fulfilled') sent++;
+        else if (r.reason && (r.reason.statusCode === 404 || r.reason.statusCode === 410)) gone.push(chunk[idx].id);
+        else { failed++; console.warn('[push]', chunk[idx].uid, r.reason && r.reason.statusCode, r.reason && r.reason.message); }
+      });
+    }
+    if (partial || data.length < PAGE) break;
+  }
+  let removed = 0;
+  for (let i = 0; i < gone.length; i += 200) {
+    const ids = gone.slice(i, i + 200);
+    const { error } = await supabase.from('push_subscriptions').delete().in('id', ids);
+    if (!error) removed += ids.length;
+  }
+  return { sent, failed, removed, total, partial };
+}
+
+/* In-app copy (Notifications page): one small doc per 400 recipients, readable only by the uids it lists. */
+async function recordInApp({ uids, title, body, url, kind }) {
+  const list = [...new Set((uids || []).filter(Boolean))];
+  if (!list.length) return 0;
+  const db = admin.firestore();
+  const ym = new Date().toISOString().slice(0, 7);
+  let n = 0;
+  for (let i = 0; i < list.length; i += 400) {
+    await db.collection('userNotifications').add({
+      uids: list.slice(i, i + 400), title: String(title).slice(0, 100), body: String(body).slice(0, 500),
+      url: url || '/', kind: kind || 'segment', ym, createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    n++;
+  }
+  return n;
+}
+
+module.exports = { init, verify, isAdminToken, handler, profileOf, admin, notifSettings, autoEnabled, deliver, recordInApp };

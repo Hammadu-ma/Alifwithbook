@@ -274,6 +274,20 @@ async function enrichStudentIdentity(student) {
   return enriched;
 }
 
+/* Best-effort: asks the push server to tell this student their receipt arrived. Never blocks or fails the payment. */
+async function notifyPaymentSubmitted(paymentId) {
+  try {
+    const base = (window.ALIF_PUSH_API_BASE || '').replace(/\/$/, '');
+    const u = getAuthUser();
+    if (!base || !u || !paymentId) return;
+    fetch(`${base}/api/push/event`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + await u.getIdToken() },
+      body: JSON.stringify({ type: 'payment-submitted', paymentId })
+    }).catch(() => {});
+  } catch (_) { /* ignore */ }
+}
+
 // ============================================================================
 // PENDING SUBMISSIONS
 // ============================================================================
@@ -1463,7 +1477,7 @@ overlay.querySelector('#bmSubmitBtn').addEventListener('click', async () => {
 
     const myUid = await getAuthUidAsync();
     if (!myUid) throw new Error('Please sign in again before paying.');
-    await addDoc(collection(db, CONFIG.firestoreCollection), {
+    const payRef = await addDoc(collection(db, CONFIG.firestoreCollection), {
       uid: myUid,
       offerName: activeOffer.name || null,
       offerPrice: activeOffer.price || null,
@@ -1487,6 +1501,7 @@ overlay.querySelector('#bmSubmitBtn').addEventListener('click', async () => {
     });
 
     PENDING_KEYS.add(`${activeOffer.type || 'package'}::${(activeOffer.name || '').trim()}`);
+    notifyPaymentSubmitted(payRef && payRef.id);   // "payment received" push (only if the admin switched it on)
 
     // Swap the form for the success panel behind a smooth left-to-right wipe.
     const successPanel = overlay.querySelector('#bmSuccessPanel');
