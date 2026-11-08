@@ -4,10 +4,10 @@
    chat lists. The student's own copy is cached in localStorage. */
 import { getStoredStudent, getAuthUser } from './auth.js';
 import { db } from './cloud-sync.js';
-import { doc, getDoc, setDoc, serverTimestamp } from './runtime-ext.js';
+import { doc, getDoc, setDoc, serverTimestamp, onSnapshot } from './runtime-ext.js';
 
 const KEY = sid => 'alif_avatar_v2_' + sid;
-const TTL = 12 * 3600 * 1000;
+const TTL = 3 * 60 * 1000;      // short: a change made on another device shows up within minutes
 const SIZE = 256;
 
 const sidOf = () => { const s = getStoredStudent(); return (s && (s.id || s.docId)) || ''; };
@@ -121,15 +121,32 @@ export function applyOwnAvatar() {
 }
 
 /* hydrate the header once the student is known (login can finish after page load) */
+let liveSid = '', liveOff = null;
+/* One tiny listener on the student's own profile doc: a photo changed anywhere shows here at once. */
+function goLive() {
+  const sid = sidOf();
+  if (!sid || !db || sid === liveSid) return;
+  try { liveOff && liveOff(); } catch (_) {}
+  liveSid = sid;
+  try {
+    liveOff = onSnapshot(doc(db, 'chatProfiles', sid), snap => {
+      if (snap.metadata.fromCache && !navigator.onLine) return;
+      const d = snap.exists() ? snap.data() : {};
+      const c = read(sid);
+      if (!c || c.url !== (d.avatarUrl || '')) { write(sid, { url: d.avatarUrl || '', key: d.avatarKey || '' }); applyOwnAvatar(); }
+      else write(sid, c);
+    }, () => {});
+  } catch (_) {}
+}
 let tries = 0;
 function boot() {
   try {
     applyOwnAvatar();
-    if (sidOf()) loadOwnAvatar().then(applyOwnAvatar).catch(() => {});
+    if (sidOf()) { goLive(); loadOwnAvatar().then(applyOwnAvatar).catch(() => {}); }
   } catch (_) { /* never let a photo problem touch the app */ }
   if (++tries < 12) setTimeout(boot, tries < 4 ? 1500 : 5000);
 }
 // NOT run at import time: this module is part of an import cycle with auth.js, so its imports may not be ready yet.
 setTimeout(boot, 800);
-window.addEventListener('focus', () => { try { applyOwnAvatar(); } catch (_) {} });
+window.addEventListener('focus', () => { try { applyOwnAvatar(); if (sidOf()) loadOwnAvatar().then(applyOwnAvatar).catch(() => {}); } catch (_) {} });
 window.__alifAvatar = { applyOwnAvatar, loadOwnAvatar, setOwnAvatar, removeOwnAvatar, ownAvatar };
