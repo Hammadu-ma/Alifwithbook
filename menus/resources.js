@@ -224,6 +224,7 @@ export function openResources({ skipHistory = false, solo = false } = {}) {
   if (skipHistory) {
     const rv = history.state && history.state.rv;
     nav = rv ? { ...ROOT, ...rv } : { ...ROOT, tab: nav.tab };
+    if (nav.tab === 'quizzes' && !nav.solo) nav.tab = 'books';   // quizzes live in the Exams tab
   } else {
     nav = { ...ROOT, tab: solo ? 'quizzes' : (nav.solo ? 'books' : nav.tab), solo: !!solo };
     if (!solo && navigator.onLine === false) nav.tab = 'offline';   // no connection: open the Downloads page
@@ -308,7 +309,6 @@ function renderHead() {
     if (!nav.solo) tabs = tabsHtml([
       { key: 'books', icon: 'fa-solid fa-book', label: 'ABooks', count: loaded.books ? BOOKS.length : null },
       { key: 'videos', icon: 'fa-solid fa-play', label: 'AVideos', count: loaded.videos ? VIDEOS.length : null },
-      { key: 'quizzes', icon: 'fa-solid fa-circle-question', label: 'AQuizzes', count: loaded.quizzes ? QUIZZES.length : null },
       { key: 'offline', icon: 'fa-solid fa-download', label: 'Downloads' }
     ], nav.tab);
   } else if (nav.view === 'module') {
@@ -664,7 +664,7 @@ elHead.addEventListener('click', e => {
 /* ---- swipe left/right between tabs (ABooks <-> AVideos, All <-> Lecturers) ---- */
 function swipeTabs() {
   if (nav.solo) return null;
-  if (nav.view === 'root') return { keys: ['books', 'videos', 'quizzes', 'offline'], cur: nav.tab, set: k => go({ tab: k }) };
+  if (nav.view === 'root') return { keys: ['books', 'videos', 'offline'], cur: nav.tab, set: k => go({ tab: k }) };
   if (nav.view === 'module' && nav.tab === 'videos') return { keys: ['all', 'lect'], cur: nav.vtab, set: k => go({ vtab: k }) };
   return null;
 }
@@ -757,7 +757,7 @@ elMain.addEventListener('click', e => {
   const lect = e.target.closest('.res-lect');
   if (lect) { go({ view: 'lecturer', lecturer: lect.dataset.lect }, { push: true }); return; }
   const book = e.target.closest('.res-book');
-  if (book) { const b = BOOKS.find(x => x.id === book.dataset.id); if (b) openBook(b); return; }
+  if (book) { const b = BOOKS.find(x => x.id === book.dataset.id); if (b) { if (safeUrl(b.fileUrl)) openReader(b); else openBook(b); } return; }
   const qz = e.target.closest('.res-quiz');
   if (qz) { openQuiz(qz); return; }
   const vid = e.target.closest('.res-vid');
@@ -1100,7 +1100,7 @@ elSov.addEventListener('click', e => {
   const k = row.dataset.k, id = row.dataset.id;
   if (k === 'quiz') { closeSov(); openQuiz(row); return; }
   closeSov();
-  if (k === 'book') { const b = BOOKS.find(x => x.id === id); if (b) openBook(b); }
+  if (k === 'book') { const b = BOOKS.find(x => x.id === id); if (b) { if (safeUrl(b.fileUrl)) openReader(b); else openBook(b); } }
   else { const v = VIDEOS.find(x => x.id === id); if (v) openVideo(v); }
 });
 elMain.addEventListener('click', e => { if (e.target.closest('.res-search')) { e.preventDefault(); openSov(); } });
