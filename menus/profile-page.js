@@ -291,7 +291,6 @@ export async function openProfilePage({ doLogout } = {}) {
       showToast(e.message || 'Could not turn on phone notifications', { icon: 'fa-solid fa-circle-exclamation', duration: 6000 });
     } finally { notify.disabled = false; window.__alifBell && window.__alifBell.refresh(); }
   });
-  });
 
   // --- expandable access rows ------------------------------------------
   // Each row opens its own full screen (slides in from the right); the content is moved there from the hidden box.
