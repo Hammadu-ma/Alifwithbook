@@ -15,8 +15,9 @@ import { lockBodyScroll, unlockBodyScroll } from './cache.js';
 import { ACTIVE_UNIVERSITY_ID, initials } from './picker-screen.js';
 import { THEME_KEY, applyTheme, getEffectiveTheme, switchTheme } from './theme.js';
 import { getChatNotifyEnabled, setChatNotifyEnabled, setAppearInChat } from './class-chat.js';
-import { enableNotifications, notificationStatus } from './notification-manager.js';
-const pushState = () => { try { return notificationStatus(); } catch (_) { return 'unsupported'; } };
+// notification-manager.js runs code at import time, so it is reached through window.__alifPush (never imported here: import cycle with auth.js)
+const pushState = () => { try { return window.__alifPush ? window.__alifPush.status() : 'unsupported'; } catch (_) { return 'unsupported'; } };
+const enableNotifications = () => (window.__alifPush ? window.__alifPush.enable() : Promise.reject(new Error('Notifications are not ready yet. Try again in a moment.')));
 const notifyOn = () => getChatNotifyEnabled() && (pushState() === 'on' || pushState() === 'unsupported');
 import { showToast } from './ui-feedback.js';
 import { ownAvatar, loadOwnAvatar, setOwnAvatar, removeOwnAvatar, avatarImg } from './avatar.js';

@@ -45,7 +45,7 @@ function pull() {   // cached for 5 minutes inside loadNotifications, so this st
 }
 
 let n = 0;
-(function tick() { refresh(); pull(); if (++n < 40) setTimeout(tick, n < 6 ? 1200 : 5000); })();
+setTimeout(function tick() { try { refresh(); pull(); } catch (_) {} if (++n < 40) setTimeout(tick, n < 6 ? 1200 : 5000); }, 600);
 setTimeout(refresh, 800);
 window.addEventListener('focus', () => { refresh(); pull(); });
 window.__alifBell = { refresh };
