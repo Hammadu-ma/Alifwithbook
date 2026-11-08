@@ -3753,7 +3753,8 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
 
       <!-- Questions Tab (Question Management tool, fully merged in-page — not an iframe.
            It reuses this page's Firebase app/auth session; see the second <script src="/push-config.js"></script>
-  <script>window.ALIF_PUSH_API_BASE = window.ALIF_PUSH_API_BASE || 'https://YOUR-PUSH-API.vercel.app'; /* set your push-api URL here if /push-config.js is not deployed */</script>
+  <script src="/push-config.js"></script>
+  <script>window.ALIF_PUSH_API_BASE = window.ALIF_PUSH_API_BASE || 'https://alif-push-api.vercel.app'; /* fallback if /push-config.js is missing */</script>
   <script type="module">
            near the end of the file, which is namespace-isolated (its own module scope) and whose
            CSS lives under "#tab-questions / #qmOverlayRoot scoped styles" below so nothing here
