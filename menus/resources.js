@@ -37,7 +37,8 @@ import {
 import { progressScreen } from './progress-page.js';
 import { pushAppState } from './progress-rings.js';
 import { collection, getDocs } from './runtime-ext.js';
-import { mountPlayer } from './resources-player.js';
+import { mountPlayer, parseVideo } from './resources-player.js';
+import { isDownloadableMedia, isSaved, saveFile, removeFile, setMeta, videoMeta, listSaved, removeAllVideos, sizeLabel } from './offline-files.js';
 import { loadQuizzesOf, lockMessage } from './resources-quiz.js';
 import { mountReader } from './resources-reader.js';
 import { esc, driveId, fileExt, norm, plural, safeUrl, thumbSrc, videoThumb } from './resources-util.js';
@@ -225,6 +226,7 @@ export function openResources({ skipHistory = false, solo = false } = {}) {
     nav = rv ? { ...ROOT, ...rv } : { ...ROOT, tab: nav.tab };
   } else {
     nav = { ...ROOT, tab: solo ? 'quizzes' : (nav.solo ? 'books' : nav.tab), solo: !!solo };
+    if (!solo && navigator.onLine === false) nav.tab = 'offline';   // no connection: open the Downloads page
     if (history.state && history.state.appState === 'resources') history.replaceState({ appState: 'resources', rv: snap() }, '', '');
     else pushAppState('resources');
   }
@@ -306,7 +308,8 @@ function renderHead() {
     if (!nav.solo) tabs = tabsHtml([
       { key: 'books', icon: 'fa-solid fa-book', label: 'ABooks', count: loaded.books ? BOOKS.length : null },
       { key: 'videos', icon: 'fa-solid fa-play', label: 'AVideos', count: loaded.videos ? VIDEOS.length : null },
-      { key: 'quizzes', icon: 'fa-solid fa-circle-question', label: 'AQuizzes', count: loaded.quizzes ? QUIZZES.length : null }
+      { key: 'quizzes', icon: 'fa-solid fa-circle-question', label: 'AQuizzes', count: loaded.quizzes ? QUIZZES.length : null },
+      { key: 'offline', icon: 'fa-solid fa-download', label: 'Downloads' }
     ], nav.tab);
   } else if (nav.view === 'module') {
     const isQuizzes = nav.tab === 'quizzes';
@@ -372,6 +375,7 @@ const markSeen = () => seenViews.add(viewKey());
 
 function renderMain() {
   const isBooks = nav.tab === 'books';
+  if (nav.view === 'root' && nav.tab === 'offline') { renderOffline(); return; }   // works with no network and no loaded data
   elMain.className = `res-main lay-${layout}${seenViews.has(viewKey()) ? ' noanim' : ''}`;
   if (loadFailed && !MODS.length) {
     elMain.innerHTML = emptyHtml('fa-solid fa-signal', 'Couldn’t load resources', 'Check your connection and try again.');
@@ -513,6 +517,7 @@ function videoCard(v, i, { showLecturer = true } = {}) {
       <span class="res-vid-play"><i class="fa-solid fa-play"></i></span>
       ${v.duration ? `<span class="res-vid-dur">${esc(v.duration)}</span>` : ''}
       ${isNew(v) ? '<span class="res-new">NEW</span>' : ''}
+      ${dlButton(v)}
     </div>
     <div class="res-vid-body">
       <div class="res-vid-title">${esc(v.title || 'Untitled')}</div>
@@ -541,6 +546,7 @@ function renderList(o) {
   renderListImpl(o);
   const h = $('resList');
   if (h && h.querySelector('.res-grid > :not(.res-sk)')) markSeen();
+  paintDownloads(h);
 }
 function renderListImpl({ animate = true } = {}) {
   const host = $('resList');
@@ -658,7 +664,7 @@ elHead.addEventListener('click', e => {
 /* ---- swipe left/right between tabs (ABooks <-> AVideos, All <-> Lecturers) ---- */
 function swipeTabs() {
   if (nav.solo) return null;
-  if (nav.view === 'root') return { keys: ['books', 'videos', 'quizzes'], cur: nav.tab, set: k => go({ tab: k }) };
+  if (nav.view === 'root') return { keys: ['books', 'videos', 'quizzes', 'offline'], cur: nav.tab, set: k => go({ tab: k }) };
   if (nav.view === 'module' && nav.tab === 'videos') return { keys: ['all', 'lect'], cur: nav.vtab, set: k => go({ vtab: k }) };
   return null;
 }
@@ -728,6 +734,7 @@ elMain.addEventListener('input', e => {
 });
 
 elMain.addEventListener('click', e => {
+  if (offlineClick(e)) return;
   const sj = e.target.closest('.res-mod[data-sid]');
   if (sj) { go({ view: 'qsubject', subject: sj.dataset.sid }, { push: true }); return; }
   const mod = e.target.closest('.res-mod');
@@ -756,6 +763,146 @@ elMain.addEventListener('click', e => {
   const vid = e.target.closest('.res-vid');
   if (vid) { const v = VIDEOS.find(x => x.id === vid.dataset.id); if (v) openVideo(v); }
 });
+
+/* ------------------------------------------------ offline downloads (videos) */
+/* A download button sits on every video card. Videos from R2 / direct media files can be saved;
+   videos hosted on YouTube, Vimeo or Google Drive show a dimmed button and stay online-only. */
+function dlButton(v) {
+  const info = parseVideo(v);
+  if (info.kind === 'none') return '';
+  const ok = info.kind === 'file' && isDownloadableMedia(info.src);
+  return `<span class="res-vid-dl${ok ? '' : ' off'}" role="button" tabindex="0" data-dl="${esc(v.id)}" aria-label="${ok ? 'Save for offline' : 'Online only'}" title="${ok ? 'Save for offline' : 'Online only'}"><i class="fa-solid fa-download"></i><b></b></span>`;
+}
+
+function setDl(el, state, pct) {
+  const ico = el.querySelector('i'), txt = el.querySelector('b');
+  el.classList.toggle('on', state === 'saved');
+  el.classList.toggle('busy', state === 'busy');
+  ico.className = state === 'busy' ? 'fa-solid fa-spinner fa-spin' : state === 'saved' ? 'fa-solid fa-circle-check' : 'fa-solid fa-download';
+  txt.textContent = state === 'busy' && pct >= 0 ? pct + '%' : '';
+  const label = state === 'saved' ? 'Saved for offline · tap to remove' : state === 'busy' ? 'Saving…' : 'Save for offline';
+  el.title = label; el.setAttribute('aria-label', label);
+}
+
+async function paintDownloads(root) {
+  if (!root) return;
+  const els = [...root.querySelectorAll('.res-vid-dl[data-dl]:not(.off)')];
+  await Promise.all(els.map(async el => {
+    const v = VIDEOS.find(x => x.id === el.dataset.dl);
+    if (!v) return;
+    const saved = await isSaved(parseVideo(v).src);
+    if (el.isConnected && !dlBusy.has(v.id)) setDl(el, saved ? 'saved' : 'idle');
+  }));
+}
+
+const dlBusy = new Set();
+async function handleDownload(el) {
+  const v = VIDEOS.find(x => x.id === el.dataset.dl);
+  if (!v) return;
+  const info = parseVideo(v);
+  if (el.classList.contains('off') || !(info.kind === 'file' && isDownloadableMedia(info.src))) {
+    triggerLockResponse(el, 'This video is hosted on another platform (YouTube, Vimeo or Drive), so it can only be watched online.');
+    return;
+  }
+  if (dlBusy.has(v.id)) return;
+  const all = () => [...document.querySelectorAll(`.res-vid-dl[data-dl="${CSS.escape(v.id)}"]`)];
+  if (await isSaved(info.src)) { await removeFile(info.src); all().forEach(n => setDl(n, 'idle')); return; }
+  dlBusy.add(v.id);
+  all().forEach(n => setDl(n, 'busy', 0));
+  try {
+    await saveFile(info.src, p => all().forEach(n => setDl(n, 'busy', p)));
+    if (await isSaved(info.src)) setMeta(info.src, videoMeta(v, videoThumb(v)));
+    else triggerLockResponse(el, 'Not enough storage space to save this video.');
+  } catch (err) {
+    triggerLockResponse(el, (err && err.message) || 'Could not save this video.');
+  } finally {
+    dlBusy.delete(v.id);
+    const saved = await isSaved(info.src);
+    all().forEach(n => setDl(n, saved ? 'saved' : 'idle'));
+  }
+}
+
+let offlineItems = [], offlineToken = 0, clearArmed = 0;
+async function renderOffline() {
+  const token = ++offlineToken;
+  elMain.className = 'res-main lay-list noanim';
+  elMain.innerHTML = skeleton('video');
+  const items = await listSaved();
+  // videos saved before this page existed have no details yet: recognise them from the loaded video list
+  const known = new Set(items.map(x => x.id));
+  for (const v of VIDEOS) {
+    const info = parseVideo(v);
+    if (known.has(v.id) || info.kind !== 'file' || !(await isSaved(info.src))) continue;
+    setMeta(info.src, videoMeta(v, videoThumb(v)));
+  }
+  const list = VIDEOS.length ? await listSaved() : items;
+  if (token !== offlineToken || !isOpen() || nav.view !== 'root' || nav.tab !== 'offline') return;
+  offlineItems = list;
+  const total = list.reduce((n, x) => n + (x.size || 0), 0);
+  const online = navigator.onLine !== false;
+  const card = (x, i) => {
+    const t = x.thumb ? thumbSrc(x.thumb) : '';
+    const when = x.savedAt ? new Date(x.savedAt).toLocaleDateString() : '';
+    return `<div class="res-vid res-off-card" role="button" tabindex="0" data-off="${esc(x.url)}" style="--accent:${x.subjectId ? subjectColorFor(x.subjectId) : accentFor(x.moduleId)};--i:${Math.min(i, 14)}">
+      <div class="res-vid-thumb">
+        ${t ? `<img src="${esc(t)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
+        <div class="res-vid-gen"><i class="fa-solid fa-photo-video"></i></div>
+        <span class="res-vid-play"><i class="fa-solid fa-play"></i></span>
+        ${x.duration ? `<span class="res-vid-dur">${esc(x.duration)}</span>` : ''}
+        <span class="res-vid-dl del" role="button" tabindex="0" data-offdel="${esc(x.url)}" aria-label="Delete download" title="Delete download"><i class="fa-solid fa-trash"></i></span>
+      </div>
+      <div class="res-vid-body">
+        <div class="res-vid-title">${esc(x.title || 'Video')}</div>
+        ${x.lecturer ? `<div class="res-vid-desc">${esc(x.lecturer)}</div>` : ''}
+        <span class="res-tag"><span class="dot"></span>${[x.size ? sizeLabel(x.size) : '', when].filter(Boolean).join(' · ') || 'Saved'}</span>
+      </div>
+    </div>`;
+  };
+  markSeen();
+  elMain.innerHTML = `
+    <div class="res-offl-head">
+      <div><b>${plural(list.length, 'video')}</b>${total ? ' · ' + sizeLabel(total) : ''}${online ? '' : ' · offline'}</div>
+      ${list.length ? '<button type="button" class="res-offl-clear" data-offl-clear>Delete all</button>' : ''}
+    </div>
+    ${list.length
+      ? `<div class="res-grid res-grid-video">${list.map(card).join('')}</div>`
+      : emptyHtml('fa-solid fa-download', 'No downloads yet', 'Tap the download icon on any video to keep it here and watch without internet.')}
+    <p class="res-offl-foot">Only ALIF-hosted and direct video files can be saved. Videos from YouTube, Vimeo or Google Drive can only be watched online.</p>`;
+}
+
+function playSaved(url) {
+  const m = offlineItems.find(x => x.url === url);
+  if (!m) return;
+  const v = VIDEOS.find(x => x.id === m.id) || {
+    id: m.id, title: m.title, lecturer: m.lecturer, subjectId: m.subjectId, moduleId: m.moduleId,
+    duration: m.duration, thumbUrl: m.thumb, videoUrl: m.url, sourceType: 'upload'
+  };
+  openVideo(v);
+}
+
+/* returns true when the click belonged to the download buttons / Downloads page */
+function offlineClick(e) {
+  const del = e.target.closest('[data-offdel]');
+  if (del) { e.preventDefault(); e.stopPropagation(); removeFile(del.dataset.offdel).then(() => renderOffline()); return true; }
+  const clr = e.target.closest('[data-offl-clear]');
+  if (clr) {
+    if (Date.now() - clearArmed < 3500) { clearArmed = 0; removeAllVideos().then(() => renderOffline()); }
+    else { clearArmed = Date.now(); clr.textContent = 'Tap again to confirm'; setTimeout(() => { if (clr.isConnected && Date.now() - clearArmed >= 3400) { clr.textContent = 'Delete all'; clearArmed = 0; } }, 3600); }
+    return true;
+  }
+  const off = e.target.closest('[data-off]');
+  if (off) { playSaved(off.dataset.off); return true; }
+  const dl = e.target.closest('.res-vid-dl[data-dl]');
+  if (dl) { e.preventDefault(); e.stopPropagation(); handleDownload(dl); return true; }
+  return false;
+}
+elMain.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const t = e.target.closest('.res-vid-dl, .res-off-card');
+  if (t) { e.preventDefault(); t.click(); }
+});
+window.addEventListener('online', () => { if (isOpen() && nav.view === 'root' && nav.tab === 'offline') renderOffline(); });
+window.addEventListener('offline', () => { if (isOpen() && nav.view === 'root' && nav.tab === 'offline') renderOffline(); });
 
 /* ---------------------------------------------------- book detail sheet */
 function openBook(b) {

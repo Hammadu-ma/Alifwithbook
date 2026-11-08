@@ -15,7 +15,7 @@ import { mountEmbeddedQuiz } from './resources-quizembed.js';
 import { mountReader, SANDBOX } from './resources-reader.js';
 import { loadCategoryQuestions, loadQuizQuestions, lockMessage, mountQuiz, resolveQuizLinks } from './resources-quiz.js';
 import { driveId, esc, plural, safeUrl, thumbSrc, videoThumb, vimeoParts, ytId, fileExt } from './resources-util.js';
-import { isR2, isSaved, savedBlobUrl, saveFile, removeFile, sizeLabel } from './offline-files.js';
+import { isDownloadableMedia, isSaved, savedBlobUrl, saveFile, removeFile, setMeta, videoMeta, sizeLabel } from './offline-files.js';
 
 /* ------------------------------------------------------------------ icons */
 const I = {
@@ -252,7 +252,7 @@ export function mountPlayer(host, first, ctx) {
                 ${sub ? `<span class="res-chip"><i class="fa-solid fa-tag"></i>${esc(sub)}</span>` : ''}
                 ${v.duration ? `<span class="res-chip"><i class="fa-solid fa-clock"></i>${esc(v.duration)}</span>` : ''}
               </div>
-              ${info.kind === 'file' && isR2(info.src) ? '<button type="button" class="res-offl" data-offl></button>' : ''}
+              ${info.kind === 'file' && isDownloadableMedia(info.src) ? '<button type="button" class="res-offl" data-offl></button>' : ''}
               ${v.description ? `<p class="res-sheet-desc">${esc(v.description)}</p>` : ''}
             </div>
           </div>
@@ -280,7 +280,7 @@ export function mountPlayer(host, first, ctx) {
     }
   }
 
-  /* ---------- save a video for offline use (R2 files only) ---------- */
+  /* ---------- save a video for offline use (R2 / direct media files only) ---------- */
   async function wireOffline(btn, info, v) {
     if (!btn) return;
     const url = info.src;
@@ -300,6 +300,7 @@ export function mountPlayer(host, first, ctx) {
       busy = true; paint(0);
       try {
         const blob = await saveFile(url, p => { if (!dead) paint(p); });
+        setMeta(url, videoMeta(v, videoThumb(v)));
         busy = false; paint();
         if (!dead && video === v) btn.title = sizeLabel(blob.size);
       } catch (e) {
@@ -325,7 +326,7 @@ export function mountPlayer(host, first, ctx) {
     stage.classList.add('loading');
     if (info.kind !== 'file') startRing(stage);      // autoplay engines: ring + progress until the first frame plays
     try {
-      engine = info.kind === 'file' ? htmlEngine(stage, (isR2(info.src) && await savedBlobUrl(info.src)) || info.src, poster)
+      engine = info.kind === 'file' ? htmlEngine(stage, (isDownloadableMedia(info.src) && await savedBlobUrl(info.src)) || info.src, poster)
         : info.kind === 'youtube' ? await youtubeEngine(stage, info.id)
         : await vimeoEngine(stage, info.id, info.h);
     } catch (_) {

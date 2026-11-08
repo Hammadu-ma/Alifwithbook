@@ -928,3 +928,18 @@ body.rq-embedded .jump-fab { z-index: 440; }
 .res-offl.on{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.4);color:#059669}
 body.dark .res-offl.on{color:#34d399}
 .res-offl:disabled{opacity:.75;cursor:default}
+
+/* Offline downloads: button on every video card + Downloads page */
+.res-vid-dl{position:absolute;top:8px;right:8px;z-index:3;display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:32px;height:32px;padding:0 9px;border-radius:999px;background:rgba(0,0,0,.58);color:#fff;font:700 11px/1 inherit;cursor:pointer;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);-webkit-tap-highlight-color:transparent}
+.res-vid-dl b{font-weight:700}
+.res-vid-dl b:empty{display:none}
+.res-vid-dl.on{background:#059669}
+.res-vid-dl.off{opacity:.5}
+.res-vid-dl.busy{pointer-events:none}
+.res-vid-dl.del{background:rgba(220,38,38,.88)}
+.lay-list .res-vid-dl{top:4px;right:4px;min-width:26px;height:26px;padding:0 6px;font-size:10px}
+.res-off-card{cursor:pointer;text-align:left}
+.res-offl-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 2px 12px;font-size:13px;color:var(--muted,#777)}
+.res-offl-head b{color:inherit;font-weight:700}
+.res-offl-clear{padding:7px 12px;border-radius:999px;border:1px solid rgba(220,38,38,.4);background:transparent;color:#dc2626;font:600 12px/1 inherit;cursor:pointer}
+.res-offl-foot{margin:14px 2px 0;max-width:760px;color:var(--muted,#777);font-size:11px;line-height:1.55}
