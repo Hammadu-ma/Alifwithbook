@@ -7,8 +7,6 @@
 const CACHE = 'alif-offline-files-v1';
 const META_KEY = 'alif_offline_meta_v1';
 const MAX_BYTES = 450 * 1024 * 1024;
-/* Offline copies are temporary: they delete themselves this long after they were saved. */
-export const OFFLINE_TTL_MS = 2 * 60 * 60 * 1000;
 
 export const isR2 = u => /^(https?:\/\/[^/]+)?\/api\/r2\?key=/i.test(String(u || ''));
 const abs = u => new URL(u, location.origin).href;
@@ -40,26 +38,19 @@ export const bookMeta = (b, thumb) => ({
 export function setMeta(url, meta) {
   if (!isDownloadableMedia(url)) return;
   const m = readMeta();
-  const old = m[abs(url)] || {};
-  m[abs(url)] = { ...meta, savedAt: old.savedAt || Date.now(), expiresAt: old.expiresAt || Date.now() + OFFLINE_TTL_MS };
+  m[abs(url)] = { ...meta, savedAt: (m[abs(url)] && m[abs(url)].savedAt) || Date.now() };
   writeMeta(m);
 }
 
-const expired = url => { const m = readMeta()[abs(url)]; return !!(m && m.expiresAt && m.expiresAt <= Date.now()); };
-
 export async function isSaved(url) {
   if (!has() || !isDownloadableMedia(url)) return false;
-  try {
-    if (expired(url)) { await removeFile(url); return false; }
-    return !!(await (await open()).match(abs(url)));
-  } catch (_) { return false; }
+  try { return !!(await (await open()).match(abs(url))); } catch (_) { return false; }
 }
 
 /* Blob URL of a saved file, or '' when it is not saved. */
 export async function savedBlobUrl(url) {
   if (!has() || !isDownloadableMedia(url)) return '';
   try {
-    if (expired(url)) { await removeFile(url); return ''; }
     const hit = await (await open()).match(abs(url));
     return hit ? URL.createObjectURL(await hit.blob()) : '';
   } catch (_) { return ''; }
@@ -139,31 +130,3 @@ export async function removeAllDownloads() {
 export const sizeLabel = n => (n >= 1048576 ? (n / 1048576).toFixed(n >= 10485760 ? 0 : 1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB');
 
 export const removeAllVideos = removeAllDownloads;
-
-/* Delete every offline copy older than OFFLINE_TTL_MS. Copies saved before expiry existed start their 2 hours now. */
-export async function purgeExpired() {
-  if (!has()) return 0;
-  let n = 0;
-  try {
-    const c = await open(), meta = readMeta(), now = Date.now();
-    let dirty = false;
-    for (const req of await c.keys()) {
-      const m = meta[req.url];
-      if (!m) { meta[req.url] = { kind: 'file', savedAt: now, expiresAt: now + OFFLINE_TTL_MS }; dirty = true; continue; }
-      if (!m.expiresAt) { m.expiresAt = (m.savedAt || now) + OFFLINE_TTL_MS; dirty = true; }
-      if (m.expiresAt <= now) { await c.delete(req); delete meta[req.url]; dirty = true; n++; }
-    }
-    for (const k of Object.keys(meta)) { if (!(await c.match(k))) { delete meta[k]; dirty = true; } }
-    if (dirty) writeMeta(meta);
-  } catch (_) {}
-  if (n) { try { window.dispatchEvent(new CustomEvent('alif:offline-purged', { detail: { count: n } })); } catch (_) {} }
-  return n;
-}
-export const expiryLabel = ms => {
-  const left = ms - Date.now();
-  if (left <= 0) return 'Expired';
-  const m = Math.ceil(left / 60000);
-  return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min left` : `${m} min left`;
-};
-setTimeout(() => { purgeExpired(); setInterval(purgeExpired, 60 * 1000); }, 3000);
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') purgeExpired(); });
