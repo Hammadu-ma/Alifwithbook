@@ -3145,6 +3145,8 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
   #xpSettings .form-control, #tab-export .form-control { font-size:16px; }
 }
 </style>
+  <script src="/push-config.js"></script>
+  <script>window.ALIF_PUSH_API_BASE = window.ALIF_PUSH_API_BASE || 'https://alif-push-api.vercel.app'; /* fallback if /push-config.js is missing */</script>
 </head>
 <body>
 <div id="splash" aria-hidden="true"><span class="sp-orb o1"></span><span class="sp-orb o2"></span>
@@ -3752,10 +3754,7 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
       </div>
 
       <!-- Questions Tab (Question Management tool, fully merged in-page — not an iframe.
-           It reuses this page's Firebase app/auth session; see the second <script src="/push-config.js"></script>
-  <script src="/push-config.js"></script>
-  <script>window.ALIF_PUSH_API_BASE = window.ALIF_PUSH_API_BASE || 'https://alif-push-api.vercel.app'; /* fallback if /push-config.js is missing */</script>
-  <script type="module">
+           It reuses this page's Firebase app/auth session; see the second module script
            near the end of the file, which is namespace-isolated (its own module scope) and whose
            CSS lives under "#tab-questions / #qmOverlayRoot scoped styles" below so nothing here
            bleeds into the rest of the dashboard. #qmOverlayRoot is where its modals/popovers
