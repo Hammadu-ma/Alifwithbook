@@ -105,6 +105,7 @@ export const avatarImg = (url, cls = 'av-photo') => (url ? `<img class="${cls}" 
 /* Swap the header profile icons for the student's photo (or restore the icon). */
 export function applyOwnAvatar() {
   const a = ownAvatar();
+  hydrateAvatars();
   ['homeProfileBtn', 'profileBtn'].forEach(id => {
     const b = document.getElementById(id);
     if (!b || b.classList.contains('signup-btn')) return;
@@ -118,6 +119,57 @@ export function applyOwnAvatar() {
       b.innerHTML = '<i class="fa-solid fa-user"></i>';
     }
   });
+}
+
+
+/* ---- everyone else's photo (and your own) wherever an avatar slot is rendered ----
+   Templates drop in <img data-av-sid="studentId" hidden>; this fills it from a small cache of
+   chatProfiles photos (30 min, stale copy shown instantly, refreshed in the background, batched). */
+const PEER_KEY = 'alif_peer_av_v1', PEER_TTL = 30 * 60 * 1000;
+let peers = {};
+try { peers = JSON.parse(localStorage.getItem(PEER_KEY)) || {}; } catch (_) {}
+const asked = new Set(), pending = new Set();
+let fetchTimer = 0, hydTimer = 0;
+const savePeers = () => { try { const k = Object.keys(peers); if (k.length > 400) k.sort((a, b) => peers[a].t - peers[b].t).slice(0, k.length - 400).forEach(x => delete peers[x]); localStorage.setItem(PEER_KEY, JSON.stringify(peers)); } catch (_) {} };
+
+export function avatarOf(sid) {
+  if (!sid) return '';
+  if (sid === sidOf()) { const a = ownAvatar(); return a ? a.url : ''; }
+  return (peers[sid] && peers[sid].u) || '';
+}
+/* feed photos we already know (e.g. from the classmates query) so no extra reads are needed */
+export function primeAvatars(list) {
+  (list || []).forEach(x => { const id = x && (x.studentId || x.id); if (id && typeof x.avatarUrl === 'string') peers[id] = { u: x.avatarUrl, t: Date.now() }; });
+  savePeers();
+}
+async function fetchPeers() {
+  fetchTimer = 0;
+  const ids = [...pending].slice(0, 40); ids.forEach(i => pending.delete(i));
+  if (!ids.length || !db) return;
+  await Promise.all(ids.map(async id => {
+    try { const sn = await getDoc(doc(db, 'chatProfiles', id)); peers[id] = { u: (sn.exists() && sn.data().avatarUrl) || '', t: Date.now() }; } catch (_) {}
+  }));
+  savePeers(); hydrateAvatars();
+  if (pending.size) fetchTimer = setTimeout(fetchPeers, 300);
+}
+export function hydrateAvatars(root) {
+  try {
+    (root || document).querySelectorAll('img[data-av-sid]').forEach(img => {
+      const sid = img.dataset.avSid, u = avatarOf(sid);
+      if (sid && sid !== sidOf()) {
+        const p = peers[sid];
+        if ((!p || Date.now() - p.t > PEER_TTL) && !asked.has(sid)) { asked.add(sid); pending.add(sid); if (!fetchTimer) fetchTimer = setTimeout(fetchPeers, 120); }
+      }
+      if (u) { if (img.getAttribute('src') !== u) img.src = u; img.hidden = false; } else { img.hidden = true; }
+    });
+  } catch (_) {}
+}
+function watchDom() {
+  try {
+    new MutationObserver(() => { if (!hydTimer) hydTimer = setTimeout(() => { hydTimer = 0; hydrateAvatars(); }, 150); })
+      .observe(document.body, { childList: true, subtree: true });
+    hydrateAvatars();
+  } catch (_) {}
 }
 
 /* hydrate the header once the student is known (login can finish after page load) */
@@ -138,9 +190,10 @@ function goLive() {
     }, () => {});
   } catch (_) {}
 }
-let tries = 0;
+let tries = 0, watching = false;
 function boot() {
   try {
+    if (!watching && document.body) { watching = true; watchDom(); }
     applyOwnAvatar();
     if (sidOf()) { goLive(); loadOwnAvatar().then(applyOwnAvatar).catch(() => {}); }
   } catch (_) { /* never let a photo problem touch the app */ }
@@ -149,4 +202,4 @@ function boot() {
 // NOT run at import time: this module is part of an import cycle with auth.js, so its imports may not be ready yet.
 setTimeout(boot, 800);
 window.addEventListener('focus', () => { try { applyOwnAvatar(); if (sidOf()) loadOwnAvatar().then(applyOwnAvatar).catch(() => {}); } catch (_) {} });
-window.__alifAvatar = { applyOwnAvatar, loadOwnAvatar, setOwnAvatar, removeOwnAvatar, ownAvatar };
+window.__alifAvatar = { hydrateAvatars, primeAvatars, avatarOf, applyOwnAvatar, loadOwnAvatar, setOwnAvatar, removeOwnAvatar, ownAvatar };

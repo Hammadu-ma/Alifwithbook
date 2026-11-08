@@ -147,7 +147,7 @@ function ensureData() {
     setTimeout(res, 1500);
   });
   const pBooks = loadList('books', l => { BOOKS = l; queueRender(); }).then(() => { loaded.books = true; });
-  const pVids = loadList('videos', l => { VIDEOS = l; queueRender(); }).then(() => { loaded.videos = true; });
+  const pVids = loadList('videos', l => { VIDEOS = shareLecturerPhotos(l); queueRender(); }).then(() => { loaded.videos = true; });
   Promise.all([pMods, pSubj, pBooks, pVids]).then(() => { queueRender(); ensureQuizzes(); });
 }
 
@@ -450,6 +450,21 @@ function renderRoot(tab) {
       <i class="fa-solid fa-chevron-right res-mod-chev"></i>
     </button>`;
   }).join('')}</div>`;
+}
+
+/* One lecturer, one photo: a video without its own photo borrows the photo (and title) of the same lecturer's other videos. */
+function shareLecturerPhotos(list) {
+  const photo = new Map(), title = new Map();
+  (list || []).forEach(v => {
+    const k = norm(v.lecturer || ''); if (!k) return;
+    if (!photo.has(k) && safeUrl(v.lecturerPhoto)) photo.set(k, v.lecturerPhoto);
+    if (!title.has(k) && v.lecturerTitle) title.set(k, v.lecturerTitle);
+  });
+  return (list || []).map(v => {
+    const k = norm(v.lecturer || '');
+    if (!k || (safeUrl(v.lecturerPhoto) && v.lecturerTitle)) return v;
+    return { ...v, lecturerPhoto: safeUrl(v.lecturerPhoto) ? v.lecturerPhoto : (photo.get(k) || ''), lecturerTitle: v.lecturerTitle || title.get(k) || '' };
+  });
 }
 
 /* module / lecturer content list (re-rendered on search) */
