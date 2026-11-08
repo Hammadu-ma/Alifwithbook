@@ -972,3 +972,4 @@ body.dark .res-offl.on{color:#34d399}
 .res-off-meta{font-size:11.5px;color:var(--ink-faint,#777)}
 .res-off-del{flex:none;width:40px;height:40px;border-radius:12px;border:0;background:rgba(220,38,38,.1);color:#dc2626;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .res-off-del:active{background:rgba(220,38,38,.22)}
+.res-off-exp{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#d97706}

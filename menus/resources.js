@@ -39,7 +39,7 @@ import { pushAppState } from './progress-rings.js';
 import { collection, getDocs } from './runtime-ext.js';
 import { mountPlayer, parseVideo } from './resources-player.js';
 import { showConfirm } from './ui-feedback.js';
-import { isDownloadableMedia, isSaved, saveFile, removeFile, setMeta, videoMeta, bookMeta, listSaved, removeAllDownloads, sizeLabel } from './offline-files.js';
+import { isDownloadableMedia, isSaved, saveFile, removeFile, setMeta, videoMeta, bookMeta, listSaved, removeAllDownloads, sizeLabel, expiryLabel, purgeExpired, OFFLINE_TTL_MS } from './offline-files.js';
 import { loadQuizzesOf, lockMessage } from './resources-quiz.js';
 import { mountReader } from './resources-reader.js';
 import { esc, driveId, fileExt, norm, plural, safeUrl, thumbSrc, videoThumb } from './resources-util.js';
@@ -773,7 +773,7 @@ function dlButton(v) {
   const info = parseVideo(v);
   if (info.kind === 'none') return '';
   const ok = info.kind === 'file' && isDownloadableMedia(info.src);
-  return `<span class="res-vid-dl${ok ? '' : ' off'}" role="button" tabindex="0" data-dl="${esc(v.id)}" aria-label="${ok ? 'Save for offline' : 'Online only'}" title="${ok ? 'Save for offline' : 'Online only'}"><i class="fa-solid fa-download"></i><b></b></span>`;
+  return `<span class="res-vid-dl${ok ? '' : ' off'}" role="button" tabindex="0" data-dl="${esc(v.id)}" aria-label="${ok ? 'Save for offline (2 hours)' : 'Online only'}" title="${ok ? 'Save for offline' : 'Online only'}"><i class="fa-solid fa-download"></i><b></b></span>`;
 }
 
 function setDl(el, state, pct) {
@@ -782,7 +782,7 @@ function setDl(el, state, pct) {
   el.classList.toggle('busy', state === 'busy');
   ico.className = state === 'busy' ? 'fa-solid fa-spinner fa-spin' : state === 'saved' ? 'fa-solid fa-circle-check' : 'fa-solid fa-download';
   txt.textContent = state === 'busy' && pct >= 0 ? pct + '%' : '';
-  const label = state === 'saved' ? 'Saved for offline · tap to remove' : state === 'busy' ? 'Saving…' : 'Save for offline';
+  const label = state === 'saved' ? 'Saved for 2 hours · tap to remove' : state === 'busy' ? 'Saving…' : 'Save for offline (kept 2 hours)';
   el.title = label; el.setAttribute('aria-label', label);
 }
 
@@ -867,6 +867,7 @@ async function handleDownload(el) {
 let offlineItems = [], offlineToken = 0, offFilter = 'all';
 async function renderOffline() {
   const token = ++offlineToken;
+  await purgeExpired();
   elMain.className = 'res-main lay-list noanim';
   elMain.innerHTML = skeleton('video');
   const items = await listSaved();
@@ -904,6 +905,7 @@ async function renderOffline() {
         <div class="res-off-title">${esc(x.title || (isBook ? 'Book' : 'Video'))}</div>
         ${sub ? `<div class="res-off-sub">${esc(sub)}</div>` : ''}
         <div class="res-off-meta">${esc([x.size ? sizeLabel(x.size) : '', when].filter(Boolean).join(' · ') || 'Saved')}</div>
+        ${x.expiresAt ? `<div class="res-off-exp"><i class="fa-regular fa-clock"></i> ${esc(expiryLabel(x.expiresAt))}</div>` : ''}
       </div>
       <button type="button" class="res-off-del" data-offdel="${esc(x.url)}" data-offname="${esc(x.title || '')}" aria-label="Delete download" title="Delete download"><i class="fa-solid fa-trash"></i></button>
     </div>`;
@@ -921,7 +923,7 @@ async function renderOffline() {
     ${all.length ? `<div class="res-off-chips">${chip('all', 'All', all.length)}${chip('books', 'Books', bookList.length)}${chip('videos', 'Videos', list.length)}</div>
       <div class="res-off-list">${shown.map(row).join('')}</div>`
       : emptyHtml('fa-solid fa-download', 'No downloads yet', 'Tap the download icon on a book or video to keep it inside the app and use it without internet.')}
-    <p class="res-offl-foot">Downloads stay inside the app and are not saved to your phone’s files. Only ALIF-hosted files and direct files can be saved. Videos from YouTube, Vimeo or Google Drive can only be watched online.</p>`;
+    <p class="res-offl-foot">Downloads stay inside the app, are not saved to your phone’s files, and delete themselves 2 hours after you download them. Only ALIF-hosted files and direct files can be saved. Videos from YouTube, Vimeo or Google Drive can only be watched online.</p>`;
 }
 
 function openSavedBook(url) {
@@ -1192,3 +1194,8 @@ window.__alifRes = {
   openVideo(id) { const v = VIDEOS.find(x => x.id === id); if (v) openVideo(v); },
   openBook(id) { const b = BOOKS.find(x => x.id === id); if (!b) return; if (safeUrl(b.fileUrl)) openReader(b); else openBook(b); }
 };
+
+/* keep the Downloads page and the green ticks honest when copies expire */
+window.addEventListener('alif:offline-purged', () => {
+  try { if (isOpen() && nav.view === 'root' && nav.tab === 'offline') renderOffline(); else paintDownloads(document); } catch (_) {}
+});
