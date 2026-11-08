@@ -38,6 +38,7 @@ import { progressScreen } from './progress-page.js';
 import { pushAppState } from './progress-rings.js';
 import { collection, getDocs } from './runtime-ext.js';
 import { mountPlayer, parseVideo } from './resources-player.js';
+import { showConfirm } from './ui-feedback.js';
 import { isDownloadableMedia, isSaved, saveFile, removeFile, setMeta, videoMeta, bookMeta, listSaved, removeAllDownloads, sizeLabel } from './offline-files.js';
 import { loadQuizzesOf, lockMessage } from './resources-quiz.js';
 import { mountReader } from './resources-reader.js';
@@ -863,7 +864,7 @@ async function handleDownload(el) {
   }
 }
 
-let offlineItems = [], offlineToken = 0, clearArmed = 0;
+let offlineItems = [], offlineToken = 0, offFilter = 'all';
 async function renderOffline() {
   const token = ++offlineToken;
   elMain.className = 'res-main lay-list noanim';
@@ -887,50 +888,38 @@ async function renderOffline() {
   offlineItems = all;
   const total = all.reduce((n, x) => n + (x.size || 0), 0);
   const online = navigator.onLine !== false;
-  const card = (x, i) => {
+  const row = (x, i) => {
+    const isBook = x.kind === 'book';
     const t = x.thumb ? thumbSrc(x.thumb) : '';
     const when = x.savedAt ? new Date(x.savedAt).toLocaleDateString() : '';
-    return `<div class="res-vid res-off-card" role="button" tabindex="0" data-off="${esc(x.url)}" style="--accent:${x.subjectId ? subjectColorFor(x.subjectId) : accentFor(x.moduleId)};--i:${Math.min(i, 14)}">
-      <div class="res-vid-thumb">
+    const sub = isBook ? x.author : x.lecturer;
+    return `<div class="res-off-row ${isBook ? 'is-book' : 'is-video'}" role="button" tabindex="0" ${isBook ? 'data-offbook' : 'data-off'}="${esc(x.url)}" style="--accent:${x.subjectId ? subjectColorFor(x.subjectId) : accentFor(x.moduleId)};--i:${Math.min(i, 14)}">
+      <div class="res-off-thumb">
         ${t ? `<img src="${esc(t)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
-        <div class="res-vid-gen"><i class="fa-solid fa-photo-video"></i></div>
-        <span class="res-vid-play"><i class="fa-solid fa-play"></i></span>
-        ${x.duration ? `<span class="res-vid-dur">${esc(x.duration)}</span>` : ''}
-        <span class="res-vid-dl del" role="button" tabindex="0" data-offdel="${esc(x.url)}" aria-label="Delete download" title="Delete download"><i class="fa-solid fa-trash"></i></span>
+        <i class="fa-solid ${isBook ? 'fa-book-medical' : 'fa-photo-video'}"></i>
+        ${!isBook && x.duration ? `<span class="res-off-dur">${esc(x.duration)}</span>` : ''}
       </div>
-      <div class="res-vid-body">
-        <div class="res-vid-title">${esc(x.title || 'Video')}</div>
-        ${x.lecturer ? `<div class="res-vid-desc">${esc(x.lecturer)}</div>` : ''}
-        <span class="res-tag"><span class="dot"></span>${[x.size ? sizeLabel(x.size) : '', when].filter(Boolean).join(' · ') || 'Saved'}</span>
+      <div class="res-off-body">
+        <span class="res-off-kind"><i class="fa-solid ${isBook ? 'fa-book' : 'fa-play'}"></i> ${isBook ? 'Book' : 'Video'}</span>
+        <div class="res-off-title">${esc(x.title || (isBook ? 'Book' : 'Video'))}</div>
+        ${sub ? `<div class="res-off-sub">${esc(sub)}</div>` : ''}
+        <div class="res-off-meta">${esc([x.size ? sizeLabel(x.size) : '', when].filter(Boolean).join(' · ') || 'Saved')}</div>
       </div>
-    </div>`;
-  };
-  const bcard = (x, i) => {
-    const t = x.thumb ? thumbSrc(x.thumb) : '';
-    const when = x.savedAt ? new Date(x.savedAt).toLocaleDateString() : '';
-    return `<div class="res-book res-off-card" role="button" tabindex="0" data-offbook="${esc(x.url)}" style="--accent:${x.subjectId ? subjectColorFor(x.subjectId) : accentFor(x.moduleId)};--i:${Math.min(i, 14)}">
-      <div class="res-book-cover">
-        ${t ? `<img src="${esc(t)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
-        <div class="res-book-gen"><i class="fa-solid fa-book-medical"></i><span>${esc(x.title || '')}</span></div>
-        <span class="res-vid-dl del" role="button" tabindex="0" data-offdel="${esc(x.url)}" aria-label="Delete download" title="Delete download"><i class="fa-solid fa-trash"></i></span>
-      </div>
-      <div class="res-book-body">
-        <div class="res-book-title">${esc(x.title || 'Book')}</div>
-        ${x.author ? `<div class="res-book-author">${esc(x.author)}</div>` : ''}
-        <span class="res-tag"><span class="dot"></span>${[x.size ? sizeLabel(x.size) : '', when].filter(Boolean).join(' · ') || 'Saved'}</span>
-      </div>
+      <button type="button" class="res-off-del" data-offdel="${esc(x.url)}" data-offname="${esc(x.title || '')}" aria-label="Delete download" title="Delete download"><i class="fa-solid fa-trash"></i></button>
     </div>`;
   };
   markSeen();
-  const counts = [bookList.length ? plural(bookList.length, 'book') : '', list.length ? plural(list.length, 'video') : ''].filter(Boolean).join(' · ') || '0 downloads';
+  if (offFilter === 'books' && !bookList.length) offFilter = 'all';
+  if (offFilter === 'videos' && !list.length) offFilter = 'all';
+  const shown = offFilter === 'books' ? bookList : offFilter === 'videos' ? list : all.slice().sort((x, y) => (y.savedAt || 0) - (x.savedAt || 0));
+  const chip = (k, label, n) => `<button type="button" class="res-off-chip${offFilter === k ? ' on' : ''}" data-offf="${k}">${label}<b>${n}</b></button>`;
   elMain.innerHTML = `
     <div class="res-offl-head">
-      <div><b>${counts}</b>${total ? ' · ' + sizeLabel(total) : ''}${online ? '' : ' · offline'}</div>
+      <div><b>${plural(all.length, 'download')}</b>${total ? ' · ' + sizeLabel(total) : ''}${online ? '' : ' · offline'}</div>
       ${all.length ? '<button type="button" class="res-offl-clear" data-offl-clear>Delete all</button>' : ''}
     </div>
-    ${all.length ? `
-      ${bookList.length ? `<div class="res-offl-sec">Books</div><div class="res-grid">${bookList.map(bcard).join('')}</div>` : ''}
-      ${list.length ? `<div class="res-offl-sec">Videos</div><div class="res-grid res-grid-video">${list.map(card).join('')}</div>` : ''}`
+    ${all.length ? `<div class="res-off-chips">${chip('all', 'All', all.length)}${chip('books', 'Books', bookList.length)}${chip('videos', 'Videos', list.length)}</div>
+      <div class="res-off-list">${shown.map(row).join('')}</div>`
       : emptyHtml('fa-solid fa-download', 'No downloads yet', 'Tap the download icon on a book or video to keep it inside the app and use it without internet.')}
     <p class="res-offl-foot">Downloads stay inside the app and are not saved to your phone’s files. Only ALIF-hosted files and direct files can be saved. Videos from YouTube, Vimeo or Google Drive can only be watched online.</p>`;
 }
@@ -955,11 +944,19 @@ function playSaved(url) {
 /* returns true when the click belonged to the download buttons / Downloads page */
 function offlineClick(e) {
   const del = e.target.closest('[data-offdel]');
-  if (del) { e.preventDefault(); e.stopPropagation(); removeFile(del.dataset.offdel).then(() => renderOffline()); return true; }
+  if (del) {
+    e.preventDefault(); e.stopPropagation();
+    const name = del.dataset.offname || 'this download';
+    showConfirm({ title: 'Delete download?', message: `“${name}” will be removed from this device. You can download it again later while online.`, confirmText: 'Delete', cancelText: 'Keep', danger: true, icon: 'fa-solid fa-trash' })
+      .then(ok => ok && removeFile(del.dataset.offdel).then(() => renderOffline()));
+    return true;
+  }
+  const flt = e.target.closest('[data-offf]');
+  if (flt) { offFilter = flt.dataset.offf; renderOffline(); return true; }
   const clr = e.target.closest('[data-offl-clear]');
   if (clr) {
-    if (Date.now() - clearArmed < 3500) { clearArmed = 0; removeAllDownloads().then(() => renderOffline()); }
-    else { clearArmed = Date.now(); clr.textContent = 'Tap again to confirm'; setTimeout(() => { if (clr.isConnected && Date.now() - clearArmed >= 3400) { clr.textContent = 'Delete all'; clearArmed = 0; } }, 3600); }
+    showConfirm({ title: 'Delete all downloads?', message: 'Every saved book and video will be removed from this device.', confirmText: 'Delete all', cancelText: 'Keep', danger: true, icon: 'fa-solid fa-trash' })
+      .then(ok => ok && removeAllDownloads().then(() => renderOffline()));
     return true;
   }
   const off = e.target.closest('[data-off]');
@@ -974,7 +971,7 @@ function offlineClick(e) {
 }
 elMain.addEventListener('keydown', e => {
   if (e.key !== 'Enter' && e.key !== ' ') return;
-  const t = e.target.closest('.res-vid-dl, .res-off-card');
+  const t = e.target.closest('.res-vid-dl, .res-off-row, .res-off-chip, .res-off-del');
   if (t) { e.preventDefault(); t.click(); }
 });
 window.addEventListener('online', () => { if (isOpen() && nav.view === 'root' && nav.tab === 'offline') renderOffline(); });
