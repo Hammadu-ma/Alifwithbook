@@ -943,3 +943,7 @@ body.dark .res-offl.on{color:#34d399}
 .res-offl-head b{color:inherit;font-weight:700}
 .res-offl-clear{padding:7px 12px;border-radius:999px;border:1px solid rgba(220,38,38,.4);background:transparent;color:#dc2626;font:600 12px/1 inherit;cursor:pointer}
 .res-offl-foot{margin:14px 2px 0;max-width:760px;color:var(--muted,#777);font-size:11px;line-height:1.55}
+
+.res-offl-sec{margin:16px 2px 8px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint)}
+.res-book .res-vid-dl{top:8px;right:8px}
+.res-book-cover{position:relative}

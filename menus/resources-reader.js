@@ -455,11 +455,11 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
       const lib = await loadPdfjs();
       let src = plan.url;
       if (isR2(plan.url)) {
-        // R2 books: use the offline copy when there is one, otherwise download once and keep it for next time
+        // R2 books: use the downloaded copy when there is one, otherwise stream it for this reading only (saving is the Download button's job)
         src = await savedBlobUrl(plan.url);
         if (!src) {
           msg.textContent = 'Downloading book…';
-          const blob = await saveFile(plan.url, v => { if (v >= 0) { loadbar.style.width = v + '%'; msg.textContent = `Downloading book… ${v}%`; } });
+          const blob = await saveFile(plan.url, v => { if (v >= 0) { loadbar.style.width = v + '%'; msg.textContent = `Downloading book… ${v}%`; } }, { persist: false });
           src = URL.createObjectURL(blob);
         } else msg.textContent = 'Opening saved copy…';
       }

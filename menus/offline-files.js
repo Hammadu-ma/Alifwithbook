@@ -20,16 +20,20 @@ export const isDownloadableMedia = u => {
     const x = new URL(String(u || ''), location.origin);
     if (!/^https?:$/.test(x.protocol)) return false;
     if (BLOCKED_HOSTS.test(x.hostname)) return false;
-    return isR2(x.href) || /\.(mp4|webm|ogg|ogv|mov|m4v)$/i.test(x.pathname);
+    return isR2(x.href) || /\.(mp4|webm|ogg|ogv|mov|m4v|pdf)$/i.test(x.pathname);
   } catch (_) { return false; }
 };
 
-/* ---- details of saved videos (for the Downloads page) ---- */
+/* ---- details of saved videos and books (for the Downloads page) ---- */
 const readMeta = () => { try { return JSON.parse(localStorage.getItem(META_KEY) || '{}') || {}; } catch (_) { return {}; } };
 const writeMeta = m => { try { localStorage.setItem(META_KEY, JSON.stringify(m)); } catch (_) {} };
 export const videoMeta = (v, thumb) => ({
   kind: 'video', id: v.id, title: v.title || 'Video', lecturer: v.lecturer || '', subjectId: v.subjectId || '',
   moduleId: v.moduleId || '', duration: v.duration || '', thumb: thumb || ''
+});
+export const bookMeta = (b, thumb) => ({
+  kind: 'book', id: b.id, title: b.title || 'Book', author: b.author || '', subjectId: b.subjectId || '',
+  moduleId: b.moduleId || '', thumb: thumb || '', src: b.fileUrl || ''
 });
 export function setMeta(url, meta) {
   if (!isDownloadableMedia(url)) return;
@@ -52,14 +56,14 @@ export async function savedBlobUrl(url) {
   } catch (_) { return ''; }
 }
 
-/* Every saved video that has details recorded, newest first: [{ url, size, savedAt, title, … }]. */
+/* Every saved video / book that has details recorded, newest first: [{ kind, url, size, savedAt, title, … }]. */
 export async function listSaved() {
   if (!has()) return [];
   try {
     const c = await open(), meta = readMeta(), out = [];
     for (const req of await c.keys()) {
       const m = meta[req.url];
-      if (!m || m.kind !== 'video') continue;
+      if (!m || (m.kind !== 'video' && m.kind !== 'book')) continue;
       const hit = await c.match(req);
       out.push({ ...m, url: req.url, size: hit ? Number(hit.headers.get('Content-Length')) || 0 : 0 });
     }
@@ -71,8 +75,8 @@ const inflight = new Map();   // url -> Promise<Blob>
 
 /* Download a file, keep it for offline use, and resolve with the Blob.
    onProgress(percent 0-100 | -1 when the size is unknown). */
-export function saveFile(url, onProgress) {
-  const k = abs(url);
+export function saveFile(url, onProgress, opts) {
+  const k = abs(url), persist = !(opts && opts.persist === false);
   if (inflight.has(k)) return inflight.get(k);
   const job = (async () => {
     let r;
@@ -95,7 +99,7 @@ export function saveFile(url, onProgress) {
       }
       blob = new Blob(parts, { type });
     } else blob = await r.blob();
-    if (has()) {
+    if (has() && persist) {
       try {
         await (await open()).put(k, new Response(blob, { headers: { 'Content-Type': type, 'Content-Length': String(blob.size) } }));
         if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
@@ -117,10 +121,12 @@ export async function removeFile(url) {
   if (m[abs(url)]) { delete m[abs(url)]; writeMeta(m); }
 }
 
-export async function removeAllVideos() {
+export async function removeAllDownloads() {
   const items = await listSaved();
   for (const x of items) await removeFile(x.url);
   return items.length;
 }
 
 export const sizeLabel = n => (n >= 1048576 ? (n / 1048576).toFixed(n >= 10485760 ? 0 : 1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB');
+
+export const removeAllVideos = removeAllDownloads;

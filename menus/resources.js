@@ -38,7 +38,7 @@ import { progressScreen } from './progress-page.js';
 import { pushAppState } from './progress-rings.js';
 import { collection, getDocs } from './runtime-ext.js';
 import { mountPlayer, parseVideo } from './resources-player.js';
-import { isDownloadableMedia, isSaved, saveFile, removeFile, setMeta, videoMeta, listSaved, removeAllVideos, sizeLabel } from './offline-files.js';
+import { isDownloadableMedia, isSaved, saveFile, removeFile, setMeta, videoMeta, bookMeta, listSaved, removeAllDownloads, sizeLabel } from './offline-files.js';
 import { loadQuizzesOf, lockMessage } from './resources-quiz.js';
 import { mountReader } from './resources-reader.js';
 import { esc, driveId, fileExt, norm, plural, safeUrl, thumbSrc, videoThumb } from './resources-util.js';
@@ -496,6 +496,7 @@ function bookCard(b, i) {
       <div class="res-book-gen"><i class="fa-solid fa-book-medical"></i><span>${esc(b.title || '')}</span></div>
       <span class="res-type">${bookTypeLabel(b)}</span>
       ${isNew(b) ? '<span class="res-new">NEW</span>' : ''}
+      ${bookDlButton(b)}
     </div>
     <div class="res-book-body">
       <div class="res-book-title">${esc(b.title || 'Untitled')}</div>
@@ -784,8 +785,48 @@ function setDl(el, state, pct) {
   el.title = label; el.setAttribute('aria-label', label);
 }
 
+/* ---- books: same idea, kept inside the app (Cache Storage), never written to the phone's files ---- */
+const canSaveBook = b => !!safeUrl(b.fileUrl) && isDownloadableMedia(b.fileUrl);
+function bookDlButton(b) {
+  if (!safeUrl(b.fileUrl)) return '';
+  const ok = canSaveBook(b);
+  return `<span class="res-vid-dl${ok ? '' : ' off'}" role="button" tabindex="0" data-bdl="${esc(b.id)}" aria-label="${ok ? 'Download in the app' : 'Online only'}" title="${ok ? 'Download in the app' : 'Online only'}"><i class="fa-solid fa-download"></i><b></b></span>`;
+}
+const bookBusy = new Set();
+async function handleBookDownload(el) {
+  const b = BOOKS.find(x => x.id === el.dataset.bdl);
+  if (!b) return;
+  if (el.classList.contains('off') || !canSaveBook(b)) {
+    triggerLockResponse(el, 'This book is hosted on another site, so it can only be read online.');
+    return;
+  }
+  if (bookBusy.has(b.id)) return;
+  const all = () => [...document.querySelectorAll(`.res-vid-dl[data-bdl="${CSS.escape(b.id)}"]`)];
+  if (await isSaved(b.fileUrl)) { await removeFile(b.fileUrl); all().forEach(n => setDl(n, 'idle')); return; }
+  bookBusy.add(b.id);
+  all().forEach(n => setDl(n, 'busy', 0));
+  try {
+    await saveFile(b.fileUrl, p => all().forEach(n => setDl(n, 'busy', p)));
+    if (await isSaved(b.fileUrl)) setMeta(b.fileUrl, bookMeta(b, b.thumbUrl));
+    else triggerLockResponse(el, 'Not enough storage space to save this book.');
+  } catch (err) {
+    triggerLockResponse(el, (err && err.message) || 'Could not download this book.');
+  } finally {
+    bookBusy.delete(b.id);
+    const saved = await isSaved(b.fileUrl);
+    all().forEach(n => setDl(n, saved ? 'saved' : 'idle'));
+  }
+}
+
 async function paintDownloads(root) {
   if (!root) return;
+  const bels = [...root.querySelectorAll('.res-vid-dl[data-bdl]:not(.off)')];
+  bels.forEach(async el => {
+    const b = BOOKS.find(x => x.id === el.dataset.bdl);
+    if (!b) return;
+    const saved = await isSaved(b.fileUrl);
+    if (el.isConnected && !bookBusy.has(b.id)) setDl(el, saved ? 'saved' : 'idle');
+  });
   const els = [...root.querySelectorAll('.res-vid-dl[data-dl]:not(.off)')];
   await Promise.all(els.map(async el => {
     const v = VIDEOS.find(x => x.id === el.dataset.dl);
@@ -835,10 +876,16 @@ async function renderOffline() {
     if (known.has(v.id) || info.kind !== 'file' || !(await isSaved(info.src))) continue;
     setMeta(info.src, videoMeta(v, videoThumb(v)));
   }
-  const list = VIDEOS.length ? await listSaved() : items;
+  // books opened before explicit downloads existed are already stored: list them too
+  for (const b of BOOKS) {
+    if (known.has(b.id) || !canSaveBook(b) || !(await isSaved(b.fileUrl))) continue;
+    setMeta(b.fileUrl, bookMeta(b, b.thumbUrl));
+  }
+  const all = (VIDEOS.length || BOOKS.length) ? await listSaved() : items;
+  const list = all.filter(x => x.kind !== 'book'), bookList = all.filter(x => x.kind === 'book');
   if (token !== offlineToken || !isOpen() || nav.view !== 'root' || nav.tab !== 'offline') return;
-  offlineItems = list;
-  const total = list.reduce((n, x) => n + (x.size || 0), 0);
+  offlineItems = all;
+  const total = all.reduce((n, x) => n + (x.size || 0), 0);
   const online = navigator.onLine !== false;
   const card = (x, i) => {
     const t = x.thumb ? thumbSrc(x.thumb) : '';
@@ -858,16 +905,41 @@ async function renderOffline() {
       </div>
     </div>`;
   };
+  const bcard = (x, i) => {
+    const t = x.thumb ? thumbSrc(x.thumb) : '';
+    const when = x.savedAt ? new Date(x.savedAt).toLocaleDateString() : '';
+    return `<div class="res-book res-off-card" role="button" tabindex="0" data-offbook="${esc(x.url)}" style="--accent:${x.subjectId ? subjectColorFor(x.subjectId) : accentFor(x.moduleId)};--i:${Math.min(i, 14)}">
+      <div class="res-book-cover">
+        ${t ? `<img src="${esc(t)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
+        <div class="res-book-gen"><i class="fa-solid fa-book-medical"></i><span>${esc(x.title || '')}</span></div>
+        <span class="res-vid-dl del" role="button" tabindex="0" data-offdel="${esc(x.url)}" aria-label="Delete download" title="Delete download"><i class="fa-solid fa-trash"></i></span>
+      </div>
+      <div class="res-book-body">
+        <div class="res-book-title">${esc(x.title || 'Book')}</div>
+        ${x.author ? `<div class="res-book-author">${esc(x.author)}</div>` : ''}
+        <span class="res-tag"><span class="dot"></span>${[x.size ? sizeLabel(x.size) : '', when].filter(Boolean).join(' · ') || 'Saved'}</span>
+      </div>
+    </div>`;
+  };
   markSeen();
+  const counts = [bookList.length ? plural(bookList.length, 'book') : '', list.length ? plural(list.length, 'video') : ''].filter(Boolean).join(' · ') || '0 downloads';
   elMain.innerHTML = `
     <div class="res-offl-head">
-      <div><b>${plural(list.length, 'video')}</b>${total ? ' · ' + sizeLabel(total) : ''}${online ? '' : ' · offline'}</div>
-      ${list.length ? '<button type="button" class="res-offl-clear" data-offl-clear>Delete all</button>' : ''}
+      <div><b>${counts}</b>${total ? ' · ' + sizeLabel(total) : ''}${online ? '' : ' · offline'}</div>
+      ${all.length ? '<button type="button" class="res-offl-clear" data-offl-clear>Delete all</button>' : ''}
     </div>
-    ${list.length
-      ? `<div class="res-grid res-grid-video">${list.map(card).join('')}</div>`
-      : emptyHtml('fa-solid fa-download', 'No downloads yet', 'Tap the download icon on any video to keep it here and watch without internet.')}
-    <p class="res-offl-foot">Only ALIF-hosted and direct video files can be saved. Videos from YouTube, Vimeo or Google Drive can only be watched online.</p>`;
+    ${all.length ? `
+      ${bookList.length ? `<div class="res-offl-sec">Books</div><div class="res-grid">${bookList.map(bcard).join('')}</div>` : ''}
+      ${list.length ? `<div class="res-offl-sec">Videos</div><div class="res-grid res-grid-video">${list.map(card).join('')}</div>` : ''}`
+      : emptyHtml('fa-solid fa-download', 'No downloads yet', 'Tap the download icon on a book or video to keep it inside the app and use it without internet.')}
+    <p class="res-offl-foot">Downloads stay inside the app and are not saved to your phone’s files. Only ALIF-hosted files and direct files can be saved. Videos from YouTube, Vimeo or Google Drive can only be watched online.</p>`;
+}
+
+function openSavedBook(url) {
+  const m = offlineItems.find(x => x.url === url);
+  if (!m) return;
+  const b = BOOKS.find(x => x.id === m.id) || { id: m.id, title: m.title, author: m.author, subjectId: m.subjectId, moduleId: m.moduleId, thumbUrl: m.thumb, fileUrl: m.src || m.url };
+  openReader(b);
 }
 
 function playSaved(url) {
@@ -886,7 +958,7 @@ function offlineClick(e) {
   if (del) { e.preventDefault(); e.stopPropagation(); removeFile(del.dataset.offdel).then(() => renderOffline()); return true; }
   const clr = e.target.closest('[data-offl-clear]');
   if (clr) {
-    if (Date.now() - clearArmed < 3500) { clearArmed = 0; removeAllVideos().then(() => renderOffline()); }
+    if (Date.now() - clearArmed < 3500) { clearArmed = 0; removeAllDownloads().then(() => renderOffline()); }
     else { clearArmed = Date.now(); clr.textContent = 'Tap again to confirm'; setTimeout(() => { if (clr.isConnected && Date.now() - clearArmed >= 3400) { clr.textContent = 'Delete all'; clearArmed = 0; } }, 3600); }
     return true;
   }
@@ -894,6 +966,10 @@ function offlineClick(e) {
   if (off) { playSaved(off.dataset.off); return true; }
   const dl = e.target.closest('.res-vid-dl[data-dl]');
   if (dl) { e.preventDefault(); e.stopPropagation(); handleDownload(dl); return true; }
+  const bdl = e.target.closest('.res-vid-dl[data-bdl]');
+  if (bdl) { e.preventDefault(); e.stopPropagation(); handleBookDownload(bdl); return true; }
+  const ob = e.target.closest('[data-offbook]');
+  if (ob) { openSavedBook(ob.dataset.offbook); return true; }
   return false;
 }
 elMain.addEventListener('keydown', e => {
