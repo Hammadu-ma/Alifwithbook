@@ -422,7 +422,11 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
     if (um) { bmarks.delete(+um.dataset.unmark); setJSON(KEY_BM, [...bmarks]); setCur(cur, { silent: true }); renderDrawer(); return; }
     if (e.target.closest('[data-stage]')) {                                   // tap on the page
       const sc = window.getSelection && window.getSelection();
-      if (sc && !sc.isCollapsed && stage.contains(sc.anchorNode)) { sc.removeAllRanges(); sel.classList.add('hidden'); return; }
+      if (sc && !sc.isCollapsed && stage.contains(sc.anchorNode)) {
+        // finishing a drag / double-click selection also fires a click — keep that selection; only a plain tap clears it
+        if (e.detail >= 2 || Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 4) return;
+        sc.removeAllRanges(); sel.classList.add('hidden'); return;
+      }
       const pgEl = e.target.closest('.rd-pg');
       if (pgEl && hls.length) {                                               // tap on a highlight → its note
         const r = pgEl.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height, pn = +pgEl.dataset.n;
@@ -459,6 +463,8 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
     if (Date.now() - st < 600 && Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.6) { dx < 0 ? next() : prev(); }
   }, { passive: true });
 
+  const downAt = { x: -99, y: -99 };
+  on(stage, 'pointerdown', e => { downAt.x = e.clientX; downAt.y = e.clientY; }, { passive: true });
   /* ----- highlights: paint, select, note ----- */
   function paintHl(pg, p) {
     if (!pg || !p) return;
