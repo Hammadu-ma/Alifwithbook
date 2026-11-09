@@ -206,13 +206,20 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
   const scrollW = () => Math.max(150, Math.min(stageW() - (compact ? 14 : 28), compact ? 1400 : 980) * zoom);
   const fitScale = () => Math.min((stageW() - 24) / bw, (stageH() - 24) / bh);
 
-  function layout(keep = cur) {
+  function layout(keep = cur, smooth = false) {
     epoch++;
     const my = epoch;
     if (io1) io1.disconnect(); if (io2) io2.disconnect();
     vis.clear(); cache.clear();
-    stage.innerHTML = '';
-    stage.scrollTo(0, 0);
+    /* smooth zoom: keep what is on screen (stretched, slightly soft) until the sharp pages are ready — no white flash */
+    const olds = new Map();
+    let keepHolder = null;
+    if (smooth) {
+      stage.querySelectorAll('.rd-pg').forEach(pg => { const cv = pg.querySelector('canvas'), k = +pg.dataset.n; if (cv && k) olds.set(k, cv); });
+      if (mode === 'page') keepHolder = stage.querySelector('.rd-single');
+    }
+    if (keepHolder) keepHolder.classList.add('keep');
+    else { stage.innerHTML = ''; stage.scrollTo(0, 0); }
     applyModeUi();
     if (mode === 'scroll') {
       const wrap = document.createElement('div');
@@ -221,18 +228,20 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
         const d = document.createElement('div');
         d.className = 'rd-pg'; d.dataset.n = i; d.style.aspectRatio = `1 / ${ratio}`;
         d.innerHTML = `<span class="rd-pg-n">${i}</span>`;
+        const oc = olds.get(i);
+        if (oc) { oc.classList.add('stale'); d.appendChild(oc); d.classList.add('done'); }
         wrap.appendChild(d);
       }
       stage.appendChild(wrap);
       const draw = async d => {
-        if (d.dataset.busy || d.querySelector('canvas')) return;
+        if (d.dataset.busy || d.querySelector('canvas:not(.stale)')) return;
         d.dataset.busy = '1';
         try {
           const r = await renderCanvas(+d.dataset.n, d.clientWidth);
-          if (!dead && my === epoch) { d.appendChild(r.canvas); if (r.text) d.appendChild(r.text); paintHl(d, +d.dataset.n); d.style.aspectRatio = `${r.canvas.width} / ${r.canvas.height}`; d.classList.add('done'); }
+          if (!dead && my === epoch) { const had = d.querySelector('canvas.stale'); if (had) { r.canvas.style.animation = 'none'; } d.appendChild(r.canvas); if (had) had.remove(); if (r.text) d.appendChild(r.text); paintHl(d, +d.dataset.n); d.style.aspectRatio = `${r.canvas.width} / ${r.canvas.height}`; d.classList.add('done'); }
         } catch (_) {} finally { delete d.dataset.busy; }
       };
-      io1 = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) draw(e.target); }), { root: stage, rootMargin: '1100px 0px' });
+      io1 = new IntersectionObserver(es => { const mid = stage.getBoundingClientRect().top + stage.clientHeight / 2; es.filter(e => e.isIntersecting).sort((a, c) => Math.abs(a.boundingClientRect.top + a.boundingClientRect.height / 2 - mid) - Math.abs(c.boundingClientRect.top + c.boundingClientRect.height / 2 - mid)).forEach(e => draw(e.target)); }, { root: stage, rootMargin: '1100px 0px' });
       io2 = new IntersectionObserver(es => {
         es.forEach(e => vis.set(+e.target.dataset.n, e.isIntersecting ? e.intersectionRatio : 0));
         let best = cur, br = -1;
@@ -285,6 +294,7 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
     pg.appendChild(item.canvas);
     if (item.text) pg.appendChild(item.text);
     paintHl(pg, p);
+    holder.classList.remove('keep');
     holder.replaceChildren(pg);
     stage.scrollTo(0, 0);
     [p + 1, p - 1].forEach(q => {      // warm the neighbours so flipping is instant
@@ -299,10 +309,10 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
     if (focus && nz === zoom) return;
     let fx = 0, fy = 0;
     if (focus) { fx = (focus.x + stage.scrollLeft) / (stage.scrollWidth || 1); fy = (focus.y + stage.scrollTop) / (stage.scrollHeight || 1); }
-    zoom = nz; persist(); layout(cur);
+    zoom = nz; persist(); layout(cur, true);
     if (focus) {   // keep the point between the fingers where it was
       const put = () => { stage.scrollLeft = fx * stage.scrollWidth - focus.x; stage.scrollTop = fy * stage.scrollHeight - focus.y; };
-      requestAnimationFrame(put); setTimeout(put, 120); setTimeout(put, 380);
+      put(); requestAnimationFrame(put); setTimeout(put, 120); setTimeout(put, 380);
     }
   }
 
