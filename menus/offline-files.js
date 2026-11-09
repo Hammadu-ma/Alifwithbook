@@ -154,29 +154,32 @@ export const sizeLabel = n => (n >= 1048576 ? (n / 1048576).toFixed(n >= 1048576
 
 export const removeAllVideos = removeAllDownloads;
 
-/* ---- quizzes for offline: kept in the normal content cache (not listed under Downloads) ---- */
+/* ---- quizzes for offline: kept in the normal content cache (not listed under Downloads) ----
+   Always saved ONE SUBJECT AT A TIME (hard cap per call) so a student can never trigger a mass read of the database. */
+export const QUIZ_BATCH_MAX = 40;
+const qKey = q => `atlas_questions_${q.subjectId}_${q.id}`;
+export function quizSavedCount(quizzes) {
+  try { return quizzes.filter(q => localStorage.getItem(qKey(q))).length; } catch (_) { return 0; }
+}
 export async function cacheQuizzesOffline(quizzes, onProgress, { fresh } = {}) {
   if (!owner()) throw new Error('Sign in first.');
+  if (quizzes.length > QUIZ_BATCH_MAX) throw new Error('Download one subject at a time.');
+  const subs = new Set(quizzes.map(q => q.subjectId));
+  if (subs.size > 1) throw new Error('Download one subject at a time.');
   purgeOthers();
   const { loadQuestions } = await import('./onboarding-tour.js');
   let ok = 0, fail = 0, i = 0;
   for (const q of quizzes) {
     i++;
     try {
-      if (fresh) localStorage.removeItem(`atlas_questions_${q.subjectId}_${q.id}`);
-      await loadQuestions(q.subjectId, q.id);
-      ok++;
+      if (!fresh && localStorage.getItem(qKey(q))) { ok++; }
+      else { if (fresh) localStorage.removeItem(qKey(q)); await loadQuestions(q.subjectId, q.id); ok++; }
     } catch (_) { fail++; }
     if (onProgress) onProgress(i, quizzes.length);
+    await new Promise(r => setTimeout(r, 120));
   }
-  try { localStorage.setItem('alif_quiz_offline_' + owner(), JSON.stringify({ at: Date.now(), n: ok })); } catch (_) {}
   return { ok, fail };
 }
-export function quizOfflineInfo() {
-  try { return JSON.parse(localStorage.getItem('alif_quiz_offline_' + owner()) || 'null'); } catch (_) { return null; }
-}
-export function clearQuizOffline() {
-  try {
-    Object.keys(localStorage).forEach(k => { if (/^atlas_questions_/.test(k) || k === 'alif_quiz_offline_' + owner()) localStorage.removeItem(k); });
-  } catch (_) {}
+export function removeQuizzesOffline(quizzes) {
+  try { quizzes.forEach(q => localStorage.removeItem(qKey(q))); } catch (_) {}
 }
