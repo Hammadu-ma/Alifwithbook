@@ -12,6 +12,7 @@
    ======================================================================== */
 import { driveId, esc, fileExt, safeUrl } from './resources-util.js';
 import { isR2, savedBlobUrl, saveFile } from './offline-files.js';
+import { getStoredStudent } from './auth.js';
 
 const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174';
 export const SANDBOX = 'allow-scripts allow-same-origin allow-presentation allow-forms';   // no popups, no top navigation
@@ -57,6 +58,8 @@ const I = {
   scroll: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9.5 8h5M9.5 12h5M9.5 16h3"/></svg>',
   pages: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="8" height="14" rx="1.6"/><rect x="13" y="5" width="8" height="14" rx="1.6"/></svg>',
   prev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 5-7 7 7 7"/></svg>',
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>',
+  pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/></svg>',
   next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg>'
 };
 
@@ -118,7 +121,7 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
           <div class="rd-zoom"><button type="button" data-act="zout" aria-label="Zoom out">${I.minus}</button><b data-zv>100%</b><button type="button" data-act="zin" aria-label="Zoom in">${I.plus}</button><button type="button" data-act="zfit" class="fit">Fit</button></div></div>
       </div>
       <div class="rd-drawer hidden" data-drawer>
-        <div class="rd-drawer-top"><div class="rd-seg tabs" data-seg="dtab"><button type="button" data-v="toc">Contents</button><button type="button" data-v="bm">Bookmarks</button><button type="button" data-v="find">Search</button></div>
+        <div class="rd-drawer-top"><div class="rd-seg tabs" data-seg="dtab"><button type="button" data-v="toc">Contents</button><button type="button" data-v="bm">Bookmarks</button><button type="button" data-v="notes">Notes</button><button type="button" data-v="find">Search</button></div>
           <button type="button" class="rd-btn" data-act="dclose" aria-label="Close panel">${I.close}</button></div>
         <div class="rd-drawer-body" data-dbody></div>
       </div>
@@ -130,6 +133,12 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
   const lbl = $('[data-lbl]'), pct = $('[data-pct]'), pop = $('[data-pop]'), drawer = $('[data-drawer]'), dbody = $('[data-dbody]');
   const jin = $('[data-jumpin]'), chipBox = $('.rd-chip'), markBtn = $('[data-act=mark]');
   const offs = [];
+  /* ----- highlights & notes: kept on this device, per student and per book ----- */
+  const uid = (() => { try { const u = getStoredStudent(); return String((u && (u.id || u.docId)) || 'anon'); } catch (_) { return 'anon'; } })();
+  const KEY_HL = `alif_rd_hl_${uid}_${key}`;
+  let hls = getJSON(KEY_HL, []);
+  const saveHl = () => setJSON(KEY_HL, hls);
+  const HC = { y: '#facc15', g: '#4ade80', b: '#60a5fa', p: '#f472b6' };
   const on = (t, e, f, o) => { t.addEventListener(e, f, o); offs.push(() => t.removeEventListener(e, f, o)); };
 
   let dead = false, pdf = null, n = 0, cur = 1, mode = prefs.mode, theme = prefs.theme, zoom = prefs.zoom;
@@ -180,7 +189,19 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
     const c = document.createElement('canvas');
     c.width = Math.floor(v.width); c.height = Math.floor(v.height);
     await page.render({ canvasContext: c.getContext('2d'), viewport: v }).promise;
-    return { canvas: c, ratio: base.height / base.width };
+    let text = null;      // selectable text on top of the page (needed for highlighting)
+    try {
+      const lib = window.pdfjsLib;
+      if (lib && lib.renderTextLayer) {
+        const tv = page.getViewport({ scale: cssW / base.width });
+        text = document.createElement('div'); text.className = 'textLayer';
+        text.style.width = tv.width + 'px'; text.style.height = tv.height + 'px';
+        text.style.setProperty('--scale-factor', String(tv.scale));
+        const tc = await page.getTextContent();
+        await lib.renderTextLayer({ textContentSource: tc, textContent: tc, container: text, viewport: tv, textDivs: [] }).promise;
+      }
+    } catch (_) { text = null; }
+    return { canvas: c, text, ratio: base.height / base.width };
   }
   const scrollW = () => Math.max(150, Math.min(stageW() - (compact ? 14 : 28), compact ? 1400 : 980) * zoom);
   const fitScale = () => Math.min((stageW() - 24) / bw, (stageH() - 24) / bh);
@@ -208,7 +229,7 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
         d.dataset.busy = '1';
         try {
           const r = await renderCanvas(+d.dataset.n, d.clientWidth);
-          if (!dead && my === epoch) { d.appendChild(r.canvas); d.style.aspectRatio = `${r.canvas.width} / ${r.canvas.height}`; d.classList.add('done'); }
+          if (!dead && my === epoch) { d.appendChild(r.canvas); if (r.text) d.appendChild(r.text); paintHl(d, +d.dataset.n); d.style.aspectRatio = `${r.canvas.width} / ${r.canvas.height}`; d.classList.add('done'); }
         } catch (_) {} finally { delete d.dataset.busy; }
       };
       io1 = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) draw(e.target); }), { root: stage, rootMargin: '1100px 0px' });
@@ -260,7 +281,10 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
     pg.style.width = w + 'px';
     pg.style.aspectRatio = `${item.canvas.width} / ${item.canvas.height}`;
     item.canvas.style.width = '100%';
+    pg.dataset.n = p;
     pg.appendChild(item.canvas);
+    if (item.text) pg.appendChild(item.text);
+    paintHl(pg, p);
     holder.replaceChildren(pg);
     stage.scrollTo(0, 0);
     [p + 1, p - 1].forEach(q => {      // warm the neighbours so flipping is instant
@@ -303,6 +327,11 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
       dbody.innerHTML = list.length
         ? list.map(p => `<div class="rd-bm"><button type="button" data-goto="${p}"><i>${I.markOn}</i><span>Page ${p}</span></button><button type="button" class="rd-bm-x" data-unmark="${p}" aria-label="Remove bookmark">${I.close}</button></div>`).join('')
         : '<div class="rd-empty"><b>No bookmarks yet</b><p>Tap the bookmark icon to save a page.</p></div>';
+    } else if (dtab === 'notes') {
+      const list = [...hls].sort((a, c) => a.p - c.p || a.at - c.at);
+      dbody.innerHTML = list.length
+        ? `<div class="rd-nt-top"><span>${list.length} highlight${list.length === 1 ? '' : 's'}</span><button type="button" data-hcopy>Copy all</button></div>` + list.map(h => `<div class="rd-nt"><button type="button" class="rd-nt-b" data-hgo="${h.id}" style="--hc:${HC[h.c] || HC.y}"><b>Page ${h.p}</b><q>${esc(h.t)}</q>${h.note ? `<p>${esc(h.note)}</p>` : ''}</button><button type="button" class="rd-bm-x" data-hedit="${h.id}" aria-label="Edit">${I.pen}</button></div>`).join('')
+        : '<div class="rd-empty"><b>No highlights yet</b><p>Press and hold a word in the book, drag to select, then pick a colour or tap the note icon.</p></div>';
     } else {
       dbody.innerHTML = `<form class="rd-find" data-find><span>${I.search}</span><input type="search" placeholder="Search in this book…" data-q autocomplete="off" inputmode="search"><button type="submit" class="rd-go">Go</button></form><div data-results class="rd-results"></div>`;
       const q = dbody.querySelector('[data-q]'); if (lastQuery) q.value = lastQuery;
@@ -380,11 +409,26 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
       else if (kind === 'dtab') { dtab = v; renderDrawer(); }
       return;
     }
+    const hg = e.target.closest('[data-hgo]'); if (hg) { const h = hls.find(x => x.id === hg.dataset.hgo); if (h) { closeDrawer(); goTo(h.p); } return; }
+    const he = e.target.closest('[data-hedit]'); if (he) { openNote(he.dataset.hedit); return; }
+    if (e.target.closest('[data-hcopy]')) {
+      const txt = [...hls].sort((a, c) => a.p - c.p || a.at - c.at).map(h => `p. ${h.p}: “${h.t}”${h.note ? '\n  → ' + h.note : ''}`).join('\n\n');
+      try { navigator.clipboard.writeText((b.title || 'Book') + '\n\n' + txt).then(() => toast('Notes copied'), () => toast('Could not copy')); } catch (_) { toast('Could not copy'); }
+      return;
+    }
     const toc = e.target.closest('[data-toc]'); if (toc) { jumpToOutline(+toc.dataset.toc); return; }
     const g = e.target.closest('[data-goto]'); if (g) { closeDrawer(); goTo(+g.dataset.goto); return; }
     const um = e.target.closest('[data-unmark]');
     if (um) { bmarks.delete(+um.dataset.unmark); setJSON(KEY_BM, [...bmarks]); setCur(cur, { silent: true }); renderDrawer(); return; }
     if (e.target.closest('[data-stage]')) {                                   // tap on the page
+      const sc = window.getSelection && window.getSelection();
+      if (sc && !sc.isCollapsed && stage.contains(sc.anchorNode)) { sc.removeAllRanges(); sel.classList.add('hidden'); return; }
+      const pgEl = e.target.closest('.rd-pg');
+      if (pgEl && hls.length) {                                               // tap on a highlight → its note
+        const r = pgEl.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height, pn = +pgEl.dataset.n;
+        const hit = hls.find(h => h.p === pn && h.rects.some(q => fx >= q[0] && fx <= q[0] + q[2] && fy >= q[1] && fy <= q[1] + q[3]));
+        if (hit) { openNote(hit.id); return; }
+      }
       if (!pop.classList.contains('hidden')) { pop.classList.add('hidden'); return; }
       if (drawer.classList.contains('show')) { closeDrawer(); return; }
       if (mode === 'page') {
@@ -410,10 +454,106 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
   let sx = 0, sy = 0, st = 0, lastPinch = 0;
   on(stage, 'touchstart', e => { if (mode !== 'page' || e.touches.length !== 1) return; sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now(); }, { passive: true });
   on(stage, 'touchend', e => {
-    if (mode !== 'page' || !e.changedTouches.length || zoom > 1.05 || Date.now() - lastPinch < 500) return;
+    if (mode !== 'page' || !e.changedTouches.length || zoom > 1.05 || Date.now() - lastPinch < 500 || (window.getSelection && !window.getSelection().isCollapsed)) return;
     const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
     if (Date.now() - st < 600 && Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.6) { dx < 0 ? next() : prev(); }
   }, { passive: true });
+
+  /* ----- highlights: paint, select, note ----- */
+  function paintHl(pg, p) {
+    if (!pg || !p) return;
+    let L = pg.querySelector(':scope > .rd-hl');
+    if (!L) { L = document.createElement('div'); L.className = 'rd-hl'; pg.insertBefore(L, pg.querySelector(':scope > .textLayer')); }
+    L.innerHTML = hls.filter(h => h.p === p).map(h => h.rects.map(r => `<i style="left:${r[0] * 100}%;top:${r[1] * 100}%;width:${r[2] * 100}%;height:${r[3] * 100}%;background:${HC[h.c] || HC.y}"></i>`).join('') + (h.note && h.rects[0] ? `<em style="left:${(h.rects[0][0] + h.rects[0][2]) * 100}%;top:${h.rects[0][1] * 100}%"></em>` : '')).join('');
+  }
+  const repaintAll = () => stage.querySelectorAll('.rd-pg').forEach(pg => paintHl(pg, +pg.dataset.n));
+
+  const sel = document.createElement('div');
+  sel.className = 'rd-sel hidden';
+  sel.innerHTML = Object.keys(HC).map(k => `<button type="button" data-hc="${k}" style="--c:${HC[k]}" aria-label="Highlight"></button>`).join('') + `<span></span><button type="button" data-hnote aria-label="Add note">${I.pen}</button><button type="button" data-hcp aria-label="Copy">${I.copy}</button>`;
+  root.appendChild(sel);
+  ['pointerdown', 'mousedown', 'touchstart'].forEach(t => sel.addEventListener(t, e => e.preventDefault(), { passive: false }));
+
+  function curSel() {
+    const sc = window.getSelection && window.getSelection();
+    if (!sc || sc.isCollapsed || !sc.rangeCount) return null;
+    const r = sc.getRangeAt(0), a = r.startContainer.nodeType === 1 ? r.startContainer : r.startContainer.parentElement;
+    const pgEl = a && a.closest && a.closest('.rd-pg');
+    return pgEl && stage.contains(pgEl) ? { sc, r, pgEl } : null;
+  }
+  let selT = 0;
+  function updateSel() {
+    if (dead) return;
+    const c = curSel();
+    if (!c) { sel.classList.add('hidden'); return; }
+    const rr = c.r.getBoundingClientRect(), W = sel.offsetWidth || 250;
+    sel.style.left = Math.max(8, Math.min(innerWidth - W - 8, rr.left + rr.width / 2 - W / 2)) + 'px';
+    sel.style.top = Math.max(70, Math.min(innerHeight - 64, rr.bottom + 16)) + 'px';
+    sel.classList.remove('hidden');
+  }
+  on(document, 'selectionchange', () => { clearTimeout(selT); selT = setTimeout(updateSel, 220); });
+  on(stage, 'scroll', () => { if (!sel.classList.contains('hidden')) { sel.classList.add('hidden'); clearTimeout(selT); selT = setTimeout(updateSel, 260); } }, { passive: true });
+
+  function selRects(c) {
+    const pr = c.pgEl.getBoundingClientRect(), out = [];
+    [...c.r.getClientRects()].forEach(r => {
+      const x = Math.max(r.left, pr.left), y = Math.max(r.top, pr.top), x2 = Math.min(r.right, pr.right), y2 = Math.min(r.bottom, pr.bottom);
+      if (x2 - x > 1 && y2 - y > 1 && y2 - y < pr.height * 0.15) out.push([x, y, x2, y2]);
+    });
+    out.sort((a, c2) => a[1] - c2[1] || a[0] - c2[0]);
+    const m = [];
+    out.forEach(r => {
+      const hit = m.find(q => Math.min(q[3], r[3]) - Math.max(q[1], r[1]) > 0.55 * Math.min(q[3] - q[1], r[3] - r[1]) && r[0] <= q[2] + 4 && r[2] >= q[0] - 4);
+      if (hit) { hit[0] = Math.min(hit[0], r[0]); hit[1] = Math.min(hit[1], r[1]); hit[2] = Math.max(hit[2], r[2]); hit[3] = Math.max(hit[3], r[3]); } else m.push(r.slice());
+    });
+    return m.map(q => [(q[0] - pr.left) / pr.width, (q[1] - pr.top) / pr.height, (q[2] - q[0]) / pr.width, (q[3] - q[1]) / pr.height]);
+  }
+  function makeHl(color, withNote) {
+    const c = curSel(); if (!c) return;
+    const rects = selRects(c);
+    if (!rects.length) { toast('Select some text first'); return; }
+    const h = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), p: +c.pgEl.dataset.n || cur, rects, c: color, t: c.sc.toString().replace(/\s+/g, ' ').trim().slice(0, 600), note: '', at: Date.now() };
+    hls.push(h); saveHl();
+    c.sc.removeAllRanges(); sel.classList.add('hidden');
+    repaintAll();
+    if (withNote) openNote(h.id); else toast('Highlighted');
+  }
+  on(sel, 'click', e => {
+    const col = e.target.closest('[data-hc]');
+    if (col) { makeHl(col.dataset.hc, false); return; }
+    if (e.target.closest('[data-hnote]')) { makeHl('y', true); return; }
+    if (e.target.closest('[data-hcp]')) {
+      const c = curSel(), t = c ? c.sc.toString() : '';
+      try { navigator.clipboard.writeText(t).then(() => toast('Copied'), () => toast('Could not copy')); } catch (_) { toast('Could not copy'); }
+      if (c) c.sc.removeAllRanges(); sel.classList.add('hidden');
+    }
+  });
+
+  function openNote(id) {
+    const h = hls.find(x => x.id === id); if (!h) return;
+    root.querySelector('.rd-ns')?.remove();
+    const w = document.createElement('div');
+    w.className = 'rd-ns';
+    w.innerHTML = `<div class="rd-ns-card" role="dialog" aria-label="Note"><div class="rd-ns-h"><b>Page ${h.p}</b><div class="rd-ns-col">${Object.keys(HC).map(k => `<button type="button" data-c="${k}" class="${h.c === k ? 'on' : ''}" style="--c:${HC[k]}" aria-label="Colour"></button>`).join('')}</div></div>
+      <q>${esc(h.t)}</q><textarea placeholder="Write a note…" maxlength="1000" rows="4"></textarea>
+      <div class="rd-ns-act"><button type="button" data-a="del" class="del">Delete</button><span></span><button type="button" data-a="x">Cancel</button><button type="button" data-a="ok" class="go">Save</button></div></div>`;
+    root.appendChild(w);
+    const ta = w.querySelector('textarea'); ta.value = h.note || '';
+    let col = h.c;
+    const close = () => { w.classList.add('out'); setTimeout(() => w.remove(), 180); };
+    w.addEventListener('click', e => {
+      if (e.target === w) { close(); return; }
+      const c = e.target.closest('[data-c]');
+      if (c) { col = c.dataset.c; w.querySelectorAll('[data-c]').forEach(x => x.classList.toggle('on', x === c)); return; }
+      const a = e.target.closest('[data-a]'); if (!a) return;
+      if (a.dataset.a === 'x') { close(); return; }
+      if (a.dataset.a === 'del') { hls = hls.filter(x => x.id !== id); saveHl(); repaintAll(); if (!drawer.classList.contains('hidden') && dtab === 'notes') renderDrawer(); close(); toast('Removed'); return; }
+      h.note = ta.value.trim(); h.c = col; saveHl(); repaintAll();
+      if (!drawer.classList.contains('hidden') && dtab === 'notes') renderDrawer();
+      close(); toast(h.note ? 'Note saved' : 'Highlight saved');
+    });
+    setTimeout(() => { try { ta.focus(); } catch (_) {} }, 120);
+  }
 
   /* pinch to zoom the document (the app itself never zooms) */
   let pz = null;
