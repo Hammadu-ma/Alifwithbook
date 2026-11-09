@@ -505,7 +505,7 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
   function updateSel() {
     if (dead) return;
     const c = curSel();
-    if (!c) { sel.classList.add('hidden'); return; }
+    if (!c) { sel.classList.add('hidden'); stage.classList.remove('selecting'); return; }
     const rr = c.r.getBoundingClientRect(), W = sel.offsetWidth || 250;
     sel.style.left = Math.max(8, Math.min(innerWidth - W - 8, rr.left + rr.width / 2 - W / 2)) + 'px';
     sel.style.top = Math.max(70, Math.min(innerHeight - 64, rr.bottom + 16)) + 'px';
@@ -513,6 +513,52 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
   }
   on(document, 'selectionchange', () => { clearTimeout(selT); selT = setTimeout(updateSel, 220); });
   on(stage, 'scroll', () => { if (!sel.classList.contains('hidden')) { sel.classList.add('hidden'); clearTimeout(selT); selT = setTimeout(updateSel, 260); } }, { passive: true });
+
+  /* Phones: do our own press-and-hold selection so the system bar (Copy / Share / Web search) never appears.
+     Press and hold a word, drag to extend; the colour bar above is the only menu. */
+  if (window.matchMedia && matchMedia('(pointer: coarse)').matches) {
+    let lp = null, timer = 0, active = false, an = null;
+    const caret = (x, y) => {
+      let r = document.caretRangeFromPoint ? document.caretRangeFromPoint(x, y) : null;
+      if (!r && document.caretPositionFromPoint) { const c = document.caretPositionFromPoint(x, y); if (c) { r = document.createRange(); r.setStart(c.offsetNode, c.offset); r.collapse(true); } }
+      return r;
+    };
+    const wordAt = r => {
+      const node = r && r.startContainer; if (!node || node.nodeType !== 3) return null;
+      const t = node.data; let a = Math.min(r.startOffset, t.length), b = a;
+      while (a > 0 && /\S/.test(t[a - 1])) a--;
+      while (b < t.length && /\S/.test(t[b])) b++;
+      return a === b ? null : { node, a, b };
+    };
+    const begin = () => {
+      timer = 0; if (!lp) return;
+      const w = wordAt(caret(lp.x, lp.y)); if (!w) return;
+      an = w; active = true; stage.classList.add('selecting');
+      const sc = window.getSelection(); sc.removeAllRanges(); sc.setBaseAndExtent(w.node, w.a, w.node, w.b);
+      try { navigator.vibrate && navigator.vibrate(12); } catch (_) {}
+    };
+    on(stage, 'touchstart', e => {
+      clearTimeout(timer); active = false;
+      if (e.touches.length !== 1 || !e.target.closest || !e.target.closest('.textLayer')) { lp = null; return; }
+      lp = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      timer = setTimeout(begin, 380);
+    }, { passive: true });
+    on(stage, 'touchmove', e => {
+      if (!lp) return;
+      const t = e.touches[0];
+      if (!active) { if (Math.hypot(t.clientX - lp.x, t.clientY - lp.y) > 9) { clearTimeout(timer); lp = null; } return; }
+      e.preventDefault();                                   // dragging extends the selection instead of scrolling
+      const r = caret(t.clientX, t.clientY); if (!r) return;
+      const probe = document.createRange(); probe.setStart(an.node, an.a); probe.collapse(true);
+      const after = probe.comparePoint(r.startContainer, r.startOffset) >= 0;
+      const sc = window.getSelection();
+      try { if (after) sc.setBaseAndExtent(an.node, an.a, r.startContainer, r.startOffset); else sc.setBaseAndExtent(an.node, an.b, r.startContainer, r.startOffset); } catch (_) {}
+    }, { passive: false });
+    const endTouch = e => { clearTimeout(timer); if (active) { active = false; lp = null; if (e.cancelable) e.preventDefault(); clearTimeout(selT); selT = setTimeout(updateSel, 60); } else lp = null; };
+    on(stage, 'touchend', endTouch, { passive: false });
+    on(stage, 'touchcancel', endTouch, { passive: true });
+    on(stage, 'contextmenu', e => e.preventDefault());
+  }
 
   function selRects(c) {
     const pr = c.pgEl.getBoundingClientRect(), out = [];
