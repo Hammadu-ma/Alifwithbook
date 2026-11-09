@@ -491,7 +491,8 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
   sel.className = 'rd-sel hidden';
   sel.innerHTML = Object.keys(HC).map(k => `<button type="button" data-hc="${k}" style="--c:${HC[k]}" aria-label="Highlight"></button>`).join('') + `<span></span><button type="button" data-hnote aria-label="Add note">${I.pen}</button><button type="button" data-hcp aria-label="Copy">${I.copy}</button>`;
   root.appendChild(sel);
-  ['pointerdown', 'mousedown', 'touchstart'].forEach(t => sel.addEventListener(t, e => e.preventDefault(), { passive: false }));
+  ['pointerdown', 'mousedown'].forEach(t => sel.addEventListener(t, e => e.preventDefault(), { passive: false }));   // keep the text selected
+  let selTouchAt = 0;
 
   function curSel() {
     const sc = window.getSelection && window.getSelection();
@@ -537,7 +538,7 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
     repaintAll();
     if (withNote) openNote(h.id); else toast('Highlighted');
   }
-  on(sel, 'click', e => {
+  const selAct = e => {
     const col = e.target.closest('[data-hc]');
     if (col) { makeHl(col.dataset.hc, false); return; }
     if (e.target.closest('[data-hnote]')) { makeHl('y', true); return; }
@@ -546,7 +547,10 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
       try { navigator.clipboard.writeText(t).then(() => toast('Copied'), () => toast('Could not copy')); } catch (_) { toast('Could not copy'); }
       if (c) c.sc.removeAllRanges(); sel.classList.add('hidden');
     }
-  });
+  };
+  // phones: act on touchend (a preventDefault on touchstart would swallow the tap); mouse/touchpad: act on click
+  sel.addEventListener('touchend', e => { e.preventDefault(); selTouchAt = Date.now(); selAct(e); }, { passive: false });
+  on(sel, 'click', e => { if (Date.now() - selTouchAt < 600) return; selAct(e); });
 
   function openNote(id) {
     const h = hls.find(x => x.id === id); if (!h) return;
