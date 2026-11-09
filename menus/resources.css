@@ -1023,3 +1023,5 @@ body.dark .res-offl.on{color:#34d399}
 .rd-seg.tabs button { padding-left: 8px; padding-right: 8px; }
 .rd-pg canvas.stale { animation: none; }
 .rd-single.keep.busy { opacity: 1; }
+.rd-stage.fit { overflow: hidden; overscroll-behavior: none; }
+.rd-stage.fit .rd-single { height: 100%; min-height: 0; }

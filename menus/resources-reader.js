@@ -164,6 +164,7 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
   function applyModeUi() {
     host.querySelectorAll('[data-seg=mode] button').forEach(x => x.classList.toggle('on', x.dataset.v === mode));
     root.dataset.mode = mode;
+    stage.classList.toggle('fit', mode === 'page' && zoom <= 1.02);   // fitted single page: nothing to pan, so no wobble
     host.querySelectorAll('.rd-edge').forEach(e => e.classList.toggle('hidden', mode !== 'page'));
     $('[data-zv]').textContent = Math.round(zoom * 100) + '%';
   }
@@ -204,7 +205,9 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
     return { canvas: c, text, ratio: base.height / base.width };
   }
   const scrollW = () => Math.max(150, Math.min(stageW() - (compact ? 14 : 28), compact ? 1400 : 980) * zoom);
-  const fitScale = () => Math.min((stageW() - 24) / bw, (stageH() - 24) / bh);
+  /* the page must fit the stage's CONTENT box (inside its padding), otherwise it overflows a little and wobbles when touched */
+  const boxSize = () => { const cs = getComputedStyle(stage); return { w: stage.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0), h: stage.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0) }; };
+  const fitScale = () => { const b = boxSize(); return Math.max(0.05, Math.min((b.w - 4) / bw, (b.h - 4) / bh)); };
 
   function layout(keep = cur, smooth = false) {
     epoch++;
@@ -622,7 +625,7 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
   let rzT = 0, lastW = 0, lastH = 0;
   const ro = new ResizeObserver(() => {
     const w = stage.clientWidth, h = stage.clientHeight;
-    const changed = Math.abs(w - lastW) >= 8 || (mode === 'page' && Math.abs(h - lastH) >= 8);
+    const changed = Math.abs(w - lastW) >= 8 || (mode === 'page' && Math.abs(h - lastH) >= 120);   // small height changes = the phone's address bar sliding, not a real resize
     lastW = w; lastH = h;
     if (!n || !changed) return;
     clearTimeout(rzT); rzT = setTimeout(() => !dead && layout(cur), 180);
