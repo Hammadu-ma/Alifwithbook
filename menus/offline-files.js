@@ -161,6 +161,23 @@ const qKey = q => `atlas_questions_${q.subjectId}_${q.id}`;
 export function quizSavedCount(quizzes) {
   try { return quizzes.filter(q => localStorage.getItem(qKey(q))).length; } catch (_) { return 0; }
 }
+const STALE_MS = 14 * 24 * 3600 * 1000;
+/* status of a subject's saved quizzes: { saved, total, stale, at } — stale = a saved copy has a different number of
+   questions than the quiz now lists, or is older than two weeks. */
+export function quizSavedInfo(quizzes) {
+  let saved = 0, stale = 0, at = 0;
+  quizzes.forEach(q => {
+    try {
+      const r = JSON.parse(localStorage.getItem(qKey(q)) || 'null');
+      if (!r || !Array.isArray(r.data) || !r.data.length) return;
+      saved++;
+      const want = Number(q.questionCount ?? q.totalQuestions ?? q.count ?? q.numQuestions);
+      if ((want > 0 && want !== r.data.length) || (r.ts && Date.now() - r.ts > STALE_MS)) stale++;
+      if (r.ts && (!at || r.ts < at)) at = r.ts;
+    } catch (_) {}
+  });
+  return { saved, total: quizzes.length, stale, at };
+}
 export async function cacheQuizzesOffline(quizzes, onProgress, { fresh } = {}) {
   if (!owner()) throw new Error('Sign in first.');
   if (quizzes.length > QUIZ_BATCH_MAX) throw new Error('Download one subject at a time.');

@@ -7,7 +7,7 @@ import { isItemLockedForUser, isResourceLocked } from './lock.js';
 import { escapeHtml as esc } from './loaders.js';
 import { showToast, showConfirm } from './ui-feedback.js';
 import { pushModalState, popModalState } from './modal-backbutton.js';
-import { cacheQuizzesOffline, quizSavedCount, removeQuizzesOffline } from './offline-files.js';
+import { cacheQuizzesOffline, quizSavedInfo, removeQuizzesOffline } from './offline-files.js';
 
 const CSS = `
 #offQz{position:fixed;inset:0;z-index:910;background:var(--paper);color:var(--ink);overflow-y:auto;overscroll-behavior:contain;opacity:0;transform:translateY(18px);transition:opacity .28s,transform .32s}
@@ -36,6 +36,17 @@ const CSS = `
 #offQz .oq-btn{padding:8px 14px;border-radius:10px;border:1px solid var(--rule,rgba(128,128,128,.3));background:transparent;color:inherit;font:600 13px inherit;cursor:pointer}
 #offQz .oq-btn.pri{background:#16a34a;border-color:#16a34a;color:#fff}
 #offQz .oq-btn:disabled{opacity:.5;cursor:default}
+#offQz .oq-tag{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;margin-bottom:4px}
+#offQz .oq-tag.none{background:rgba(128,128,128,.16);color:inherit;opacity:.8}
+#offQz .oq-tag.part{background:rgba(217,119,6,.16);color:#b45309}
+#offQz .oq-tag.ok{background:rgba(22,163,74,.16);color:#15803d}
+#offQz .oq-tag.upd{background:rgba(37,99,235,.16);color:#1d4ed8}
+body.dark #offQz .oq-tag.part{color:#fbbf24}body.dark #offQz .oq-tag.ok{color:#4ade80}body.dark #offQz .oq-tag.upd{color:#93c5fd}
+#offQz .oq-sub[data-st="ok"]{box-shadow:inset 3px 0 0 #16a34a}
+#offQz .oq-sub[data-st="upd"]{box-shadow:inset 3px 0 0 #2563eb}
+#offQz .oq-sub[data-st="part"]{box-shadow:inset 3px 0 0 #d97706}
+#offQz .oq-legend{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+#offQz .oq-btn.upd{background:#2563eb;border-color:#2563eb;color:#fff}
 #offQz .oq-empty{text-align:center;opacity:.65;padding:40px 10px;font-size:14px}
 `;
 let el = null, busy = false;
@@ -64,16 +75,21 @@ function render() {
   const body = el.querySelector('.oq-main');
   const open = new Set([...body.querySelectorAll('.oq-mod.open')].map(x => x.dataset.m));
   if (!gs.length) { body.innerHTML = '<div class="oq-empty">No quizzes available yet.<br>Open the Exams tab once while online, then come back here.</div>'; return; }
-  body.innerHTML = '<p class="oq-note">Pick a module, open a subject and save its quizzes on this device. Saved quizzes work without internet and belong to your account. Tap <b>Update</b> any time to get the latest version.</p>' +
+  body.innerHTML = '<div class="oq-legend"><span class="oq-tag none">Not downloaded</span><span class="oq-tag part">Partly saved</span><span class="oq-tag ok">Downloaded</span><span class="oq-tag upd">Update available</span></div><p class="oq-note">Pick a module, open a subject and save its quizzes on this device. Saved quizzes work without internet and belong to your account. Tap <b>Update</b> any time to get the latest version.</p>' +
     gs.map(g => {
-      const total = g.subs.reduce((n, x) => n + x.qs.length, 0), saved = g.subs.reduce((n, x) => n + quizSavedCount(x.qs), 0);
+      const infos = g.subs.map(x => quizSavedInfo(x.qs));
+      const done = infos.filter(i => i.saved >= i.total && !i.stale).length, upd = infos.filter(i => i.saved && i.stale).length;
       return `<div class="oq-mod${open.has(g.id) ? ' open' : ''}" data-m="${esc(g.id)}">
-        <button class="oq-mh" type="button"><b>${esc(g.name)}</b><small>${saved}/${total} saved</small><i class="fa-solid fa-chevron-down"></i></button>
-        <div class="oq-subs">${g.subs.map(({ sub, qs }) => {
-          const n = quizSavedCount(qs), all = n >= qs.length;
-          return `<div class="oq-sub" data-s="${esc(sub.id)}">
-            <div class="oq-st"><b>${esc(sub.name)}</b><span>${qs.length} ${qs.length === 1 ? 'quiz' : 'quizzes'} · ${n ? n + ' saved' : 'not saved'}</span><div class="oq-bar"><i></i></div></div>
-            <div class="oq-btns">${n ? '<button class="oq-btn" data-a="rm" type="button">Remove</button>' : ''}<button class="oq-btn pri" data-a="dl" type="button">${all ? 'Update' : n ? 'Finish' : 'Download'}</button></div></div>`;
+        <button class="oq-mh" type="button"><b>${esc(g.name)}</b><small>${done}/${g.subs.length} subjects ready${upd ? ' · ' + upd + ' to update' : ''}</small><i class="fa-solid fa-chevron-down"></i></button>
+        <div class="oq-subs">${g.subs.map(({ sub, qs }, k) => {
+          const f = infos[k];
+          const st = !f.saved ? 'none' : f.saved < f.total ? 'part' : f.stale ? 'upd' : 'ok';
+          const tag = { none: '<i class="fa-regular fa-circle"></i> Not downloaded', part: `<i class="fa-solid fa-circle-half-stroke"></i> Partly saved · ${f.saved} of ${f.total}`, ok: '<i class="fa-solid fa-circle-check"></i> Downloaded', upd: '<i class="fa-solid fa-arrows-rotate"></i> Update available' }[st];
+          const when = f.at ? ' · saved ' + new Date(f.at).toLocaleDateString() : '';
+          const lbl = { none: 'Download', part: 'Finish', ok: 'Update', upd: 'Update' }[st];
+          return `<div class="oq-sub" data-s="${esc(sub.id)}" data-st="${st}">
+            <div class="oq-st"><span class="oq-tag ${st}">${tag}</span><b>${esc(sub.name)}</b><span>${qs.length} ${qs.length === 1 ? 'quiz' : 'quizzes'}${when}</span><div class="oq-bar"><i></i></div></div>
+            <div class="oq-btns">${f.saved ? '<button class="oq-btn" data-a="rm" type="button">Remove</button>' : ''}<button class="oq-btn ${st === 'upd' ? 'upd' : 'pri'}" data-a="dl" data-l="${lbl}" type="button">${lbl}</button></div></div>`;
         }).join('')}</div></div>`;
     }).join('');
 }
@@ -113,7 +129,7 @@ export function openOfflineQuizzesPage() {
     el.querySelectorAll('.oq-btn').forEach(x => x.disabled = true);
     const bar = row.querySelector('.oq-bar'), fill = bar.firstElementChild; bar.style.display = 'block';
     try {
-      const r = await cacheQuizzesOffline(g.qs, (i, t) => { fill.style.width = Math.round(i / t * 100) + '%'; }, { fresh: b.textContent.trim() === 'Update' });
+      const r = await cacheQuizzesOffline(g.qs, (i, t) => { fill.style.width = Math.round(i / t * 100) + '%'; }, { fresh: b.dataset.l === 'Update' });
       showToast(r.fail ? `Saved ${r.ok}, ${r.fail} failed` : `${g.sub.name} saved for offline`, { icon: r.fail ? 'fa-solid fa-triangle-exclamation' : 'fa-solid fa-circle-check' });
     } catch (e) { showToast(e.message || 'Could not save', { icon: 'fa-solid fa-circle-exclamation' }); }
     busy = false;
