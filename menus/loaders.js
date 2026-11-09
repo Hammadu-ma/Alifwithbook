@@ -20,6 +20,7 @@ import{doc as vDoc,getDoc as vGet}from"./runtime-ext.js";
 const MEM=new Map();
 if(typeof window!=="undefined")window.addEventListener("storage",e=>{e.key?MEM.delete(e.key):MEM.clear()});
 
+export function dropCached(k){MEM.delete(k);try{t.remove(k)}catch(_){}}
 export const CATALOG_TTL=6*36e5;
 export const QUESTIONS_TTL=12*36e5;
 const CATALOG_TTL_LONG=3*24*36e5,QUESTIONS_TTL_LONG=7*24*36e5;

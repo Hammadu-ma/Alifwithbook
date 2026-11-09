@@ -5,6 +5,7 @@
    so a saved book / video opens with no network at all. A small list of video details (title, lecturer, …)
    is kept in localStorage so the Downloads page can show saved videos while offline. */
 import { getStoredStudent } from './auth.js';
+import { dropCached } from './loaders.js';
 /* Everything saved here belongs to the signed-in account: the cache and the details list are named after the
    student, other accounts' copies (and the old shared copies) are deleted, and nothing works while signed out. */
 const BASE = 'alif-offline-files-v2', META_BASE = 'alif_offline_meta_v2', OWNER_KEY = 'alif_cache_owner_v1';
@@ -190,7 +191,7 @@ export async function cacheQuizzesOffline(quizzes, onProgress, { fresh } = {}) {
     i++;
     try {
       if (!fresh && localStorage.getItem(qKey(q))) { ok++; }
-      else { if (fresh) localStorage.removeItem(qKey(q)); await loadQuestions(q.subjectId, q.id); ok++; }
+      else { if (fresh) dropCached(qKey(q)); await loadQuestions(q.subjectId, q.id); ok++; }
     } catch (_) { fail++; }
     if (onProgress) onProgress(i, quizzes.length);
     await new Promise(r => setTimeout(r, 120));
@@ -198,5 +199,5 @@ export async function cacheQuizzesOffline(quizzes, onProgress, { fresh } = {}) {
   return { ok, fail };
 }
 export function removeQuizzesOffline(quizzes) {
-  try { quizzes.forEach(q => localStorage.removeItem(qKey(q))); } catch (_) {}
+  try { quizzes.forEach(q => dropCached(qKey(q))); } catch (_) {}
 }
