@@ -417,6 +417,9 @@ function isExamActiveOnScreen() {
   return !!(root && isOpen && focusGuardArmed && EXAM_STATE && !EXAM_STATE.submitted && !$('examScreen').classList.contains('hidden'));
 }
 function fullscreenSupported() {
+  // Phones / tablets: the browser shows its own "to exit full screen, drag from the top…" banner, which cannot be styled or hidden.
+  // The exam already covers the whole viewport, and leaving the app is still caught by the visibility / blur / pagehide guards.
+  try { if (window.matchMedia('(pointer: coarse)').matches) return false; } catch (_) {}
   const el = document.documentElement;
   return !!(el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen);
 }
