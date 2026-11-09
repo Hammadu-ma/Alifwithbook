@@ -103,6 +103,15 @@ export async function openProfilePage({ doLogout } = {}) {
       <section class="pf-card">
         ${row('fa-solid fa-users', '#0070f3', 'Appear in Class Chat', 'Let classmates find and message you.', toggle('appearInChatToggle', appearInChat), 'appearInChatToggle')}
         ${row('fa-solid fa-bell', '#E8923B', 'Message notifications', 'Chat messages and admin announcements, in the app and as phone notifications.', toggle('chatNotifyToggle', notifyOn()), 'chatNotifyToggle')}
+        <div class="pf-row" id="offQuizRow" style="flex-wrap:wrap;gap:10px">
+          <span class="pf-ico" style="--tone:#16a34a"><i class="fa-solid fa-cloud-arrow-down"></i></span>
+          <span class="pf-row-text"><span class="pf-row-title">Quizzes offline</span>
+            <span class="pf-row-sub" id="offQuizSub">Save the quizzes you can open so they work without internet. Download again any time to get the latest.</span></span>
+          <span style="display:flex;gap:8px;width:100%;padding-left:52px">
+            <button type="button" class="btn-ghost" id="offQuizGo" style="padding:8px 14px;border-radius:10px">Save / update</button>
+            <button type="button" class="btn-ghost" id="offQuizClear" style="padding:8px 14px;border-radius:10px">Clear</button>
+          </span>
+        </div>
       </section>
 
       <h2 class="pf-section-title">Appearance</h2>
@@ -273,6 +282,38 @@ export async function openProfilePage({ doLogout } = {}) {
       showToast("Couldn't update — check your connection", { icon: 'fa-solid fa-triangle-exclamation' });
     } finally { appear.disabled = false; }
   });
+
+  (function offlineQuizzes() {
+    const sub = el.querySelector('#offQuizSub'), go = el.querySelector('#offQuizGo'), clr = el.querySelector('#offQuizClear');
+    if (!sub) return;
+    const base = sub.textContent;
+    const show = async () => {
+      const o = await import('./offline-files.js');
+      const i = o.quizOfflineInfo();
+      sub.textContent = i ? `${i.n} ${i.n === 1 ? 'quiz' : 'quizzes'} saved on this device · ${new Date(i.at).toLocaleDateString()}. Tap Save / update to get the latest.` : base;
+    };
+    show().catch(() => {});
+    go.addEventListener('click', async () => {
+      go.disabled = true;
+      try {
+        const o = await import('./offline-files.js');
+        const st = getStoredStudent();
+        const { ALL_QUIZZES } = await import('./picker-screen.js');
+        const { isResourceLocked } = await import('./lock.js');
+        const list = (ALL_QUIZZES || []).filter(q => q && q.subjectId && !isItemLockedForUser(q) && !isResourceLocked(q, st, 'quiz'));
+        if (!list.length) { showToast('Open the Exams tab once, then try again', { icon: 'fa-solid fa-circle-info' }); return; }
+        const r = await o.cacheQuizzesOffline(list, (n, t) => { go.textContent = `Saving ${n}/${t}…`; }, { fresh: true });
+        showToast(r.fail ? `Saved ${r.ok}, ${r.fail} failed` : `Saved ${r.ok} quizzes for offline`, { icon: 'fa-solid fa-circle-check' });
+        await show();
+      } catch (e) { showToast(e.message || 'Could not save', { icon: 'fa-solid fa-circle-exclamation' }); }
+      finally { go.disabled = false; go.textContent = 'Save / update'; }
+    });
+    clr.addEventListener('click', async () => {
+      const o = await import('./offline-files.js');
+      o.clearQuizOffline(); await show();
+      showToast('Offline quizzes cleared', { icon: 'fa-solid fa-trash' });
+    });
+  })();
 
   const notify = el.querySelector('#chatNotifyToggle');
   notify.addEventListener('change', async () => {
