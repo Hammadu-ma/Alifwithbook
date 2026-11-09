@@ -19,6 +19,7 @@ import { isDownloadableMedia, isSaved, savedBlobUrl, saveFile, removeFile, setMe
 
 /* ------------------------------------------------------------------ icons */
 const I = {
+  rot: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="12" height="13" rx="2"/><path d="M10 4h6a4 4 0 0 1 4 4v1"/><path d="M17.5 6.5 20 9l2.5-2.5" transform="translate(-1 0)"/></svg>',
   play: '<svg viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.52.85l10.4-6.5a1 1 0 0 0 0-1.7L9.52 4.65A1 1 0 0 0 8 5.5Z" fill="currentColor"/></svg>',
   pause: '<svg viewBox="0 0 24 24"><rect x="6" y="5" width="4.2" height="14" rx="1.4" fill="currentColor"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.4" fill="currentColor"/></svg>',
   replay: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3.5 4.5v4.8h4.8"/></svg>',
@@ -368,6 +369,7 @@ export function mountPlayer(host, first, ctx) {
           <button type="button" class="pl-btn" data-a="mute" aria-label="Mute"></button>
           <div class="pl-menu-wrap"><button type="button" class="pl-btn txt" data-a="speed" aria-label="Playback speed">1×</button>
             <div class="pl-menu hidden" data-menu>${SPEEDS.map(s => `<button type="button" data-rate="${s}" class="${s === 1 ? 'on' : ''}">${s}×</button>`).join('')}</div></div>
+          <button type="button" class="pl-btn" data-a="rot" aria-label="Rotate screen"></button>
           <button type="button" class="pl-btn" data-a="fs" aria-label="Fullscreen"></button>
         </div>
       </div>
@@ -386,11 +388,15 @@ export function mountPlayer(host, first, ctx) {
       stage.querySelectorAll('[data-a=toggle]').forEach(b => { b.innerHTML = ended ? I.replay : pl ? I.pause : I.play; });
       stage.querySelector('[data-a=mute]').innerHTML = ui.muted ? I.mute : I.vol;
       stage.querySelector('[data-a=fs]').innerHTML = isFs() ? I.fsx : I.fs;
+      stage.querySelector('[data-a=rot]').innerHTML = I.rot;
       stage.classList.toggle('is-playing', pl);
       stage.classList.toggle('is-buffering', ui.state === 'buffering');
       syncRing(stage, ui.state === 'buffering');
     };
     const isFs = () => document.fullscreenElement === stage || stage.classList.contains('fs');
+    // When the picture is turned sideways with the Rotate button, the seek bar's x-axis runs down the screen.
+    const along = (e, r) => stage.classList.contains('rot') ? (e.clientY - r.top) / r.height : (e.clientX - r.left) / r.width;
+    const touchDevice = () => { try { return matchMedia('(pointer: coarse)').matches; } catch (_) { return false; } };
     const showUi = () => {
       ui.shown = true; uiEl.classList.remove('off'); stage.classList.remove('hide-cursor');
       clearTimeout(ui.hideT);
@@ -401,8 +407,11 @@ export function mountPlayer(host, first, ctx) {
     const skip = d => { if (!engine) return; const t = Math.min(Math.max(0, engine.time() + d), engine.dur() || 1e9); engine.seek(t); ripple(d < 0 ? 'l' : 'r'); paint(); showUi(); };
     const ripple = side => { const r = q('.pl-ripple.' + side); r.classList.remove('hidden'); r.style.animation = 'none'; void r.offsetWidth; r.style.animation = ''; setTimeout(() => r.classList.add('hidden'), 650); };
     const setFs = async () => {
-      if (isFs()) { if (document.fullscreenElement) await document.exitFullscreen().catch(() => {}); stage.classList.remove('fs'); }
-      else {
+      if (isFs()) { if (document.fullscreenElement) await document.exitFullscreen().catch(() => {}); stage.classList.remove('fs', 'rot'); }
+      else if (touchDevice()) {
+        // Phones: the browser's own fullscreen shows a "drag from the top to exit" banner, so fill the screen ourselves instead.
+        stage.classList.add('fs');
+      } else {
         const rq = stage.requestFullscreen || stage.webkitRequestFullscreen;
         try { if (!rq) throw 0; await rq.call(stage); } catch (_) { stage.classList.add('fs'); }
       }
@@ -429,7 +438,7 @@ export function mountPlayer(host, first, ctx) {
     // taps on the shield: desktop click = play/pause; touch tap = toggle controls, double-tap sides = ±10s
     let lastTap = 0, tapT = 0;
     on(shield, 'click', e => {
-      const r = shield.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, now = Date.now();
+      const r = shield.getBoundingClientRect(), x = along(e, r), now = Date.now();
       if (!touch) { toggle(); showUi(); return; }
       if (now - lastTap < 300) {
         clearTimeout(tapT); lastTap = 0;
@@ -449,12 +458,15 @@ export function mountPlayer(host, first, ctx) {
       else if (k === 'mute') setMuted(!ui.muted);
       else if (k === 'speed') menu.classList.toggle('hidden');
       else if (k === 'fs') setFs();
+      else if (k === 'rot') { stage.classList.toggle('rot'); showUi(); }
       showUi();
     });
-    on(document, 'fullscreenchange', () => { if (!document.fullscreenElement) stage.classList.remove('fs'); paintIcons(); });
+    on(document, 'fullscreenchange', () => { if (!document.fullscreenElement) stage.classList.remove('fs', 'rot'); paintIcons(); });
+    // turning the phone sideways makes the manual rotation unnecessary
+    on(window, 'resize', () => { if (innerWidth > innerHeight) stage.classList.remove('rot'); });
 
     // scrubbing on the themed progress bar
-    const ratioOf = e => { const r = seek.getBoundingClientRect(); return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); };
+    const ratioOf = e => { const r = seek.getBoundingClientRect(); return Math.min(1, Math.max(0, along(e, r))); };
     const tipAt = e => { const d = engine.dur(), p = ratioOf(e); tip.textContent = fmt(p * d); tip.style.left = p * 100 + '%'; return p * d; };
     on(seek, 'pointerdown', e => { ui.scrub = true; seek.setPointerCapture(e.pointerId); seek.classList.add('active'); ui.scrubT = tipAt(e); paint(); });
     on(seek, 'pointermove', e => { const t = tipAt(e); if (ui.scrub) { ui.scrubT = t; paint(); } });
