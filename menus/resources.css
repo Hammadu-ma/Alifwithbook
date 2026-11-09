@@ -936,6 +936,7 @@ body.dark .res-offl.on{color:#34d399}
 .res-vid-dl.on{background:#059669}
 .res-vid-dl.off{opacity:.5}
 .res-vid-dl.busy{pointer-events:none}
+.res-vid-dl[data-bdl].on{pointer-events:none;cursor:default}
 .res-vid-dl.del{background:rgba(220,38,38,.88)}
 .lay-list .res-vid-dl{top:4px;right:4px;min-width:26px;height:26px;padding:0 6px;font-size:10px}
 .res-off-card{cursor:pointer;text-align:left}

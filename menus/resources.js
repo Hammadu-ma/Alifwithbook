@@ -784,6 +784,10 @@ function setDl(el, state, pct) {
   txt.textContent = state === 'busy' && pct >= 0 ? pct + '%' : '';
   const label = state === 'saved' ? (el.dataset.bdl ? 'Saved' : 'Saved for offline · tap to remove') : state === 'busy' ? 'Saving…' : 'Save for offline';
   el.title = label; el.setAttribute('aria-label', label);
+  if (el.dataset.bdl) {   // a saved book's badge is only a label, not a control
+    if (state === 'saved') { el.removeAttribute('role'); el.removeAttribute('tabindex'); }
+    else { el.setAttribute('role', 'button'); el.setAttribute('tabindex', '0'); }
+  }
 }
 
 /* ---- books: same idea, kept inside the app (Cache Storage), never written to the phone's files ---- */
