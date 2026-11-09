@@ -782,7 +782,7 @@ function setDl(el, state, pct) {
   el.classList.toggle('busy', state === 'busy');
   ico.className = state === 'busy' ? 'fa-solid fa-spinner fa-spin' : state === 'saved' ? 'fa-solid fa-circle-check' : 'fa-solid fa-download';
   txt.textContent = state === 'busy' && pct >= 0 ? pct + '%' : '';
-  const label = state === 'saved' ? 'Saved for offline · tap to remove' : state === 'busy' ? 'Saving…' : 'Save for offline';
+  const label = state === 'saved' ? (el.dataset.bdl ? 'Saved' : 'Saved for offline · tap to remove') : state === 'busy' ? 'Saving…' : 'Save for offline';
   el.title = label; el.setAttribute('aria-label', label);
 }
 
@@ -803,7 +803,8 @@ async function handleBookDownload(el) {
   }
   if (bookBusy.has(b.id)) return;
   const all = () => [...document.querySelectorAll(`.res-vid-dl[data-bdl="${CSS.escape(b.id)}"]`)];
-  if (await isSaved(b.fileUrl)) { await removeFile(b.fileUrl); all().forEach(n => setDl(n, 'idle')); return; }
+  /* a saved book can only be removed from the Downloads tab — here the green check just says it is saved */
+  if (await isSaved(b.fileUrl)) { all().forEach(n => setDl(n, 'saved')); return; }
   bookBusy.add(b.id);
   all().forEach(n => setDl(n, 'busy', 0));
   try {
