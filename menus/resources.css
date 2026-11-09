@@ -617,7 +617,7 @@ body:has(#resourcesScreen:not(.hidden)) .desktop-nav { z-index: 330; }
 .rd-chip.editing span { display: none; } .rd-chip.editing .rd-jump { display: block; }
 
 /* reading surface */
-.rd-stage { flex: 1; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; outline: none; background: var(--rd-bg); padding: 14px 8px; transition: background .3s; }
+.rd-stage { touch-action: pan-x pan-y; flex: 1; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; outline: none; background: var(--rd-bg); padding: 14px 8px; transition: background .3s; }
 .rd:not(.in-panel) .rd-stage { padding: calc(72px + env(safe-area-inset-top, 0px)) 10px calc(78px + env(safe-area-inset-bottom, 0px)); }
 .rd-pages { margin: 0 auto; display: flex; flex-direction: column; gap: 14px; transition: width .2s; }
 .rd-pg { position: relative; flex: none; width: 100%; overflow: hidden; border-radius: 3px; background: var(--rd-page);

@@ -1,3 +1,4 @@
+import "./no-page-zoom.js";
 // Core/Infrastructure
 import"./anon-auth.js";
 import"./median-guard.js";

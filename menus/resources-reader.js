@@ -270,7 +270,17 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
   }
 
   const next = () => goTo(cur + 1), prev = () => goTo(cur - 1);
-  function setZoom(z) { zoom = Math.min(3, Math.max(0.6, Math.round(z * 100) / 100)); persist(); layout(cur); }
+  function setZoom(z, focus) {
+    const nz = Math.min(3, Math.max(0.6, Math.round(z * 100) / 100));
+    if (focus && nz === zoom) return;
+    let fx = 0, fy = 0;
+    if (focus) { fx = (focus.x + stage.scrollLeft) / (stage.scrollWidth || 1); fy = (focus.y + stage.scrollTop) / (stage.scrollHeight || 1); }
+    zoom = nz; persist(); layout(cur);
+    if (focus) {   // keep the point between the fingers where it was
+      const put = () => { stage.scrollLeft = fx * stage.scrollWidth - focus.x; stage.scrollTop = fy * stage.scrollHeight - focus.y; };
+      requestAnimationFrame(put); setTimeout(put, 120); setTimeout(put, 380);
+    }
+  }
 
   /* ----- drawer: contents / bookmarks / search ----- */
   function openDrawer(tab) {
@@ -397,13 +407,40 @@ export function mountReader(host, b, { back = false, onClose } = {}) {
   }, { passive: true });
 
   // swipe to turn pages
-  let sx = 0, sy = 0, st = 0;
+  let sx = 0, sy = 0, st = 0, lastPinch = 0;
   on(stage, 'touchstart', e => { if (mode !== 'page' || e.touches.length !== 1) return; sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now(); }, { passive: true });
   on(stage, 'touchend', e => {
-    if (mode !== 'page' || !e.changedTouches.length || zoom > 1.05) return;
+    if (mode !== 'page' || !e.changedTouches.length || zoom > 1.05 || Date.now() - lastPinch < 500) return;
     const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
     if (Date.now() - st < 600 && Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.6) { dx < 0 ? next() : prev(); }
   }, { passive: true });
+
+  /* pinch to zoom the document (the app itself never zooms) */
+  let pz = null;
+  const dist2 = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const ctr2 = t => { const r = stage.getBoundingClientRect(); return { x: (t[0].clientX + t[1].clientX) / 2 - r.left, y: (t[0].clientY + t[1].clientY) / 2 - r.top }; };
+  on(stage, 'touchstart', e => {
+    if (e.touches.length !== 2) return;
+    const tg = stage.firstElementChild; if (!tg) return;
+    const c = ctr2(e.touches);
+    pz = { d: dist2(e.touches), z: zoom, s: 1, c, tg };
+    tg.style.transformOrigin = `${c.x + stage.scrollLeft - tg.offsetLeft}px ${c.y + stage.scrollTop - tg.offsetTop}px`;
+    tg.style.willChange = 'transform';
+  }, { passive: true });
+  on(stage, 'touchmove', e => {
+    if (!pz || e.touches.length !== 2) return;
+    e.preventDefault();
+    pz.s = Math.min(3 / pz.z, Math.max(0.6 / pz.z, dist2(e.touches) / pz.d));
+    pz.tg.style.transform = `scale(${pz.s})`;
+  }, { passive: false });
+  const endPinch = e => {
+    if (!pz || e.touches.length >= 2) return;
+    const p = pz; pz = null; lastPinch = Date.now();
+    p.tg.style.transform = ''; p.tg.style.willChange = ''; p.tg.style.transformOrigin = '';
+    if (Math.abs(p.s - 1) > 0.03) setZoom(p.z * p.s, p.c);
+  };
+  on(stage, 'touchend', endPinch, { passive: true });
+  on(stage, 'touchcancel', endPinch, { passive: true });
 
   on(stage, 'wheel', e => { if (e.ctrlKey) { e.preventDefault(); setZoom(zoom + (e.deltaY < 0 ? 0.15 : -0.15)); } }, { passive: false });
   on(document, 'keydown', e => {                       // capture phase: runs before the app's own Esc handler
