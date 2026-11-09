@@ -259,7 +259,7 @@ function bindSend() {
         res = await api('/api/push/send', { title, body, url, uids: r.uids, segmentLabel: r.label });
       }
       show(`✓ ${r.label}: sent to ${res.sent} device(s)${r.count != null ? ` of ${r.count} student(s)` : ''}.${res.failed ? ` ${res.failed} failed.` : ''}${res.partial ? ' Stopped early — send again for the rest.' : ''}`, true);
-      $('ncTitle').value = ''; $('ncBody').value = '';
+      $('ncTitle').value = ''; $('ncBody').value = ''; $('ncUrl').value = '';
     } catch (e) { console.error('[ALIF push admin]', e); show(e.message || 'Could not send.', false); }
     finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send now'; }
   });

@@ -70,8 +70,10 @@ function ago(ms) {
 let screen = null, isOpen = false, hideTimer = 0;
 
 const ICON = { 'payment-submitted': 'fa-receipt', 'payment-approved': 'fa-circle-check', 'payment-rejected': 'fa-circle-xmark', 'access-granted': 'fa-lock-open', 'access-revoked': 'fa-lock' };
+/* only real destinations count as links; the app's own notifications page / home are not shown as links */
+const hasLink = u => { if (!u || u === '/') return false; try { const x = new URL(u, location.origin); return !(x.origin === location.origin && (x.pathname === '/' || x.pathname === '') && (!x.search || x.search === '?notifications=1')); } catch (_) { return false; } };
 function itemHtml(i, seen) {
-  const link = i.url && i.url !== '/';
+  const link = hasLink(i.url);
   return `<${link ? 'button type="button"' : 'div'} class="nf-item${i.ms > seen ? ' unread' : ''}" ${link ? `data-url="${esc(i.url)}"` : ''}>
     <span class="nf-ic"><i class="fa-solid ${ICON[i.kind] || 'fa-bullhorn'}"></i></span>
     <span class="nf-tx"><b>${esc(i.title)}</b><span class="nf-body">${esc(i.body)}</span><small>${esc(ago(i.ms))}</small></span>
