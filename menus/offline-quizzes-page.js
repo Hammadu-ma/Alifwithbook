@@ -72,6 +72,8 @@ body.dark #offQz .oq-tag.part{color:#fbbf24}body.dark #offQz .oq-tag.ok{color:#4
 .oq-warn button.go{background:#d97706;border-color:#d97706;color:#fff}
 #offQz .oq-empty{text-align:center;opacity:.65;padding:40px 10px;font-size:14px}
 `;
+/* The "Online only" switch is built but hidden for now — set to true to show it again. */
+const SHOW_ONLINE_ONLY = false;
 let el = null, busy = false, tab = '';
 const TABS = [['todo', 'To download', '#d97706'], ['ok', 'Downloaded', '#16a34a'], ['upd', 'Updates', '#2563eb']];
 const stOf = f => !f.saved ? 'todo' : f.saved < f.total ? 'todo' : f.stale ? 'upd' : 'ok';
@@ -98,9 +100,9 @@ function groups() {
 function render() {
   const gs = groups();
   const body = el.querySelector('.oq-main');
-  const only = isQuizOnlineOnly();
+  const only = SHOW_ONLINE_ONLY && isQuizOnlineOnly();
   el.classList.toggle('only', only);
-  const sw = `<div class="oq-only"><span class="pf-ico" style="--tone:#d97706"><i class="fa-solid fa-wifi"></i></span><div class="t"><b>Online only</b><span>${only ? 'On — quizzes are never saved on this device. You need internet to practise.' : 'Never keep quizzes on this device. Saves storage, needs internet.'}</span></div><button class="oq-sw${only ? ' on' : ''}" type="button" data-a="only" role="switch" aria-checked="${only}" aria-label="Online only"></button></div>`;
+  const sw = !SHOW_ONLINE_ONLY ? '' : `<div class="oq-only"><span class="pf-ico" style="--tone:#d97706"><i class="fa-solid fa-wifi"></i></span><div class="t"><b>Online only</b><span>${only ? 'On — quizzes are never saved on this device. You need internet to practise.' : 'Never keep quizzes on this device. Saves storage, needs internet.'}</span></div><button class="oq-sw${only ? ' on' : ''}" type="button" data-a="only" role="switch" aria-checked="${only}" aria-label="Online only"></button></div>`;
   const open = new Set([...body.querySelectorAll('.oq-mod.open')].map(x => x.dataset.m));
   if (!gs.length) { body.innerHTML = sw + '<div class="oq-empty">No quizzes available yet.<br>Open the Exams tab once while online, then come back here.</div>'; return; }
   gs.forEach(g => g.subs.forEach(x => { x.f = quizSavedInfo(x.qs); x.st = stOf(x.f); x.raw = !x.f.saved ? 'none' : x.f.saved < x.f.total ? 'part' : x.f.stale ? 'upd' : 'ok'; }));
@@ -145,6 +147,7 @@ function close() {
 
 export function openOfflineQuizzesPage() {
   if (el) return;
+  if (!SHOW_ONLINE_ONLY && isQuizOnlineOnly()) setQuizOnlineOnly(false);   // never leave anyone stuck in a hidden mode
   if (!document.getElementById('offQzCss')) { const s = document.createElement('style'); s.id = 'offQzCss'; s.textContent = CSS; document.head.appendChild(s); }
   el = document.createElement('div');
   el.id = 'offQz';
