@@ -4,7 +4,7 @@
 import { getStoredStudent } from './auth.js';
 import { ALL_MODULES, ALL_QUIZZES, SUBJECTS_CACHE } from './picker-screen.js';
 import { isItemLockedForUser, isResourceLocked } from './lock.js';
-import { escapeHtml as esc } from './loaders.js';
+import { escapeHtml as esc, isQuizOnlineOnly, setQuizOnlineOnly } from './loaders.js';
 import { showToast, showConfirm } from './ui-feedback.js';
 import { pushModalState, popModalState } from './modal-backbutton.js';
 import { cacheQuizzesOffline, quizSavedInfo, removeQuizzesOffline } from './offline-files.js';
@@ -53,6 +53,23 @@ body.dark #offQz .oq-tag.part{color:#fbbf24}body.dark #offQz .oq-tag.ok{color:#4
 #offQz .oq-tab.on{opacity:1;border-bottom-color:var(--tc);color:var(--tc)}
 #offQz .oq-subs{background:rgba(128,128,128,.13)}
 #offQz .oq-sub+.oq-sub{border-top-color:rgba(128,128,128,.2)}
+#offQz .oq-only{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:16px;background:rgba(128,128,128,.13);margin-bottom:16px}
+#offQz .oq-only .t{flex:1}#offQz .oq-only b{display:block;font-size:14px}#offQz .oq-only span{font-size:12px;opacity:.7;line-height:1.4}
+#offQz .oq-sw{position:relative;width:48px;height:28px;border-radius:999px;border:0;background:rgba(128,128,128,.45);cursor:pointer;flex:none;transition:background .2s}
+#offQz .oq-sw::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+#offQz .oq-sw.on{background:#16a34a}#offQz .oq-sw.on::after{transform:translateX(20px)}
+#offQz.only .oq-tabs,#offQz.only .oq-note,#offQz.only .oq-mod{display:none}
+.oq-warn{position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;padding:16px;animation:oqf .2s}
+@keyframes oqf{from{opacity:0}}
+.oq-warn .card{width:100%;max-width:420px;background:var(--paper,#fff);color:var(--ink,#111);border-radius:22px;padding:26px 22px 20px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35);animation:oqu .28s cubic-bezier(.2,.9,.3,1)}
+@keyframes oqu{from{transform:translateY(30px);opacity:0}}
+.oq-warn .ic{width:64px;height:64px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;font-size:26px;background:rgba(217,119,6,.15);color:#d97706}
+.oq-warn h3{margin:0 0 8px;font-size:19px}
+.oq-warn p{margin:0 0 6px;font-size:14px;line-height:1.5;opacity:.8}
+.oq-warn ul{list-style:none;text-align:left;margin:12px 0 16px;padding:12px 14px;border-radius:14px;background:rgba(128,128,128,.12);font-size:13.5px}
+.oq-warn li{display:flex;gap:10px;padding:4px 0}.oq-warn li i{color:#d97706;margin-top:3px}
+.oq-warn .row{display:flex;gap:10px}.oq-warn button{flex:1;padding:13px;border-radius:14px;border:1px solid rgba(128,128,128,.3);background:transparent;color:inherit;font:700 14px inherit;cursor:pointer}
+.oq-warn button.go{background:#d97706;border-color:#d97706;color:#fff}
 #offQz .oq-empty{text-align:center;opacity:.65;padding:40px 10px;font-size:14px}
 `;
 let el = null, busy = false, tab = '';
@@ -81,8 +98,11 @@ function groups() {
 function render() {
   const gs = groups();
   const body = el.querySelector('.oq-main');
+  const only = isQuizOnlineOnly();
+  el.classList.toggle('only', only);
+  const sw = `<div class="oq-only"><span class="pf-ico" style="--tone:#d97706"><i class="fa-solid fa-wifi"></i></span><div class="t"><b>Online only</b><span>${only ? 'On — quizzes are never saved on this device. You need internet to practise.' : 'Never keep quizzes on this device. Saves storage, needs internet.'}</span></div><button class="oq-sw${only ? ' on' : ''}" type="button" data-a="only" role="switch" aria-checked="${only}" aria-label="Online only"></button></div>`;
   const open = new Set([...body.querySelectorAll('.oq-mod.open')].map(x => x.dataset.m));
-  if (!gs.length) { body.innerHTML = '<div class="oq-empty">No quizzes available yet.<br>Open the Exams tab once while online, then come back here.</div>'; return; }
+  if (!gs.length) { body.innerHTML = sw + '<div class="oq-empty">No quizzes available yet.<br>Open the Exams tab once while online, then come back here.</div>'; return; }
   gs.forEach(g => g.subs.forEach(x => { x.f = quizSavedInfo(x.qs); x.st = stOf(x.f); x.raw = !x.f.saved ? 'none' : x.f.saved < x.f.total ? 'part' : x.f.stale ? 'upd' : 'ok'; }));
   const cnt = k => gs.reduce((n, g) => n + g.subs.filter(x => x.st === k).length, 0);
   if (!tab || !TABS.some(t => t[0] === tab)) tab = TABS.find(t => cnt(t[0]))?.[0] || 'todo';
@@ -90,7 +110,7 @@ function render() {
   const tabs = '<div class="oq-tabs">' + TABS.map(([k, l, c]) => `<button type="button" class="oq-tab${tab === k ? ' on' : ''}" data-t="${k}" style="--tc:${c}">${l}<b>${cnt(k)}</b></button>`).join('') + '</div>';
   const tag = { none: '<i class="fa-regular fa-circle"></i> Not downloaded', part: '', ok: '<i class="fa-solid fa-circle-check"></i> Downloaded', upd: '<i class="fa-solid fa-arrows-rotate"></i> Update available' };
   const lbls = { none: 'Download', part: 'Finish', ok: 'Update', upd: 'Update' };
-  body.innerHTML = tabs + '<p class="oq-note">Open a module, then save a subject\'s quizzes on this device. Saved quizzes work without internet and belong to your account. Tap <b>Update</b> any time to get the latest version.</p>' +
+  body.innerHTML = sw + tabs + '<p class="oq-note">Open a module, then save a subject\'s quizzes on this device. Saved quizzes work without internet and belong to your account. Tap <b>Update</b> any time to get the latest version.</p>' +
     (shown.length ? shown.map(g => `<div class="oq-mod${open.has(g.id) ? ' open' : ''}" data-m="${esc(g.id)}">
         <button class="oq-mh" type="button"><b>${esc(g.name)}</b><small>${g.subs.length} ${g.subs.length === 1 ? 'subject' : 'subjects'}</small><i class="fa-solid fa-chevron-down"></i></button>
         <div class="oq-subs">${g.subs.map(({ sub, qs, f, raw }) => {
@@ -100,6 +120,19 @@ function render() {
             <div class="oq-st"><span class="oq-tag ${raw}">${t}</span><b>${esc(sub.name)}</b><span>${qs.length} ${qs.length === 1 ? 'quiz' : 'quizzes'}${when}</span><div class="oq-bar"><i></i></div></div>
             <div class="oq-btns">${f.saved ? '<button class="oq-btn" data-a="rm" type="button">Remove</button>' : ''}<button class="oq-btn ${raw === 'upd' ? 'upd' : 'pri'}" data-a="dl" data-l="${lbls[raw]}" type="button">${lbls[raw]}</button></div></div>`;
         }).join('')}</div></div>`).join('') : '<div class="oq-empty">Nothing here.</div>');
+}
+
+function confirmOnly() {
+  return new Promise(res => {
+    const w = document.createElement('div');
+    w.className = 'oq-warn';
+    w.innerHTML = `<div class="card" role="alertdialog" aria-modal="true"><div class="ic"><i class="fa-solid fa-wifi"></i></div><h3>Use quizzes online only?</h3><p>Nothing will be stored on your phone, which keeps your storage free.</p>
+      <ul><li><i class="fa-solid fa-trash"></i><span>Quizzes you saved before will be removed from this device.</span></li><li><i class="fa-solid fa-signal"></i><span>You'll need an internet connection every time you practise a quiz.</span></li><li><i class="fa-solid fa-rotate-left"></i><span>You can turn this off any time and download again.</span></li></ul>
+      <div class="row"><button type="button" data-v="0">Cancel</button><button type="button" class="go" data-v="1">Turn on</button></div></div>`;
+    const done = v => { w.remove(); res(v); };
+    w.addEventListener('click', e => { const b = e.target.closest('button'); if (b) done(b.dataset.v === '1'); else if (e.target === w) done(false); });
+    document.body.appendChild(w);
+  });
 }
 
 function close() {
@@ -121,6 +154,11 @@ export function openOfflineQuizzesPage() {
   requestAnimationFrame(() => el && el.classList.add('open'));
   el.querySelector('.oq-back').addEventListener('click', close);
   el.addEventListener('click', async ev => {
+    if (ev.target.closest('[data-a="only"]')) {
+      if (isQuizOnlineOnly()) { setQuizOnlineOnly(false); render(); showToast('Offline saving is back on', { icon: 'fa-solid fa-cloud-arrow-down' }); return; }
+      if (await confirmOnly()) { removeQuizzesOffline((ALL_QUIZZES || [])); setQuizOnlineOnly(true); render(); showToast('Online only is on', { icon: 'fa-solid fa-wifi' }); }
+      return;
+    }
     const tb = ev.target.closest('.oq-tab');
     if (tb) { tab = tb.dataset.t; render(); return; }
     const mh = ev.target.closest('.oq-mh');

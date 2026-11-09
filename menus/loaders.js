@@ -20,6 +20,12 @@ import{doc as vDoc,getDoc as vGet}from"./runtime-ext.js";
 const MEM=new Map();
 if(typeof window!=="undefined")window.addEventListener("storage",e=>{e.key?MEM.delete(e.key):MEM.clear()});
 
+/* "Quizzes online only" (per student, chosen on the offline page): question banks are never read from or written to the device. */
+const QO_KEY="alif_q_online_only_v1";
+const qOwner=()=>{try{const u=t.get("atlas_student_v2");return String(u&&(u.id||u.docId)||"")}catch(_){return""}};
+export function isQuizOnlineOnly(){try{const o=qOwner();return!!o&&localStorage.getItem(QO_KEY)===o}catch(_){return!1}}
+export function setQuizOnlineOnly(on){try{if(on&&qOwner())localStorage.setItem(QO_KEY,qOwner());else localStorage.removeItem(QO_KEY)}catch(_){}}
+const isQ=k=>typeof k==="string"&&k.indexOf("atlas_questions_")===0;
 export function dropCached(k){MEM.delete(k);try{t.remove(k)}catch(_){}}
 export const CATALOG_TTL=6*36e5;
 export const QUESTIONS_TTL=12*36e5;
@@ -31,12 +37,14 @@ const num=k=>{try{return Number(localStorage.getItem(k))||0}catch(_){return 0}};
 const put=(k,v)=>{try{localStorage.setItem(k,String(v))}catch(_){}};
 
 export function getCachedWithTTL(k){
+  if(isQ(k)&&isQuizOnlineOnly())return null;
   if(MEM.has(k))return MEM.get(k);
   const r=t.get(k),v=r&&"object"==typeof r&&"ts"in r&&"data"in r?r:null;
   if(v)MEM.set(k,v);
   return v;
 }
 export function setCachedWithTTL(k,d){
+  if(isQ(k)&&isQuizOnlineOnly())return;
   const v={data:d,ts:Date.now()};
   MEM.set(k,v);t.set(k,v);
 }
