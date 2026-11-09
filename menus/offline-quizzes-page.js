@@ -47,9 +47,17 @@ body.dark #offQz .oq-tag.part{color:#fbbf24}body.dark #offQz .oq-tag.ok{color:#4
 #offQz .oq-sub[data-st="part"]{box-shadow:inset 3px 0 0 #d97706}
 #offQz .oq-legend{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
 #offQz .oq-btn.upd{background:#2563eb;border-color:#2563eb;color:#fff}
+#offQz .oq-tabs{display:flex;gap:4px;margin:0 0 14px;border-bottom:1px solid var(--rule,rgba(128,128,128,.25))}
+#offQz .oq-tab{flex:1;padding:10px 4px;background:transparent;border:0;border-bottom:3px solid transparent;margin-bottom:-1px;color:inherit;opacity:.6;font:600 13.5px inherit;cursor:pointer}
+#offQz .oq-tab b{font-weight:700;margin-left:4px;font-size:12px}
+#offQz .oq-tab.on{opacity:1;border-bottom-color:var(--tc);color:var(--tc)}
+#offQz .oq-subs{background:rgba(128,128,128,.13)}
+#offQz .oq-sub+.oq-sub{border-top-color:rgba(128,128,128,.2)}
 #offQz .oq-empty{text-align:center;opacity:.65;padding:40px 10px;font-size:14px}
 `;
-let el = null, busy = false;
+let el = null, busy = false, tab = '';
+const TABS = [['todo', 'To download', '#d97706'], ['ok', 'Downloaded', '#16a34a'], ['upd', 'Updates', '#2563eb']];
+const stOf = f => !f.saved ? 'todo' : f.saved < f.total ? 'todo' : f.stale ? 'upd' : 'ok';
 
 function groups() {
   const st = getStoredStudent();
@@ -75,23 +83,23 @@ function render() {
   const body = el.querySelector('.oq-main');
   const open = new Set([...body.querySelectorAll('.oq-mod.open')].map(x => x.dataset.m));
   if (!gs.length) { body.innerHTML = '<div class="oq-empty">No quizzes available yet.<br>Open the Exams tab once while online, then come back here.</div>'; return; }
-  body.innerHTML = '<div class="oq-legend"><span class="oq-tag none">Not downloaded</span><span class="oq-tag part">Partly saved</span><span class="oq-tag ok">Downloaded</span><span class="oq-tag upd">Update available</span></div><p class="oq-note">Pick a module, open a subject and save its quizzes on this device. Saved quizzes work without internet and belong to your account. Tap <b>Update</b> any time to get the latest version.</p>' +
-    gs.map(g => {
-      const infos = g.subs.map(x => quizSavedInfo(x.qs));
-      const done = infos.filter(i => i.saved >= i.total && !i.stale).length, upd = infos.filter(i => i.saved && i.stale).length;
-      return `<div class="oq-mod${open.has(g.id) ? ' open' : ''}" data-m="${esc(g.id)}">
-        <button class="oq-mh" type="button"><b>${esc(g.name)}</b><small>${done}/${g.subs.length} subjects ready${upd ? ' · ' + upd + ' to update' : ''}</small><i class="fa-solid fa-chevron-down"></i></button>
-        <div class="oq-subs">${g.subs.map(({ sub, qs }, k) => {
-          const f = infos[k];
-          const st = !f.saved ? 'none' : f.saved < f.total ? 'part' : f.stale ? 'upd' : 'ok';
-          const tag = { none: '<i class="fa-regular fa-circle"></i> Not downloaded', part: `<i class="fa-solid fa-circle-half-stroke"></i> Partly saved · ${f.saved} of ${f.total}`, ok: '<i class="fa-solid fa-circle-check"></i> Downloaded', upd: '<i class="fa-solid fa-arrows-rotate"></i> Update available' }[st];
+  gs.forEach(g => g.subs.forEach(x => { x.f = quizSavedInfo(x.qs); x.st = stOf(x.f); x.raw = !x.f.saved ? 'none' : x.f.saved < x.f.total ? 'part' : x.f.stale ? 'upd' : 'ok'; }));
+  const cnt = k => gs.reduce((n, g) => n + g.subs.filter(x => x.st === k).length, 0);
+  if (!tab || !TABS.some(t => t[0] === tab)) tab = TABS.find(t => cnt(t[0]))?.[0] || 'todo';
+  const shown = gs.map(g => ({ ...g, subs: g.subs.filter(x => x.st === tab) })).filter(g => g.subs.length);
+  const tabs = '<div class="oq-tabs">' + TABS.map(([k, l, c]) => `<button type="button" class="oq-tab${tab === k ? ' on' : ''}" data-t="${k}" style="--tc:${c}">${l}<b>${cnt(k)}</b></button>`).join('') + '</div>';
+  const tag = { none: '<i class="fa-regular fa-circle"></i> Not downloaded', part: '', ok: '<i class="fa-solid fa-circle-check"></i> Downloaded', upd: '<i class="fa-solid fa-arrows-rotate"></i> Update available' };
+  const lbls = { none: 'Download', part: 'Finish', ok: 'Update', upd: 'Update' };
+  body.innerHTML = tabs + '<p class="oq-note">Open a module, then save a subject\'s quizzes on this device. Saved quizzes work without internet and belong to your account. Tap <b>Update</b> any time to get the latest version.</p>' +
+    (shown.length ? shown.map(g => `<div class="oq-mod${open.has(g.id) ? ' open' : ''}" data-m="${esc(g.id)}">
+        <button class="oq-mh" type="button"><b>${esc(g.name)}</b><small>${g.subs.length} ${g.subs.length === 1 ? 'subject' : 'subjects'}</small><i class="fa-solid fa-chevron-down"></i></button>
+        <div class="oq-subs">${g.subs.map(({ sub, qs, f, raw }) => {
+          const t = raw === 'part' ? `<i class="fa-solid fa-circle-half-stroke"></i> Partly saved · ${f.saved} of ${f.total}` : tag[raw];
           const when = f.at ? ' · saved ' + new Date(f.at).toLocaleDateString() : '';
-          const lbl = { none: 'Download', part: 'Finish', ok: 'Update', upd: 'Update' }[st];
-          return `<div class="oq-sub" data-s="${esc(sub.id)}" data-st="${st}">
-            <div class="oq-st"><span class="oq-tag ${st}">${tag}</span><b>${esc(sub.name)}</b><span>${qs.length} ${qs.length === 1 ? 'quiz' : 'quizzes'}${when}</span><div class="oq-bar"><i></i></div></div>
-            <div class="oq-btns">${f.saved ? '<button class="oq-btn" data-a="rm" type="button">Remove</button>' : ''}<button class="oq-btn ${st === 'upd' ? 'upd' : 'pri'}" data-a="dl" data-l="${lbl}" type="button">${lbl}</button></div></div>`;
-        }).join('')}</div></div>`;
-    }).join('');
+          return `<div class="oq-sub" data-s="${esc(sub.id)}" data-st="${raw}">
+            <div class="oq-st"><span class="oq-tag ${raw}">${t}</span><b>${esc(sub.name)}</b><span>${qs.length} ${qs.length === 1 ? 'quiz' : 'quizzes'}${when}</span><div class="oq-bar"><i></i></div></div>
+            <div class="oq-btns">${f.saved ? '<button class="oq-btn" data-a="rm" type="button">Remove</button>' : ''}<button class="oq-btn ${raw === 'upd' ? 'upd' : 'pri'}" data-a="dl" data-l="${lbls[raw]}" type="button">${lbls[raw]}</button></div></div>`;
+        }).join('')}</div></div>`).join('') : '<div class="oq-empty">Nothing here.</div>');
 }
 
 function close() {
@@ -113,6 +121,8 @@ export function openOfflineQuizzesPage() {
   requestAnimationFrame(() => el && el.classList.add('open'));
   el.querySelector('.oq-back').addEventListener('click', close);
   el.addEventListener('click', async ev => {
+    const tb = ev.target.closest('.oq-tab');
+    if (tb) { tab = tb.dataset.t; render(); return; }
     const mh = ev.target.closest('.oq-mh');
     if (mh) { mh.parentElement.classList.toggle('open'); return; }
     const b = ev.target.closest('.oq-btn'); if (!b) return;
