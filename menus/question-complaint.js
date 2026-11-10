@@ -37,12 +37,17 @@ export async function applyFlags(subjectId, quizId, questions) {
     } catch (_) { /* keep the old copy (or none) */ }
   }
   const f = (c && c.flags) || {};
-  questions.forEach(q => { const x = f[q.id]; if (x) { q.complaintApprovedAt = x.at || 1; q.complaintExpl = x.h; q.complaintAns = x.ans; } });
+  questions.forEach(q => { const x = f[q.id]; if (x) { q.complaintApprovedAt = x.at || 1; q.complaintExpl = x.h; q.complaintAns = x.ans; q.complaintProp = x.p == null ? -1 : Number(x.p); q.complaintDesc = x.d || ''; } });
 }
 export function complaintNoticeHtml(q) {
   return isFlagged(q)
     ? '<div class="qc-flag"><i class="fa-solid fa-triangle-exclamation"></i><div><b>Reported by students — approved, not corrected yet</b><span>An admin agreed this question may be wrong, but its answer and explanation have not been updated. Treat it with care.</span></div></div>'
     : '';
+}
+export function complaintExplHtml(q) {
+  if (!isFlagged(q) || !q.complaintDesc) return '';
+  const p = Number(q.complaintProp), has = p >= 0 && (q.options || [])[p] != null;
+  return `<div class="qc-flag qc-desc"><i class="fa-solid fa-comment-dots"></i><div><b>Student complaint — approved, not corrected yet</b>${has ? `<span>Students suggest the answer may be <b style="display:inline">${String.fromCharCode(65 + p)}</b> (shown in yellow).</span>` : ''}<span class="qc-d">“${esc(q.complaintDesc)}”</span></div></div>`;
 }
 export const complaintPillHtml = q => (isFlagged(q) ? '<span class="qc-pill"><i class="fa-solid fa-flag"></i> Under review</span>' : '');
 
@@ -77,6 +82,10 @@ function ensureCss() {
 body.dark .qc-pill{color:#fde047}
 .qcard.qc-flagged .card-inner{background-image:linear-gradient(rgba(250,204,21,.16),rgba(250,204,21,.16));border-left-color:#eab308!important;box-shadow:0 0 0 1.5px rgba(234,179,8,.55)}
 .qc-flag{margin:10px 0 12px}
+.qc-flag .qc-d{margin-top:6px;white-space:pre-wrap;font-style:italic;opacity:1}
+.opt.reveal-claim{background:rgba(250,204,21,.22)!important;border-color:#eab308!important}
+.opt.reveal-claim .letter{background:#eab308!important;color:#1f1700!important;border-color:#eab308!important}
+body.dark .opt.reveal-claim{background:rgba(250,204,21,.18)!important}
 `;
   document.head.appendChild(s);
 }
@@ -137,7 +146,7 @@ export function openComplaint({ q, subjectId, quizId, subjectName, quizName }) {
   setTimeout(() => { try { ta.focus({ preventScroll: true }); } catch (_) {} }, 150);
 }
 
-window.__alifQC = { apply: applyFlags, notice: complaintNoticeHtml, pill: complaintPillHtml, flagged: isFlagged, open: openComplaint };
+window.__alifQC = { expl: complaintExplHtml, apply: applyFlags, notice: complaintNoticeHtml, pill: complaintPillHtml, flagged: isFlagged, open: openComplaint };
 
 /* practice cards: the Complain button inside .qcard */
 document.addEventListener('click', async e => {

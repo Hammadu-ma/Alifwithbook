@@ -102,7 +102,7 @@ async function onClick(e) {
           const q = qs.data();
           // only mark the question if it has not been corrected since the student reported it
           if (String(q.explanation || '').trim() === String(c.explanationAtComplaint || '').trim() && Number(q.answerIndex) === Number(c.currentAnswer)) {
-            await setDoc(doc(db, 'questionFlags', c.quizId), { subjectId: c.subjectId, updatedAt: Date.now(), flags: { [c.questionId]: { ans: Number(q.answerIndex), h: hashOf(q.explanation), at: Date.now() } } }, { merge: true });
+            await setDoc(doc(db, 'questionFlags', c.quizId), { subjectId: c.subjectId, updatedAt: Date.now(), flags: { [c.questionId]: { ans: Number(q.answerIndex), h: hashOf(q.explanation), p: Number(c.proposedAnswer), d: String(c.explanation || '').slice(0, 600), at: Date.now() } } }, { merge: true });
             flagged = true;
           }
         }
