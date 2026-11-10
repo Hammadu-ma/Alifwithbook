@@ -76,13 +76,23 @@ function render() {
     const when = c.createdMs ? new Date(c.createdMs).toLocaleString() : '';
     const acts = filter === 'pending'
       ? `<input data-note placeholder="Note for the record (optional)"><button class="cp-btn ok" data-a="approve" type="button"><i class="fa-solid fa-check"></i> Approve</button><button class="cp-btn no" data-a="reject" type="button"><i class="fa-solid fa-xmark"></i> Reject</button>`
-      : `<span class="cp-st ${c.status}">${c.status === 'approved' ? 'Approved' : 'Rejected'}</span>${c.flagged ? '<span class="cp-st flag"><i class="fa-solid fa-flag"></i> Yellow notice is showing to students</span><button class="cp-btn gr" data-a="unflag" type="button">Remove notice</button>' : ''}${c.adminNote ? `<span style="font-size:13px;opacity:.7">Note: ${esc(c.adminNote)}</span>` : ''}`;
+      : `<span class="cp-st ${c.status}">${c.status === 'approved' ? 'Approved' : 'Rejected'}</span>${c.flagged ? '<span class="cp-st flag"><i class="fa-solid fa-flag"></i> Yellow notice is showing to students</span><button class="cp-btn gr" data-a="unflag" type="button">Remove notice</button>' : ''}${c.status === 'approved' ? '<button class="cp-btn ok" data-a="reapply" type="button">Re-apply notice</button>' : ''}${c.adminNote ? `<span style="font-size:13px;opacity:.7">Note: ${esc(c.adminNote)}</span>` : ''}`;
     return `<div class="cp-card" data-id="${esc(c.id)}">
       <div class="cp-meta"><b>Q${esc(c.questionNumber)}</b><span>${esc(c.quizName)} · ${esc(c.subjectName)}</span><span><i class="fa-solid fa-user"></i> ${esc(c.studentName || c.studentId || 'Student')}</span><span>${esc(when)}</span></div>
       <div class="cp-q">${esc(plain(c.question))}</div>${opts}
       <div class="cp-why"><b>Student's explanation</b>${esc(c.explanation)}</div>
       <div class="cp-act">${acts}</div></div>`;
   }).join('');
+}
+
+/* writes the per-quiz flag (only if the question has not been corrected since the report); returns true when the notice is active */
+async function applyFlag(c) {
+  const qs = await getDoc(qPath(c));
+  if (!qs.exists()) return false;
+  const q = qs.data();
+  if (String(q.explanation || '').trim() !== String(c.explanationAtComplaint || '').trim() || Number(q.answerIndex) !== Number(c.currentAnswer)) return false;
+  await setDoc(doc(db, 'questionFlags', c.quizId), { subjectId: c.subjectId, updatedAt: Date.now(), flags: { [c.questionId]: { ans: Number(q.answerIndex), h: hashOf(q.explanation), p: Number(c.proposedAnswer), d: String(c.explanation || '').slice(0, 600), at: Date.now() } } }, { merge: true });
+  return true;
 }
 
 async function onClick(e) {
@@ -96,22 +106,17 @@ async function onClick(e) {
     const by = auth.currentUser?.uid || '';
     if (b.dataset.a === 'approve') {
       let flagged = false;
-      try {
-        const qs = await getDoc(qPath(c));
-        if (qs.exists()) {
-          const q = qs.data();
-          // only mark the question if it has not been corrected since the student reported it
-          if (String(q.explanation || '').trim() === String(c.explanationAtComplaint || '').trim() && Number(q.answerIndex) === Number(c.currentAnswer)) {
-            await setDoc(doc(db, 'questionFlags', c.quizId), { subjectId: c.subjectId, updatedAt: Date.now(), flags: { [c.questionId]: { ans: Number(q.answerIndex), h: hashOf(q.explanation), p: Number(c.proposedAnswer), d: String(c.explanation || '').slice(0, 600), at: Date.now() } } }, { merge: true });
-            flagged = true;
-          }
-        }
-      } catch (err) { toast('Approved, but the question could not be marked: ' + (err.message || err), 'error'); }
+      try { flagged = await applyFlag(c); }
+      catch (err) { toast('Approved, but the notice could not be saved: ' + (err.message || err) + ' — publish the latest Firestore rules (questionFlags).', 'error'); }
       await updateDoc(doc(db, 'questionComplaints', c.id), { status: 'approved', flagged, adminNote: note, reviewedAt: serverTimestamp(), reviewedBy: by });
       toast(flagged ? 'Approved — students now see the yellow notice until you correct the question' : 'Approved (question already corrected)', 'success');
     } else if (b.dataset.a === 'reject') {
       await updateDoc(doc(db, 'questionComplaints', c.id), { status: 'rejected', adminNote: note, reviewedAt: serverTimestamp(), reviewedBy: by });
       toast('Rejected', 'success');
+    } else if (b.dataset.a === 'reapply') {
+      const ok = await applyFlag(c);
+      await updateDoc(doc(db, 'questionComplaints', c.id), { flagged: ok });
+      toast(ok ? 'Notice re-applied — students see it within ~30 minutes' : 'Not applied: the question was already corrected', ok ? 'success' : 'info');
     } else if (b.dataset.a === 'unflag') {
       await updateDoc(doc(db, 'questionFlags', c.quizId), { [`flags.${c.questionId}`]: deleteField(), updatedAt: Date.now() });
       await updateDoc(doc(db, 'questionComplaints', c.id), { flagged: false });
