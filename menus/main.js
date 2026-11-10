@@ -45,7 +45,7 @@ import"./boot.js";import"./avatar.js";import"./notifications-page.js";import"./f
 
 // Deferred: not needed for first paint. Loaded when the browser is idle (and instantly on first touch/keypress),
 // straight from the service-worker cache after the first visit.
-const loadDeferred = () => { import("./buy-modal.js"); import("./quiz-live.js"); };
+const loadDeferred = () => { import("./buy-modal.js"); import("./quiz-live.js"); import("./question-complaint.js").catch(() => {}); };
 let deferredStarted = false;
 const startDeferred = () => { if (deferredStarted) return; deferredStarted = true; loadDeferred(); };
 const whenIdle = () => ("requestIdleCallback" in window) ? requestIdleCallback(startDeferred, { timeout: 2500 }) : setTimeout(startDeferred, 1500);

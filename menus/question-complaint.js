@@ -115,6 +115,8 @@ export function openComplaint({ q, subjectId, quizId, subjectName, quizName }) {
   setTimeout(() => { try { ta.focus({ preventScroll: true }); } catch (_) {} }, 150);
 }
 
+window.__alifQC = { notice: complaintNoticeHtml, pill: complaintPillHtml, flagged: isFlagged, open: openComplaint };
+
 /* practice cards: the Complain button inside .qcard */
 document.addEventListener('click', async e => {
   const b = e.target.closest && e.target.closest('[data-complain]');
