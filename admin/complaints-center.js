@@ -76,7 +76,7 @@ function render() {
     const when = c.createdMs ? new Date(c.createdMs).toLocaleString() : '';
     const acts = filter === 'pending'
       ? `<input data-note placeholder="Note for the record (optional)"><button class="cp-btn ok" data-a="approve" type="button"><i class="fa-solid fa-check"></i> Approve</button><button class="cp-btn no" data-a="reject" type="button"><i class="fa-solid fa-xmark"></i> Reject</button>`
-      : `<span class="cp-st ${c.status}">${c.status === 'approved' ? 'Approved' : 'Rejected'}</span>${c.flagged ? '<span class="cp-st flag"><i class="fa-solid fa-flag"></i> Yellow notice is showing to students</span><button class="cp-btn gr" data-a="unflag" type="button">Remove notice</button>' : ''}${c.status === 'approved' ? '<button class="cp-btn ok" data-a="reapply" type="button">Re-apply notice</button>' : ''}${c.adminNote ? `<span style="font-size:13px;opacity:.7">Note: ${esc(c.adminNote)}</span>` : ''}`;
+      : `<span class="cp-st ${c.status}">${c.status === 'approved' ? 'Approved' : 'Rejected'}</span>${c.flagged ? '<span class="cp-st flag"><i class="fa-solid fa-flag"></i> Under review — yellow notice showing</span>' : ''}${c.status === 'approved' ? `<input data-note placeholder="Note (optional)"><button class="cp-btn gr" data-a="unflag" type="button">Remove from review</button><button class="cp-btn ok" data-a="reapply" type="button">Re-apply notice</button><button class="cp-btn no" data-a="reject" type="button">Reject</button>` : ''}${c.adminNote ? `<span style="font-size:13px;opacity:.7">Note: ${esc(c.adminNote)}</span>` : ''}`;
     return `<div class="cp-card" data-id="${esc(c.id)}">
       <div class="cp-meta"><b>Q${esc(c.questionNumber)}</b><span>${esc(c.quizName)} · ${esc(c.subjectName)}</span><span><i class="fa-solid fa-user"></i> ${esc(c.studentName || c.studentId || 'Student')}</span><span>${esc(when)}</span></div>
       <div class="cp-q">${esc(plain(c.question))}</div>${opts}
@@ -95,6 +95,12 @@ async function applyFlag(c) {
   return true;
 }
 
+/* take a question out of "under review": drop its flag (and the older fields on the question itself, if any) */
+async function clearFlag(c) {
+  try { await updateDoc(doc(db, 'questionFlags', c.quizId), { [`flags.${c.questionId}`]: deleteField(), updatedAt: Date.now() }); } catch (_) {}
+  try { await updateDoc(qPath(c), { complaintApprovedAt: 0, complaintExpl: '', complaintAns: -1 }); } catch (_) {}
+}
+
 async function onClick(e) {
   const t = e.target.closest('.cp-tab'); if (t) { filter = t.dataset.f; load(); return; }
   if (e.target.closest('[data-refresh]')) { load(); return; }
@@ -111,16 +117,17 @@ async function onClick(e) {
       await updateDoc(doc(db, 'questionComplaints', c.id), { status: 'approved', flagged, adminNote: note, reviewedAt: serverTimestamp(), reviewedBy: by });
       toast(flagged ? 'Approved — students now see the yellow notice until you correct the question' : 'Approved (question already corrected)', 'success');
     } else if (b.dataset.a === 'reject') {
-      await updateDoc(doc(db, 'questionComplaints', c.id), { status: 'rejected', adminNote: note, reviewedAt: serverTimestamp(), reviewedBy: by });
+      if (c.status === 'approved') { try { await clearFlag(c); } catch (_) {} }   // rejecting an approved report also takes the question out of review
+      await updateDoc(doc(db, 'questionComplaints', c.id), { status: 'rejected', flagged: false, adminNote: note, reviewedAt: serverTimestamp(), reviewedBy: by });
       toast('Rejected', 'success');
     } else if (b.dataset.a === 'reapply') {
       const ok = await applyFlag(c);
       await updateDoc(doc(db, 'questionComplaints', c.id), { flagged: ok });
       toast(ok ? 'Notice re-applied — students see it within ~30 minutes' : 'Not applied: the question was already corrected', ok ? 'success' : 'info');
     } else if (b.dataset.a === 'unflag') {
-      await updateDoc(doc(db, 'questionFlags', c.quizId), { [`flags.${c.questionId}`]: deleteField(), updatedAt: Date.now() });
+      await clearFlag(c);
       await updateDoc(doc(db, 'questionComplaints', c.id), { flagged: false });
-      toast('Notice removed', 'success');
+      toast('Removed from review — students stop seeing the notice within ~30 minutes', 'success');
     }
     load();
   } catch (err) { toast('Failed: ' + (err.message || err), 'error'); card.querySelectorAll('button').forEach(x => x.disabled = false); }

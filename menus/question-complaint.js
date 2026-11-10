@@ -37,7 +37,11 @@ export async function applyFlags(subjectId, quizId, questions) {
     } catch (_) { /* keep the old copy (or none) */ }
   }
   const f = (c && c.flags) || {};
-  questions.forEach(q => { const x = f[q.id]; if (x) { q.complaintApprovedAt = x.at || 1; q.complaintExpl = x.h; q.complaintAns = x.ans; q.complaintProp = x.p == null ? -1 : Number(x.p); q.complaintDesc = x.d || ''; } });
+  questions.forEach(q => {
+    const x = f[q.id];
+    if (x) { q.complaintApprovedAt = x.at || 1; q.complaintExpl = x.h; q.complaintAns = x.ans; q.complaintProp = x.p == null ? -1 : Number(x.p); q.complaintDesc = x.d || ''; }
+    else if (c) q.complaintApprovedAt = 0;   // the flags doc is the source of truth: not listed = not under review (also clears older cached marks)
+  });
 }
 export function complaintNoticeHtml(q) {
   return isFlagged(q)
