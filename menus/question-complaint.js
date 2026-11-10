@@ -23,18 +23,19 @@ export function isFlagged(q) {
   const same = String(q.complaintExpl || '') === hashOf(q.explanation) || String(q.complaintExpl || '').trim() === String(q.explanation || '').trim();
   return same && Number(q.complaintAns) === Number(q.answerIndex);
 }
-const FLAG_TTL = 30 * 60 * 1000;
+const FLAG_TTL = 6 * 3600 * 1000;   // the admin's stamp (settings/appVersion.cf, delivered by the already-open listener) invalidates sooner at zero cost
 export async function applyFlags(subjectId, quizId, questions) {
   if (!Array.isArray(questions) || !questions.length) return;
   const key = `alif_qflags_${quizId}`;
   let c = null; try { c = JSON.parse(localStorage.getItem(key) || 'null'); } catch (_) {}
-  const stale = !c || Date.now() - (c.t || 0) > FLAG_TTL;
+  const cf = window.__alifCF || '';
+  const stale = !c || Date.now() - (c.t || 0) > FLAG_TTL || (cf && c.cf !== cf);
   if (stale && navigator.onLine !== false) {
     try {
       const snap = await Promise.race([getDoc(doc(db, 'questionFlags', String(quizId))), new Promise((_, rej) => setTimeout(() => rej(new Error('slow')), 2500))]);
-      c = { t: Date.now(), flags: snap.exists() ? (snap.data().flags || {}) : {} };
+      c = { t: Date.now(), cf, flags: snap.exists() ? (snap.data().flags || {}) : {} };
       try { localStorage.setItem(key, JSON.stringify(c)); } catch (_) {}
-    } catch (_) { /* keep the old copy (or none) */ }
+    } catch (err) { try { console.warn('[complaints] could not read questionFlags:', err && (err.code || err.message)); } catch (_) {} }
   }
   const f = (c && c.flags) || {};
   questions.forEach(q => {

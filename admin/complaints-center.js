@@ -95,6 +95,9 @@ async function applyFlag(c) {
   return true;
 }
 
+/* tells every open student app (through the appVersion listener they already have — no extra reads) that flags changed */
+const bumpCF = () => setDoc(doc(db, 'settings', 'appVersion'), { cf: Date.now() }, { merge: true }).catch(() => {});
+
 /* take a question out of "under review": drop its flag (and the older fields on the question itself, if any) */
 async function clearFlag(c) {
   try { await updateDoc(doc(db, 'questionFlags', c.quizId), { [`flags.${c.questionId}`]: deleteField(), updatedAt: Date.now() }); } catch (_) {}
@@ -129,6 +132,7 @@ async function onClick(e) {
       await updateDoc(doc(db, 'questionComplaints', c.id), { flagged: false });
       toast('Removed from review — students stop seeing the notice within ~30 minutes', 'success');
     }
+    bumpCF();
     load();
   } catch (err) { toast('Failed: ' + (err.message || err), 'error'); card.querySelectorAll('button').forEach(x => x.disabled = false); }
 }

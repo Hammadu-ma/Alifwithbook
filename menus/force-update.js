@@ -122,6 +122,7 @@ if (db) {
       window.__alifCV = { v: d.cv != null ? String(d.cv) : '', q: d.cq != null ? String(d.cq) : '', t: Date.now() };
       try { window.dispatchEvent(new Event('alif:cv')); } catch (_) {}
     }
+    if (d.cf != null) window.__alifCF = String(d.cf);   // complaint-flag stamp: tells question-complaint.js its cached flags are out of date
     const version = d.version != null ? String(d.version) : '';
     if (!version) return;
     const seen = getSeen();
