@@ -3233,6 +3233,7 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
         <button data-tab="chat"><i class="fa-solid fa-comments"></i><span>Chat</span></button>
         <button data-tab="settings"><i class="fa-solid fa-gear"></i><span>Settings</span></button>
         <button data-tab="notifications"><i class="fa-solid fa-bell"></i><span>Notifications</span></button>
+        <button data-tab="complaints"><i class="fa-solid fa-flag"></i><span>Complaints</span></button>
         <button data-tab="resources"><i class="fa-solid fa-book-open"></i><span>AResources</span></button>
         <button data-tab="admins" style="display:none"><i class="fa-solid fa-user-shield"></i><span>Admins</span></button>
         <button data-tab="activity" style="display:none"><i class="fa-solid fa-clock-rotate-left"></i><span>Activity</span></button>
@@ -3989,6 +3990,7 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
 
       <!-- Settings Tab -->
       <div class="tab-panel" id="tab-notifications"></div>
+      <div class="tab-panel" id="tab-complaints"></div>
       <div class="tab-panel" id="tab-resources"></div>
 
       <div class="tab-panel" id="tab-settings">
@@ -4972,7 +4974,7 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
       ['dashboard', 'Dashboard', 'fa-house'], ['students', 'Students', 'fa-users'], ['access', 'Access', 'fa-shield-halved'], ['programaccess', 'Program Access', 'fa-key'],
       ['enroll', 'Enroll', 'fa-user-check'], ['payments', 'Payments', 'fa-money-bill-wave'], ['pricing', 'Pricing', 'fa-tags'], ['bundles', 'Bundles', 'fa-box-open'], ['chat', 'Class chat', 'fa-comments'], ['live', 'Live quizzes', 'fa-tower-broadcast'], ['modules', 'Modules', 'fa-layer-group'], ['subjects', 'Subjects', 'fa-book'],
       ['quizzes', 'Quizzes', 'fa-list-check'], ['questions', 'Questions', 'fa-circle-question'], ['results', 'Results', 'fa-chart-column'], ['export', 'Export', 'fa-file-export'],
-      ['devices', 'Devices', 'fa-mobile-screen-button'], ['settings', 'Settings', 'fa-gear'], ['notifications', 'Notifications', 'fa-bell'], ['resources', 'AResources (books & videos)', 'fa-book-open']
+      ['devices', 'Devices', 'fa-mobile-screen-button'], ['settings', 'Settings', 'fa-gear'], ['notifications', 'Notifications', 'fa-bell'], ['complaints', 'Complaints (question reports)', 'fa-flag'], ['resources', 'AResources (books & videos)', 'fa-book-open']
     ];
     let adminProfile = { uid: null, role: 'owner', permissions: {} };
     let admRows = [];
@@ -8715,7 +8717,7 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
     function dashSetActiveTab(tabKey) {
       if (!admCan(tabKey)) { toast("You don't have access to this section.", 'error'); return; }
       tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tabKey));
-      const panels = { dashboard: $('tab-dashboard'), access: $('tab-access'), students: $('tab-students'), programaccess: $('tab-programaccess'), enroll: $('tab-enroll'), chat: $('tab-chat'), bundles: $('tab-bundles'), modules: $('tab-modules'), subjects: $('tab-subjects'), quizzes: $('tab-quizzes'), questions: $('tab-questions'), settings: $('tab-settings'), resources: $('tab-resources'), admins: $('tab-admins'), payments: $('tab-payments'), pricing: $('tab-pricing'), live: $('tab-live'), activity: $('tab-activity'), notifications: $('tab-notifications') };
+      const panels = { dashboard: $('tab-dashboard'), access: $('tab-access'), students: $('tab-students'), programaccess: $('tab-programaccess'), enroll: $('tab-enroll'), chat: $('tab-chat'), bundles: $('tab-bundles'), modules: $('tab-modules'), subjects: $('tab-subjects'), quizzes: $('tab-quizzes'), questions: $('tab-questions'), settings: $('tab-settings'), resources: $('tab-resources'), admins: $('tab-admins'), payments: $('tab-payments'), pricing: $('tab-pricing'), live: $('tab-live'), activity: $('tab-activity'), notifications: $('tab-notifications'), complaints: $('tab-complaints') };
       Object.keys(panels).forEach(key => panels[key].classList.toggle('active', key === tabKey));
     }
 
@@ -9681,7 +9683,7 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
         tabBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-        const panels = { dashboard: $('tab-dashboard'), access: $('tab-access'), students: $('tab-students'), programaccess: $('tab-programaccess'), enroll: $('tab-enroll'), chat: $('tab-chat'), bundles: $('tab-bundles'), modules: $('tab-modules'), subjects: $('tab-subjects'), quizzes: $('tab-quizzes'), questions: $('tab-questions'), results: $('tab-results'), export: $('tab-export'), devices: $('tab-devices'), settings: $('tab-settings'), resources: $('tab-resources'), admins: $('tab-admins'), payments: $('tab-payments'), pricing: $('tab-pricing'), live: $('tab-live'), activity: $('tab-activity'), notifications: $('tab-notifications') };
+        const panels = { dashboard: $('tab-dashboard'), access: $('tab-access'), students: $('tab-students'), programaccess: $('tab-programaccess'), enroll: $('tab-enroll'), chat: $('tab-chat'), bundles: $('tab-bundles'), modules: $('tab-modules'), subjects: $('tab-subjects'), quizzes: $('tab-quizzes'), questions: $('tab-questions'), results: $('tab-results'), export: $('tab-export'), devices: $('tab-devices'), settings: $('tab-settings'), resources: $('tab-resources'), admins: $('tab-admins'), payments: $('tab-payments'), pricing: $('tab-pricing'), live: $('tab-live'), activity: $('tab-activity'), notifications: $('tab-notifications'), complaints: $('tab-complaints') };
         Object.keys(panels).forEach(key => panels[key].classList.toggle('active', key === btn.dataset.tab));
         const tab = btn.dataset.tab;
         if (tab === 'dashboard') refreshDashboard();
@@ -9702,7 +9704,7 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
         else if (tab === 'payments') payOpen();
         else if (tab === 'pricing') prOpen();
         else if (tab === 'live') lvOpen();
-        else if (tab === 'activity') auOpen(); else if (tab === 'notifications') window.__alifInitNotificationsAdmin?.(); else if (tab === 'resources') window.__alifInitResourcesAdmin?.();
+        else if (tab === 'activity') auOpen(); else if (tab === 'notifications') window.__alifInitNotificationsAdmin?.(); else if (tab === 'complaints') window.__alifInitComplaintsAdmin?.(); else if (tab === 'resources') window.__alifInitResourcesAdmin?.();
       });
     });
 
@@ -11313,7 +11315,7 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
       tabBtns.forEach(b => b.classList.remove('active'));
       const paTabBtn = Array.from(tabBtns).find(b => b.dataset.tab === 'programaccess');
       if (paTabBtn) paTabBtn.classList.add('active');
-      const panels = { dashboard: $('tab-dashboard'), access: $('tab-access'), students: $('tab-students'), programaccess: $('tab-programaccess'), modules: $('tab-modules'), subjects: $('tab-subjects'), quizzes: $('tab-quizzes'), settings: $('tab-settings'), resources: $('tab-resources'), admins: $('tab-admins'), payments: $('tab-payments'), pricing: $('tab-pricing'), live: $('tab-live'), activity: $('tab-activity'), notifications: $('tab-notifications') };
+      const panels = { dashboard: $('tab-dashboard'), access: $('tab-access'), students: $('tab-students'), programaccess: $('tab-programaccess'), modules: $('tab-modules'), subjects: $('tab-subjects'), quizzes: $('tab-quizzes'), settings: $('tab-settings'), resources: $('tab-resources'), admins: $('tab-admins'), payments: $('tab-payments'), pricing: $('tab-pricing'), live: $('tab-live'), activity: $('tab-activity'), notifications: $('tab-notifications'), complaints: $('tab-complaints') };
       Object.keys(panels).forEach(key => panels[key].classList.toggle('active', key === 'programaccess'));
       if (student) $('paSearch').value = student.name || '';
       renderProgramAccess();
@@ -14830,6 +14832,7 @@ document.addEventListener('DOMContentLoaded',()=>document.querySelector('[data-t
 
   </script>
   <script type="module" src="admin/notifications-center.js"></script>
+<script type="module" src="admin/complaints-center.js"></script>
 <script>
 (function(){
   const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
