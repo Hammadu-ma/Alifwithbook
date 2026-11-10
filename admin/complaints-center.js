@@ -5,7 +5,7 @@
    Reject   → closes the report (optional note). */
 import { getApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
 import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
-import { getFirestore, doc, getDoc, updateDoc, collection, getDocs, query, where, limit, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
+import { getFirestore, doc, getDoc, updateDoc, setDoc, deleteField, collection, getDocs, query, where, limit, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 
 const auth = getAuth(getApp());
 const db = getFirestore(getApp());
@@ -16,6 +16,7 @@ const toast = (m, t = 'info') => { try { window.toast?.(m, t); } catch (_) {} };
 const letter = i => String.fromCharCode(65 + (+i || 0));
 const qPath = c => doc(db, 'subjects', c.subjectId, 'quizzes', c.quizId, 'questions', c.questionId);
 
+const hashOf = t => { t = String(t ?? '').trim(); let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return 'h' + (h >>> 0).toString(36) + t.length; };
 let filter = 'pending', rows = [], built = false;
 
 const CSS = `
@@ -101,7 +102,7 @@ async function onClick(e) {
           const q = qs.data();
           // only mark the question if it has not been corrected since the student reported it
           if (String(q.explanation || '').trim() === String(c.explanationAtComplaint || '').trim() && Number(q.answerIndex) === Number(c.currentAnswer)) {
-            await updateDoc(qPath(c), { complaintApprovedAt: Date.now(), complaintExpl: String(q.explanation || ''), complaintAns: Number(q.answerIndex) });
+            await setDoc(doc(db, 'questionFlags', c.quizId), { subjectId: c.subjectId, updatedAt: Date.now(), flags: { [c.questionId]: { ans: Number(q.answerIndex), h: hashOf(q.explanation), at: Date.now() } } }, { merge: true });
             flagged = true;
           }
         }
@@ -112,7 +113,7 @@ async function onClick(e) {
       await updateDoc(doc(db, 'questionComplaints', c.id), { status: 'rejected', adminNote: note, reviewedAt: serverTimestamp(), reviewedBy: by });
       toast('Rejected', 'success');
     } else if (b.dataset.a === 'unflag') {
-      await updateDoc(qPath(c), { complaintApprovedAt: 0, complaintExpl: '', complaintAns: -1 });
+      await updateDoc(doc(db, 'questionFlags', c.quizId), { [`flags.${c.questionId}`]: deleteField(), updatedAt: Date.now() });
       await updateDoc(doc(db, 'questionComplaints', c.id), { flagged: false });
       toast('Notice removed', 'success');
     }

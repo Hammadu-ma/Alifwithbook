@@ -6,17 +6,38 @@
    the snapshot no longer matches and the notice disappears by itself).
    No import-time work except registering one delegated click listener. */
 import { db } from './cloud-sync.js';
-import { doc, setDoc, serverTimestamp } from './runtime-ext.js';
+import { doc, setDoc, getDoc, serverTimestamp } from './runtime-ext.js';
 import { getStoredStudent, getAuthUser } from './auth.js';
 
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const plain = v => String(v ?? '').replace(/<[^>]*>/g, '').replace(/[*_`#>]/g, '').replace(/\s+/g, ' ').trim();
 const letter = i => String.fromCharCode(65 + i);
 
-/* ---------- the yellow "approved, not corrected yet" state ---------- */
+/* ---------- the yellow "approved, not corrected yet" state ----------
+   Admin approval writes ONE small doc per quiz: questionFlags/{quizId} = { flags: { [questionId]: { ans, h, at } } }.
+   h = hash of the explanation at approval time. While the question still has that explanation and answer it is flagged;
+   editing either makes the hash differ and the notice goes away by itself. Students read the doc at most once per 30 min per quiz. */
+const hashOf = t => { t = String(t ?? '').trim(); let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return 'h' + (h >>> 0).toString(36) + t.length; };
 export function isFlagged(q) {
   if (!q || !q.complaintApprovedAt) return false;
-  return String(q.complaintExpl || '').trim() === String(q.explanation || '').trim() && Number(q.complaintAns) === Number(q.answerIndex);
+  const same = String(q.complaintExpl || '') === hashOf(q.explanation) || String(q.complaintExpl || '').trim() === String(q.explanation || '').trim();
+  return same && Number(q.complaintAns) === Number(q.answerIndex);
+}
+const FLAG_TTL = 30 * 60 * 1000;
+export async function applyFlags(subjectId, quizId, questions) {
+  if (!Array.isArray(questions) || !questions.length) return;
+  const key = `alif_qflags_${quizId}`;
+  let c = null; try { c = JSON.parse(localStorage.getItem(key) || 'null'); } catch (_) {}
+  const stale = !c || Date.now() - (c.t || 0) > FLAG_TTL;
+  if (stale && navigator.onLine !== false) {
+    try {
+      const snap = await Promise.race([getDoc(doc(db, 'questionFlags', String(quizId))), new Promise((_, rej) => setTimeout(() => rej(new Error('slow')), 2500))]);
+      c = { t: Date.now(), flags: snap.exists() ? (snap.data().flags || {}) : {} };
+      try { localStorage.setItem(key, JSON.stringify(c)); } catch (_) {}
+    } catch (_) { /* keep the old copy (or none) */ }
+  }
+  const f = (c && c.flags) || {};
+  questions.forEach(q => { const x = f[q.id]; if (x) { q.complaintApprovedAt = x.at || 1; q.complaintExpl = x.h; q.complaintAns = x.ans; } });
 }
 export function complaintNoticeHtml(q) {
   return isFlagged(q)
@@ -54,7 +75,8 @@ function ensureCss() {
 .qc-flag i{color:#ca8a04;margin-top:2px}.qc-flag b{display:block}.qc-flag span{opacity:.8}
 .qc-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;background:rgba(250,204,21,.3);color:#a16207}
 body.dark .qc-pill{color:#fde047}
-.qcard.qc-flagged .card-inner{background-image:linear-gradient(rgba(250,204,21,.07),rgba(250,204,21,.07))}
+.qcard.qc-flagged .card-inner{background-image:linear-gradient(rgba(250,204,21,.16),rgba(250,204,21,.16));border-left-color:#eab308!important;box-shadow:0 0 0 1.5px rgba(234,179,8,.55)}
+.qc-flag{margin:10px 0 12px}
 `;
   document.head.appendChild(s);
 }
@@ -115,7 +137,7 @@ export function openComplaint({ q, subjectId, quizId, subjectName, quizName }) {
   setTimeout(() => { try { ta.focus({ preventScroll: true }); } catch (_) {} }, 150);
 }
 
-window.__alifQC = { notice: complaintNoticeHtml, pill: complaintPillHtml, flagged: isFlagged, open: openComplaint };
+window.__alifQC = { apply: applyFlags, notice: complaintNoticeHtml, pill: complaintPillHtml, flagged: isFlagged, open: openComplaint };
 
 /* practice cards: the Complain button inside .qcard */
 document.addEventListener('click', async e => {
