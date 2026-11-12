@@ -51,7 +51,8 @@ module.exports = handler(async (req, res) => {
       const what = p.offerName ? clean(p.offerName, 60) : 'your payment';
       if (want === 'approved') {
         title = 'Payment approved';
-        body = `Your payment for ${what} was approved.` + (unlocked ? ` Unlocked: ${list(unlocked)}.` : (p.grantedTo ? ` ${clean(String(p.grantedTo).replace(/\s*\(.*$/, ''), 80)} is now unlocked.` : ''));
+        const got = list(unlocked);
+        body = `Your payment for ${what} was approved.` + (got ? ` Unlocked: ${got}.` : (p.grantedTo ? ` ${clean(String(p.grantedTo).replace(/\s*\(.*$/, ''), 80)} is now unlocked.` : ' Your content is now unlocked.'));
       } else {
         title = 'Payment rejected';
         const why = clean(p.rejectReason, 200);
