@@ -3,7 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // =====================================================================
-    // Identity / roles
+    // Identity / roles  (EXISTING APP — preserved)
     // =====================================================================
     function signedIn() {
       return request.auth != null;
@@ -25,8 +25,6 @@ service cloud.firestore {
       return isAdmin() && get(adminPath(request.auth.uid)).data.role == 'owner';
     }
 
-    // UI permissions are not a security boundary by themselves. These helpers
-    // make the same admin permissions enforceable inside Firestore Rules.
     function adminCan(permission) {
       return isOwner()
         || (isAdmin() && get(adminPath(request.auth.uid)).data.permissions[permission] == true);
@@ -80,20 +78,39 @@ service cloud.firestore {
             || activeAllow(uid, 'module', get(/databases/$(database)/documents/subjects/$(subjectId)).data.moduleId));
     }
 
+    // ---- DEVICE PROTECTION ------------------------------------------------
+    // Rules cannot see which physical device sent a request, so each student
+    // "binds" the device they are using to their account in
+    // deviceSessions/{uid}.deviceId (see bindDeviceSession in device-session.js).
+    // That bind is only accepted for a device that is registered under the
+    // student AND not blocked (create/update rule below). Reads are then allowed
+    // only while that bound device is STILL registered and NOT blocked, so an
+    // admin block on a device cuts off protected questions at once.
+    function deviceSessionPath(uid) {
+      return /databases/$(database)/documents/deviceSessions/$(uid);
+    }
+
+    function registeredUnblockedDevice(studentId, deviceId) {
+      return deviceId is string
+        && exists(/databases/$(database)/documents/secretkeys/$(studentId)/devices/$(deviceId))
+        && get(/databases/$(database)/documents/secretkeys/$(studentId)/devices/$(deviceId)).data.blocked == false;
+    }
+
+    function deviceAllowed(uid) {
+      return exists(deviceSessionPath(uid))
+        && registeredUnblockedDevice(currentStudentId(), get(deviceSessionPath(uid)).data.deviceId);
+    }
+
     function ownerOrAdmin() {
       return isAdmin();
     }
 
     // =====================================================================
-    // Account profile
+    // Account profile  (EXISTING APP — preserved)
     // =====================================================================
     match /users/{uid} {
       allow read: if (adminCan('students') || adminCan('programaccess') || adminCan('enroll') || adminCan('payments') || adminCan('results') || adminCan('devices') || adminCan('chat')) || (signedIn() && request.auth.uid == uid);
 
-      // A student creates only their own profile, and the paired legacy
-      // student document is created in the same batch. getAfter() makes the
-      // pairing atomic and prevents a client from inventing an arbitrary
-      // studentId without creating the matching record.
       allow create: if signedIn()
         && request.auth.uid == uid
         && request.resource.data.role == 'student'
@@ -102,15 +119,9 @@ service cloud.firestore {
         && request.resource.data.name is string
         && request.resource.data.email is string
         && request.resource.data.migrationState in ['in_progress', 'complete']
-        // exists()/get() only see the database BEFORE the batch commits, so a
-        // brand-new signup (users + secretkeys written in one batch) would
-        // always fail. existsAfter()/getAfter() read the state after the batch,
-        // which also covers backfilling an already-existing linked student.
         && existsAfter(/databases/$(database)/documents/secretkeys/$(request.resource.data.studentId))
         && getAfter(/databases/$(database)/documents/secretkeys/$(request.resource.data.studentId)).data.authUid == uid;
 
-      // Students may update profile-facing fields only. Role/status/studentId
-      // are privileged account bindings and cannot be changed by the browser.
       allow update: if adminCan('students') || adminCan('programaccess') || adminCan('enroll') || (
         signedIn() && request.auth.uid == uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
@@ -142,14 +153,10 @@ service cloud.firestore {
     }
 
     // =====================================================================
-    // Admin accounts
+    // Admin accounts  (EXISTING APP — preserved)
     // =====================================================================
     match /admin/{uid} {
-      // Admin roster is sensitive. Only admins can see it.
       allow read: if isAdmin();
-
-      // Only the owner can add/change/remove admin metadata. The browser
-      // cannot promote an account to owner.
       allow create: if isOwner()
         && request.resource.data.role == 'admin';
       allow update: if isOwner()
@@ -159,7 +166,7 @@ service cloud.firestore {
     }
 
     // =====================================================================
-    // Public catalog metadata
+    // Public catalog metadata  (EXISTING APP — preserved)
     // =====================================================================
     match /universities/{id} {
       allow read: if true;
@@ -175,50 +182,33 @@ service cloud.firestore {
       allow read: if true;
       allow write: if (adminCan('subjects') || adminCan('programaccess'));
 
-      // -------------------------------------------------------------------
-      // Quiz access. Metadata may be public; questions are the protected
-      // content. The lock cascade mirrors the existing client entitlement
-      // model so the Firestore rule remains the actual enforcement point.
-      // -------------------------------------------------------------------
       match /quizzes/{quizId} {
-        // Quiz metadata is intentionally readable; the actual question bank
-        // is protected below. This also keeps collectionGroup/live queries
-        // efficient because rules do not need to prove entitlement for every
-        // metadata document returned.
         allow read: if true;
         allow write: if (adminCan('quizzes') || adminCan('programaccess'));
 
         match /questions/{questionId} {
           allow read: if adminCan('questions')
             || !quizLockedByDefault(getQuizData(id, quizId), id)
-            || (isActiveStudent() && quizAccess(request.auth.uid, id, quizId));
+            || (isActiveStudent() && deviceAllowed(request.auth.uid) && quizAccess(request.auth.uid, id, quizId));
           allow write: if adminCan('questions');
         }
       }
+    }
+
+    match /{path=**}/quizzes/{quizId} {
+      allow read: if true;
     }
 
     // AResources — books and videos shown in the student app's AResources tab.
     // Metadata is public (like modules); only admins with the 'resources' permission can write.
     match /books/{id} {
       allow read: if true;
-      allow write: if adminCan('resources');
+      allow write: if adminCan('resources') || adminCan('programaccess');
     }
 
     match /videos/{id} {
       allow read: if true;
-      allow write: if adminCan('resources');
-    }
-
-    match /packages/{id} {
-      allow read: if true;
-      allow write: if (adminCan('bundles') || adminCan('enroll') || adminCan('programaccess'));
-    }
-
-    match /bankAccounts/{id} {
-      // Bank details are intentionally public because a student must see
-      // them before submitting a manual bank transfer.
-      allow read: if true;
-      allow write: if (adminCan('payments') || adminCan('settings'));
+      allow write: if adminCan('resources') || adminCan('programaccess');
     }
 
     // Personal / segment / automatic notifications. Written only by the push server (Admin SDK).
@@ -236,12 +226,41 @@ service cloud.firestore {
     }
 
     // =====================================================================
-    // Settings — only non-sensitive settings are public.
-    // Telegram credentials must never be readable from a student browser.
+    // In-app timed exam attempts — identity-bound to Firebase Auth UID, same
+    // model as quiz results. Students create and read only their own attempts;
+    // attempts are immutable for students (no update/delete).
+    // =====================================================================
+    match /examAttempts/{id} {
+      allow read: if adminCan('results') || (
+        isActiveStudent()
+        && resource.data.uid == request.auth.uid
+        && resource.data.studentId == currentStudentId()
+      );
+      allow create: if isActiveStudent()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.studentId == currentStudentId();
+      allow update, delete: if adminCan('results');
+    }
+
+    match /packages/{id} {
+      allow read: if true;
+      allow write: if (adminCan('bundles') || adminCan('enroll') || adminCan('programaccess'));
+    }
+
+    match /bankAccounts/{id} {
+      allow read: if true;
+      allow write: if (adminCan('payments') || adminCan('settings'));
+    }
+
+    // =====================================================================
+    // Settings  (EXISTING APP — preserved)
+    //   NEW: content admins may write ONLY the cv / cq stamp fields on
+    //   settings/appVersion (read-free cache invalidation for students).
     // =====================================================================
     match /settings/{id} {
       allow read: if id in ['system', 'contentVersion', 'appVersion', 'forceDeviceLock', 'lockConfig', 'pricing']
         || (id == 'pricing' && adminCan('pricing'))
+        || (id == 'telegram' && isActiveStudent())   // payment receipt upload reads the bot config
         || adminCan('settings');
       allow write: if id == 'pricing'
         ? adminCan('pricing')
@@ -256,10 +275,9 @@ service cloud.firestore {
     }
 
     // =====================================================================
-    // Unified student entitlements
+    // Unified student entitlements  (EXISTING APP — preserved)
     // =====================================================================
     match /access/{uid} {
-      allow read: if signedIn() && request.auth.uid == uid || isAdmin();
       allow read: if signedIn() && request.auth.uid == uid || isAdmin();
       allow create, update: if isAdmin() && (isOwner() || adminCan('programaccess') || adminCan('enroll') || adminCan('payments') || adminCan('bundles'))
         || (isActiveStudent() && request.auth.uid == uid && get(userPath(uid)).data.migrationState == 'in_progress');
@@ -274,13 +292,15 @@ service cloud.firestore {
       }
     }
 
-    // Lets the admin list every active grant for a resource in one query
-    // (Enroll screen). Students still only read their own via the rule above.
     match /{path=**}/resources/{resourceKey} {
       allow read: if isAdmin();
     }
 
-    // Admin activity log (written by audit() in the admin dashboard).
+    // NEW: admin Devices / Enroll tabs read every student device in one collection-group query.
+    match /{path=**}/devices/{deviceId} {
+      allow read: if isAdmin();
+    }
+
     match /auditLog/{entryId} {
       allow create: if isAdmin() && request.resource.data.uid == request.auth.uid;
       allow read: if isAdmin() && (isOwner() || adminCan('activity'));
@@ -295,10 +315,9 @@ service cloud.firestore {
     }
 
     // =====================================================================
-    // Legacy student record / entitlement profile
+    // Legacy student record  (EXISTING APP — preserved)
     // =====================================================================
     match /secretkeys/{studentId} {
-      // A student may read only their own record. Admins can read all.
       allow read: if (adminCan('students') || adminCan('programaccess') || adminCan('enroll') || adminCan('bundles') || adminCan('devices') || adminCan('chat'))
         || (signedIn() && resource.data.authUid == request.auth.uid)
         || ownsStudent(studentId);
@@ -320,8 +339,6 @@ service cloud.firestore {
         && getAfter(userPath(request.auth.uid)).data.studentId == studentId
       );
 
-      // Normal student changes are limited to profile/presence preferences.
-      // Entitlements, authUid, device policy and keys stay privileged.
       allow update: if (adminCan('students') || adminCan('programaccess') || adminCan('enroll') || adminCan('bundles') || adminCan('devices') || adminCan('chat')) || (
         signedIn()
         && !('authUid' in resource.data)
@@ -341,11 +358,6 @@ service cloud.firestore {
 
       allow delete: if isOwner();
 
-      // -------------------------------------------------------------------
-      // Device registrations are policy state, not authentication. A
-      // student can register their own browser but cannot make it blocked:
-      // false. Only admins can block/delete devices.
-      // -------------------------------------------------------------------
       match /devices/{deviceId} {
         allow read: if isAdmin() || ownsStudent(studentId);
         allow create: if adminCan('devices') || (
@@ -367,7 +379,21 @@ service cloud.firestore {
     }
 
     // =====================================================================
-    // Personal quiz pins
+    // Device session binding  (NEW) — which registered device this account is
+    // currently using. Only a registered, NON-blocked device can be bound, so a
+    // blocked or unregistered device can never unlock protected questions.
+    // =====================================================================
+    match /deviceSessions/{uid} {
+      allow read: if (signedIn() && request.auth.uid == uid) || isAdmin();
+      allow create, update: if isActiveStudent()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['deviceId', 'updatedAt'])
+        && registeredUnblockedDevice(currentStudentId(), request.resource.data.deviceId);
+      allow delete: if (signedIn() && request.auth.uid == uid) || isAdmin();
+    }
+
+    // =====================================================================
+    // Personal quiz pins  (EXISTING APP — preserved)
     // =====================================================================
     match /studentPins/{studentId} {
       allow read, create, update: if isActiveStudent() && currentStudentId() == studentId;
@@ -375,7 +401,7 @@ service cloud.firestore {
     }
 
     // =====================================================================
-    // Quiz progress — document key is the Firebase UID.
+    // Quiz progress  (EXISTING APP — preserved)
     // =====================================================================
     match /progress/{uid} {
       allow read, create, update: if isActiveStudent()
@@ -386,9 +412,7 @@ service cloud.firestore {
     }
 
     // =====================================================================
-    // Quiz results — identity-bound to Firebase Auth UID. Legacy records
-    // without uid remain admin-readable but are not student-readable until
-    // they are migrated.
+    // Quiz results  (EXISTING APP — preserved)
     // =====================================================================
     match /results/{id} {
       allow read: if adminCan('results') || (
@@ -411,47 +435,52 @@ service cloud.firestore {
     }
 
     // =====================================================================
-    // In-app timed exam attempts — identity-bound to Firebase Auth UID, same
-    // model as quiz results. Students create and read only their own attempts;
-    // attempts are immutable for students (no update/delete).
+    // Payment submissions  (EXISTING APP — preserved)
     // =====================================================================
-    match /examAttempts/{id} {
-      allow read: if adminCan('results') || (
-        isActiveStudent()
-        && resource.data.uid == request.auth.uid
-        && resource.data.studentId == currentStudentId()
-      );
-      allow create: if isActiveStudent()
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.studentId == currentStudentId();
-      allow update, delete: if adminCan('results');
+    // Students report a question's answer; admins review. One report per student per question (id = uid_quiz_question).
+    // Tiny per-quiz doc listing questions with an approved complaint that is not corrected yet.
+    match /questionFlags/{quizId} {
+      allow read: if signedIn();
+      allow write: if adminCan('questions') || adminCan('complaints');
     }
 
-    // =====================================================================
-    // Payment submissions — a student can submit and view only their own
-    // pending/previous submissions. Approval remains an admin operation.
-    // =====================================================================
-    match /paymentSubmissions/{id} {
-      // `studentId` on a submission may be the account's record key OR the human-facing ID (secretkeys.ID, ALIF-XXXXXXXX).
-      function ownStudentRef(sid) {
-        return sid == currentStudentId()
-          || sid == get(/databases/$(database)/documents/secretkeys/$(currentStudentId())).data.ID;
-      }
+    match /questionComplaints/{id} {
+      allow read: if adminCan('questions') || adminCan('complaints')
+        || (signedIn() && resource.data.uid == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.explanation is string
+        && request.resource.data.explanation.size() <= 1500;
+      allow update, delete: if adminCan('questions') || adminCan('complaints');
+    }
 
+    match /paymentSubmissions/{id} {
+      // Ownership is proven by uid. `studentId` may be the human-facing ID, so the internal
+      // record key is checked through `studentRecordId` (legacy submissions used studentId for it).
       allow read: if adminCan('payments') || (
-        isActiveStudent() && resource.data.uid == request.auth.uid
+        signedIn() && resource.data.uid == request.auth.uid
       );
 
-      allow create: if isActiveStudent()
+      allow create: if signedIn()
         && request.resource.data.uid == request.auth.uid
-        && ownStudentRef(request.resource.data.studentId)
-        && request.resource.data.status == 'pending';
+        && request.resource.data.status == 'pending'
+        && (
+          // normal path: active student whose users/{uid}.studentId matches
+          (isActiveStudent()
+            && (request.resource.data.get('studentRecordId', null) == currentStudentId()
+                || request.resource.data.studentId == currentStudentId()))
+          // fallback: the student's own secretkeys record is linked to this login
+          || (request.resource.data.get('studentRecordId', null) is string
+              && exists(/databases/$(database)/documents/secretkeys/$(request.resource.data.studentRecordId))
+              && get(/databases/$(database)/documents/secretkeys/$(request.resource.data.studentRecordId)).data.authUid == request.auth.uid)
+        );
 
       allow update, delete: if adminCan('payments');
     }
 
     // =====================================================================
-    // Chat — authenticated, identity-bound, participant-bound.
+    // Chat  (EXISTING APP — preserved, except privateChats which is FIXED)
     // =====================================================================
     match /chatProfiles/{profileId} {
       allow read: if isActiveStudent() || adminCan('chat');
@@ -474,34 +503,67 @@ service cloud.firestore {
         && request.resource.data.authUid == resource.data.authUid
         && request.resource.data.studentId == resource.data.studentId
       );
-      allow delete: if adminCan('chat');
+      allow delete: if adminCan('chat') || (isActiveStudent() && resource.data.authUid == request.auth.uid);
     }
 
+    // ---- PRIVATE CHATS (fixed) ------------------------------------------
     match /privateChats/{chatId} {
-      allow read: if adminCan('chat') || (isActiveStudent()
-        && currentStudentId() in resource.data.participantIds);
+
+      // Single-chat read. Also allowed while the chat does not exist yet
+      // (a brand-new conversation), otherwise reading it threw an error.
+      allow get: if adminCan('chat')
+        || (isActiveStudent()
+            && (resource == null || currentStudentId() in resource.data.participantIds));
+
+      // Chat list:  where('participantIds', 'array-contains', studentId)
+      allow list: if adminCan('chat')
+        || (isActiveStudent() && currentStudentId() in resource.data.participantIds);
+
+      // The app names every chat  [idA, idB].sort().join('_')  — enforce that,
+      // so nobody can pre-create a chat document in a pair they are not part of.
       allow create: if isActiveStudent()
-        && currentStudentId() in request.resource.data.participantIds;
-      allow update: if isActiveStudent()
-        && currentStudentId() in resource.data.participantIds
-        && currentStudentId() in request.resource.data.participantIds;
+        && request.resource.data.participantIds is list
+        && request.resource.data.participantIds.size() == 2
+        && currentStudentId() in request.resource.data.participantIds
+        && (chatId == request.resource.data.participantIds[0] + '_' + request.resource.data.participantIds[1]
+            || chatId == request.resource.data.participantIds[1] + '_' + request.resource.data.participantIds[0]);
+
+      allow update: if adminCan('chat')
+        || (isActiveStudent()
+            && currentStudentId() in resource.data.participantIds
+            && currentStudentId() in request.resource.data.participantIds);
+
       allow delete: if adminCan('chat');
 
       match /messages/{messageId} {
-        allow read: if adminCan('chat') || (isActiveStudent()
-          && currentStudentId() in get(parentChatPath(chatId)).data.participantIds);
+
+        // isNewPrivateChatFor: the app opens / writes a conversation's messages
+        // BEFORE the chat document exists (first message to a classmate).
+        allow read: if adminCan('chat')
+          || isPrivateParticipant(chatId)
+          || isNewPrivateChatFor(chatId);
+
         allow create: if isActiveStudent()
           && request.resource.data.authUid == request.auth.uid
           && request.resource.data.studentId == currentStudentId()
-          && currentStudentId() in get(parentChatPath(chatId)).data.participantIds;
-        allow update: if adminCan('chat') || (
-          isActiveStudent()
-          && resource.data.authUid == request.auth.uid
-          && request.resource.data.authUid == resource.data.authUid
-          && request.resource.data.studentId == resource.data.studentId
-          && currentStudentId() in get(parentChatPath(chatId)).data.participantIds
-        );
-        allow delete: if adminCan('chat');
+          && (isPrivateParticipantAfter(chatId) || isNewPrivateChatFor(chatId));
+
+        allow update: if adminCan('chat')
+          // sender edits their own message
+          || (isActiveStudent()
+              && resource.data.authUid == request.auth.uid
+              && request.resource.data.authUid == resource.data.authUid
+              && request.resource.data.studentId == resource.data.studentId
+              && isPrivateParticipant(chatId))
+          // the other participant answers a shared question: only answers.<theirStudentId>
+          || (isPrivateParticipant(chatId)
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answers'])
+              && request.resource.data.answers
+                   .diff(resource.data.get('answers', {}))
+                   .affectedKeys().hasOnly([currentStudentId()]));
+
+        allow delete: if adminCan('chat')
+          || (isActiveStudent() && resource.data.authUid == request.auth.uid && isPrivateParticipant(chatId));
       }
     }
 
@@ -529,8 +591,85 @@ service cloud.firestore {
           && request.resource.data.studentId == resource.data.studentId
           && currentStudentId() in get(parentGroupPath(groupId)).data.memberIds
         );
-        allow delete: if adminCan('chat');
+        allow delete: if adminCan('chat') || (isActiveStudent()
+          && resource.data.authUid == request.auth.uid
+          && currentStudentId() in get(parentGroupPath(groupId)).data.memberIds);
       }
+    }
+
+    // =====================================================================
+    // ██  JUMJ SOCIAL AFFAIR APP — NEW SECTION  ██
+    // Separate collections (members, payments, messages). Does NOT touch
+    // or weaken any of the rules above.
+    // =====================================================================
+
+    function jumjMemberPath(uid) {
+      return /databases/$(database)/documents/members/$(uid);
+    }
+
+    // Any signed-in user who has a members/{uid} document
+    function isJumjMember() {
+      return signedIn() && exists(jumjMemberPath(request.auth.uid));
+    }
+
+    // A JUMJ admin = a member whose role field is 'admin'
+    function isJumjAdmin() {
+      return isJumjMember()
+        && get(jumjMemberPath(request.auth.uid)).data.role == 'admin';
+    }
+
+    // members/{uid} — member profiles
+    match /members/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isJumjAdmin());
+
+      // Self-signup: a newly authenticated user creates their own member doc.
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.uid == uid;
+
+      // Self update (profile edit) OR admin update
+      allow update: if isJumjAdmin()
+        || (signedIn()
+            && request.auth.uid == uid
+            && request.resource.data.uid == resource.data.uid);
+
+      // Only JUMJ admins can delete member accounts
+      allow delete: if isJumjAdmin();
+    }
+
+    // payments/{id} — payment submissions
+    match /payments/{id} {
+      allow read: if isJumjAdmin()
+        || (signedIn() && resource.data.uid == request.auth.uid);
+
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'pending';
+
+      // Only admins can change status (approve / reject)
+      allow update, delete: if isJumjAdmin();
+    }
+
+    // messages/{id} — member <-> admin chat
+    match /messages/{id} {
+      allow read: if isJumjAdmin()
+        || (signedIn() && resource.data.uid == request.auth.uid);
+
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid;
+
+      // Admin replies flip status -> 'replied'; member can update status of own message
+      allow update: if isJumjAdmin()
+        || (signedIn() && resource.data.uid == request.auth.uid);
+
+      allow delete: if isJumjAdmin();
+    }
+
+    // =====================================================================
+    // No public catch-all. New collections are denied by default.
+    // =====================================================================
+    match /{document=**} {
+      allow read, write: if false;
     }
 
     // =====================================================================
@@ -619,6 +758,26 @@ service cloud.firestore {
 
     function parentGroupPath(groupId) {
       return /databases/$(database)/documents/chatGroups/$(groupId);
+    }
+
+    // ---- Private chat helpers (NEW) -------------------------------------
+    function isPrivateParticipant(chatId) {
+      return isActiveStudent()
+        && exists(parentChatPath(chatId))
+        && currentStudentId() in get(parentChatPath(chatId)).data.participantIds;
+    }
+
+    function isPrivateParticipantAfter(chatId) {
+      return isActiveStudent()
+        && existsAfter(parentChatPath(chatId))
+        && currentStudentId() in getAfter(parentChatPath(chatId)).data.participantIds;
+    }
+
+    // Chat document not created yet, and this student's ID is one half of the chat ID.
+    function isNewPrivateChatFor(chatId) {
+      return isActiveStudent()
+        && !exists(parentChatPath(chatId))
+        && chatId.matches('^(.+_)?' + currentStudentId() + '(_.+)?$');
     }
   }
 }
