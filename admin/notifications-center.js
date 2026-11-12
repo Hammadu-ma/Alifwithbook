@@ -9,7 +9,7 @@
 import { getApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
 import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import {
-  getFirestore, doc, getDoc, setDoc, collection, collectionGroup, getDocs, query, where, onSnapshot, Timestamp, addDoc, serverTimestamp
+  getFirestore, doc, getDoc, setDoc, collection, collectionGroup, getDocs, query, where, onSnapshot, Timestamp, addDoc, serverTimestamp, deleteDoc, orderBy, limit, writeBatch
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 
 const auth = getAuth(getApp());
@@ -125,7 +125,7 @@ function css() {
 #tab-notifications .nc-chip.on{background:var(--accent,var(--artery));border-color:transparent;color:#fff}
 #tab-notifications .nc-count{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;background:var(--paper-2);font-size:13px;margin-bottom:14px}
 #tab-notifications .nc-count b{font-size:18px}
-#tab-notifications .nc-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:1px solid var(--card-border)}
+#tab-notifications .nc-hist-bar{display:flex;gap:8px;margin:6px 0 4px}#tab-notifications .nc-danger{color:#dc2626;border-color:rgba(220,38,38,.35)}#tab-notifications .nc-hist .nc-row .nc-tx span{display:block;word-break:break-word}#tab-notifications .nc-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:1px solid var(--card-border)}
 #tab-notifications .nc-row:first-of-type{border-top:0}
 #tab-notifications .nc-ic{flex:none;width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:var(--paper-2);color:var(--accent,var(--artery))}
 #tab-notifications .nc-tx{flex:1;min-width:0}#tab-notifications .nc-tx b{display:block;font-size:14px}#tab-notifications .nc-tx span{font-size:12px;color:var(--ink-faint);line-height:1.4}
@@ -172,6 +172,13 @@ function injectUI() {
       <div class="nc-field"><label for="ncUrl">Open when tapped (optional)</label><input id="ncUrl" placeholder="/ or https://…"></div>
       <button class="btn btn-primary" id="ncSend" type="button"><i class="fa-solid fa-paper-plane"></i> Send now</button>
       <div class="nc-result" id="ncResult" role="status"></div>
+    </section>
+
+    <section class="nc-card"><h3><i class="fa-solid fa-clock-rotate-left"></i> Sent notifications</h3>
+      <p class="nc-sub">Deleting removes a message from every student's bell and Notifications page. A push already delivered to a phone can't be recalled — students clear that themselves.</p>
+      <div class="nc-hist-bar"><button class="nc-chip" id="ncHistReload" type="button"><i class="fa-solid fa-rotate"></i> Refresh</button>
+        <button class="nc-chip nc-danger" id="ncHistClear" type="button"><i class="fa-solid fa-trash"></i> Clear all</button></div>
+      <div id="ncHist" class="nc-hist"><div class="nc-sub">Loading…</div></div>
     </section>
 
     <section class="nc-card"><h3><i class="fa-solid fa-bolt"></i> Automatic notifications</h3>
@@ -321,7 +328,31 @@ async function flush() {
   }
   const calls = [...payCalls];
   groups.forEach(g => { for (let i = 0; i < g.uids.length; i += 200) calls.push({ type: g.type, items: g.items, uids: g.uids.slice(i, i + 200) }); });
-  for (const c of calls) { try { await api('/api/push/event', c); } catch (err) { console.warn('[notifications] auto', c.type, err.message); } }
+  for (const c of calls) {
+    try { reportAuto(c, await api('/api/push/event', c)); }
+    catch (err) { console.warn('[notifications] auto', c.type, err.message); autoToast('Automatic notification failed: ' + err.message, true); }
+  }
+}
+
+
+/* Tell the admin what happened to each automatic notification (it used to fail silently). */
+function autoToast(msg, bad) {
+  try {
+    let box = document.getElementById('ncAutoToast');
+    if (!box) { box = document.createElement('div'); box.id = 'ncAutoToast'; box.style.cssText = 'position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:99999;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none'; document.body.appendChild(box); }
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'max-width:min(92vw,460px);padding:10px 14px;border-radius:12px;font:600 13px/1.35 system-ui,sans-serif;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.25);background:' + (bad ? '#b91c1c' : '#15803d');
+    box.appendChild(t); setTimeout(() => t.remove(), bad ? 8000 : 5000);
+  } catch (_) {}
+}
+function reportAuto(c, r) {
+  const what = { 'payment-approved': 'Payment approved', 'payment-rejected': 'Payment rejected', 'access-granted': 'Access granted', 'access-revoked': 'Access removed' }[c.type] || c.type;
+  if (r && r.skipped === 'disabled') return autoToast(what + ': not sent — this automatic notification is switched off (Admin → Notifications → Automatic).', true);
+  if (r && r.skipped === 'no-account') return autoToast(what + ': not sent — the student has no app account yet.', true);
+  if (r && r.skipped) return autoToast(what + ': skipped (' + r.skipped + ').', true);
+  if (r && r.sent > 0) return autoToast(what + ': pushed to ' + r.sent + ' device' + (r.sent === 1 ? '' : 's') + '.', false);
+  autoToast(what + ': saved in the student\'s app, but no push was sent — they have not turned notifications on for any device.', true);
 }
 
 let watching = false;
@@ -358,13 +389,59 @@ function startWatchers(user) {
   } catch (_) {}
 }
 
+
+/* ------------------------------------------------- sent notifications: list + delete */
+let histRows = [];
+const fmtWhen = ms => ms ? new Date(ms).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '';
+async function loadHistory() {
+  const box = $('ncHist'); if (!box) return;
+  box.innerHTML = '<div class="nc-sub">Loading…</div>';
+  const rows = []; let denied = false;
+  const pull = async (col, kind, q) => {
+    try { (await getDocs(q)).docs.forEach(d => { const v = d.data() || {}; rows.push({ col, kind, id: d.id, title: v.title || '(no title)', body: v.body || '', ms: v.createdAt && v.createdAt.toMillis ? v.createdAt.toMillis() : 0, n: Array.isArray(v.uids) ? v.uids.length : 0 }); }); }
+    catch (e) { if (e && e.code === 'permission-denied') denied = true; else console.warn('[notifications] history', col, e); }
+  };
+  await Promise.all([
+    pull('notifications', 'Everyone', query(collection(db, 'notifications'), orderBy('createdAt', 'desc'), limit(100))),
+    pull('userNotifications', 'Targeted', query(collection(db, 'userNotifications'), limit(100)))
+  ]);
+  histRows = rows.sort((a, b) => b.ms - a.ms);
+  if (!histRows.length) { box.innerHTML = `<div class="nc-sub">${denied ? 'Your admin account is not allowed to read notifications (check Firestore rules).' : 'No sent notifications.'}</div>`; return; }
+  box.innerHTML = histRows.map((r, i) => `<div class="nc-row"><span class="nc-tx"><b>${esc(r.title)}</b><span>${esc(r.body)}</span><span>${esc(r.kind)}${r.n ? ' · ' + r.n + ' student' + (r.n === 1 ? '' : 's') : ''} · ${esc(fmtWhen(r.ms))}</span></span><button type="button" class="nc-chip nc-danger" data-del="${i}" title="Delete"><i class="fa-solid fa-trash"></i></button></div>`).join('');
+}
+async function deleteHist(list) {
+  for (let i = 0; i < list.length; i += 400) {
+    const b = writeBatch(db);
+    list.slice(i, i + 400).forEach(r => b.delete(doc(db, r.col, r.id)));
+    await b.commit();
+  }
+}
+function bindHistory() {
+  const note = m => { const o = $('ncResult'); if (o) { o.textContent = m; o.className = 'nc-result err'; } };
+  $('ncHistReload').addEventListener('click', loadHistory);
+  $('ncHist').addEventListener('click', async e => {
+    const b = e.target.closest('[data-del]'); if (!b) return;
+    const r = histRows[+b.dataset.del]; if (!r) return;
+    if (!confirm('Delete "' + r.title + '" for all students?')) return;
+    b.disabled = true;
+    try { await deleteDoc(doc(db, r.col, r.id)); histRows = histRows.filter(x => x !== r); await loadHistory(); }
+    catch (err) { b.disabled = false; alert(err.code === 'permission-denied' ? 'Not allowed by Firestore rules — add an admin delete rule for notifications.' : 'Could not delete: ' + err.message); }
+  });
+  $('ncHistClear').addEventListener('click', async () => {
+    if (!histRows.length) return;
+    if (!confirm('Delete ALL ' + histRows.length + ' sent notifications for every student? This cannot be undone.')) return;
+    try { await deleteHist(histRows.slice()); await loadHistory(); }
+    catch (err) { alert(err.code === 'permission-denied' ? 'Not allowed by Firestore rules — add an admin delete rule for notifications.' : 'Could not delete: ' + err.message); await loadHistory(); }
+  });
+}
+
 /* ------------------------------------------------------------------ boot */
 let uiBooted = false;
 async function boot() {
   css(); injectUI();
   if (!$('ncSend') || uiBooted) { if (uiBooted) { fillSelectors(); } return; }
   uiBooted = true;
-  bindSend(); bindSettings();
+  bindSend(); bindSettings(); bindHistory(); loadHistory();
   await loadSettings(); paintSettings();
   try { await bridge()?.ensureStudents(); } catch (_) {}
   fillSelectors(); refreshCount();

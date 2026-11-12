@@ -330,6 +330,7 @@ function effectiveLocked(docData, studentId) {
 
 async function isEnrolledIn(moduleId, student) {
   if (!moduleId || !student || !student.id) return false;
+  try { if ((await import('./access-service.js')).hasAccess('module', moduleId)) return true; } catch (_) {}
   const { ALL_MODULES } = await import('./picker-screen.js');
   const m = ALL_MODULES.find((x) => x.id === moduleId);
   if (m && m.userLocks && m.userLocks[student.id] === 'enrolled') return true;
@@ -378,6 +379,7 @@ async function subjectHasLockedContent(subjectName) {
       const { SUBJECTS_CACHE } = await import('./picker-screen.js');
       const known = SUBJECTS_CACHE.find((x) => x.name === subjectName);
       if (known && ((known.userLocks && known.userLocks[student.id] === 'enrolled') || (student.userLocks && student.userLocks[known.id] === 'enrolled'))) return false;
+      try { if (known && (await import('./access-service.js')).hasAccess('subject', known.id)) return false; } catch (_) {}
       if (known && await isEnrolledIn(known.moduleId, student)) return false;
       const subjSnap = await getDocs(query(collection(db, 'subjects'), where('name', '==', subjectName), limit(1)));
       if (!subjSnap.docs.length) return false;

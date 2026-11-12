@@ -26,10 +26,11 @@ const hmac = (key, data) => crypto.createHmac('sha256', key).update(data).digest
 const sha256hex = data => crypto.createHash('sha256').update(data).digest('hex');
 const enc = s => encodeURIComponent(s).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase());
 
+const clean = v => String(v == null ? '' : v).replace(/\s+/g, '');   // pasted env values often carry a trailing newline
 function cfg() {
   const c = {
-    account: process.env.R2_ACCOUNT_ID, ak: process.env.R2_ACCESS_KEY_ID,
-    sk: process.env.R2_SECRET_ACCESS_KEY, bucket: process.env.R2_BUCKET
+    account: clean(process.env.R2_ACCOUNT_ID), ak: clean(process.env.R2_ACCESS_KEY_ID),
+    sk: clean(process.env.R2_SECRET_ACCESS_KEY), bucket: clean(process.env.R2_BUCKET)
   };
   return c.account && c.ak && c.sk && c.bucket ? c : null;
 }

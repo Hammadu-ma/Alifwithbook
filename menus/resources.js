@@ -224,13 +224,15 @@ export function openResources({ skipHistory = false, solo = false } = {}) {
 
   if (skipHistory) {
     const rv = history.state && history.state.rv;
-    nav = rv ? { ...ROOT, ...rv } : { ...ROOT, tab: nav.tab };
+    nav = rv ? { ...ROOT, ...rv } : (solo ? { ...ROOT, tab: 'quizzes', solo: true } : { ...ROOT, tab: nav.tab });
     if (nav.tab === 'quizzes' && !nav.solo) nav.tab = 'books';   // quizzes live in the Exams tab
   } else {
     nav = { ...ROOT, tab: solo ? 'quizzes' : (nav.solo ? 'books' : nav.tab), solo: !!solo };
     if (!solo && navigator.onLine === false) nav.tab = 'offline';   // no connection: open the Downloads page
-    if (history.state && history.state.appState === 'resources') history.replaceState({ appState: 'resources', rv: snap() }, '', '');
-    else pushAppState('resources');
+    // Exams (solo) and AResources are separate history entries, so Back from a quiz returns to the right one.
+    const key = nav.solo ? 'exams' : 'resources';
+    if (history.state && (history.state.appState === 'resources' || history.state.appState === 'exams')) history.replaceState({ appState: key, rv: snap() }, '', '');
+    else { pushAppState(key); try { history.replaceState({ appState: key, rv: snap() }, '', ''); } catch (_) {} }
   }
   subjectId = 'all';
   query = '';
@@ -250,7 +252,7 @@ function go(next, { push = false } = {}) {
   nav = { ...nav, ...next };
   subjectId = 'all';
   query = '';
-  try { history[push ? 'pushState' : 'replaceState']({ appState: 'resources', rv: snap() }, '', ''); } catch (_) {}
+  try { history[push ? 'pushState' : 'replaceState']({ appState: nav.solo ? 'exams' : 'resources', rv: snap() }, '', ''); } catch (_) {}
   render();
   screen.scrollTop = 0;
 }

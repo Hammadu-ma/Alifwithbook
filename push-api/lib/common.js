@@ -90,7 +90,7 @@ const autoEnabled = (st, key) => st.autoAll === true || (st.events && st.events[
 
 /* Send one payload to every matching subscription row. `apply(q)` narrows the Supabase query. */
 const webpush = require('web-push');
-async function deliver(supabase, apply, payloadObj, { budgetMs = 50000, ttl = 60 * 60 * 24 * 3, urgency } = {}) {
+async function deliver(supabase, apply, payloadObj, { budgetMs = 50000, ttl = 60 * 60 * 24 * 3, urgency = 'high' } = {}) {
   const started = Date.now();
   webpush.setVapidDetails(process.env.VAPID_SUBJECT, process.env.VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
   const payload = JSON.stringify({ icon: '/logo.png', badge: '/logo.png', ...payloadObj });

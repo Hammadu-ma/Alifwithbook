@@ -85,3 +85,14 @@ export function getEffectiveLockMessage(item, kind, student) {
 export function getQuizLockMessage(quiz, student) {
   return isResourceLocked(quiz, student, 'quiz') ? getEffectiveLockMessage(quiz, 'quizzes', student) : null;
 }
+
+/* A bundle counts as owned when the student can open everything inside it: the bundle itself was granted,
+   or every module and subject it contains is allowed (that is what enrolling in a bundle grants). */
+export function isBundleOwned(bundle) {
+  if (!bundle || !bundle.id) return false;
+  if (grantState('package', bundle.id) === 'allow') return true;
+  const mods = (bundle.moduleIds || []).filter(id => MODS.some(m => m.id === id));
+  const subs = (bundle.subjectIds || []).filter(id => SUBJS.some(x => x.id === id));
+  if (!mods.length && !subs.length) return false;
+  return mods.every(id => grantState('module', id) === 'allow') && subs.every(id => grantState('subject', id) === 'allow');
+}

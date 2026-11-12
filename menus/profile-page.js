@@ -210,6 +210,12 @@ export async function openProfilePage({ doLogout } = {}) {
           <span class="pf-row-sub">Pull the latest quizzes and updates.</span></span>
           <i class="fa-solid fa-chevron-right pf-chev"></i>
         </button>
+        <button type="button" class="pf-action" id="pfReloadAppBtn">
+          <span class="pf-ico" style="--tone:#2563eb"><i class="fa-solid fa-arrows-rotate"></i></span>
+          <span class="pf-row-text"><span class="pf-row-title" id="pfReloadAppLabel">Refresh the app</span>
+          <span class="pf-row-sub">Reload the app with the newest version. You stay signed in and keep your downloads.</span></span>
+          <i class="fa-solid fa-chevron-right pf-chev"></i>
+        </button>
         <button type="button" class="pf-action pf-danger" id="pfLogoutBtn">
           <span class="pf-ico" style="--tone:#d64545"><i class="fa-solid fa-right-from-bracket"></i></span>
           <span class="pf-row-text"><span class="pf-row-title">Log out</span>
@@ -338,6 +344,16 @@ export async function openProfilePage({ doLogout } = {}) {
   const pwSub = wireSub('#pfPasswordBtn', '#passwordExpand', 'Change password');
   el._closePwSub = () => closeSub(pwSub);
   wirePasswordForm(el);
+
+  el.querySelector('#pfReloadAppBtn').addEventListener('click', async e => {
+    const b = e.currentTarget; if (b.disabled) return; b.disabled = true;
+    const lab = el.querySelector('#pfReloadAppLabel'); if (lab) lab.textContent = 'Refreshing…';
+    // Drop only the app-file caches (never the offline books/quizzes), then reload so the newest version is fetched.
+    try { if (window.caches) await Promise.all((await caches.keys()).filter(k => /^alif-(shell|runtime)/.test(k)).map(k => caches.delete(k))); } catch (_) {}
+    try { if (navigator.serviceWorker) await Promise.all((await navigator.serviceWorker.getRegistrations()).map(r => r.unregister())); } catch (_) {}
+    const u = new URL(location.href); u.searchParams.set('_v', String(Date.now()));
+    location.replace(u.toString());
+  });
 
   el.querySelector('#pfLogoutBtn').addEventListener('click', () => {
     closeProfilePage();

@@ -5468,7 +5468,27 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
         if (!r.studentId) throw new Error('Payment has no student ID.');
         await payEnsureStudentKey(r);
         const tg = payResolveTarget(r);
-        if (!tg) throw new Error('Nothing to unlock for this payment.');
+        if (!tg) {
+          // Bundle (package) payments: enroll in the matching bundle, or in the module picked in the dialog.
+          const bundle = r.offerType === 'package' ? await bnMatchForPayment(r) : null;
+          const modId = bundle ? '' : (($('payEnrollModule') || {}).value || '');
+          let label = '';
+          if (bundle) {
+            if (!await bnEnroll(bundle, [r.studentId], { nobusy: true })) throw new Error('Could not enroll the student in the bundle.');
+            label = 'Bundle · ' + bundle.name + ` (${(bundle.moduleIds || []).length} modules, ${(bundle.subjectIds || []).length} subjects)`;
+          } else if (modId) {
+            await updateDoc(doc(db, getResourcePath('module', modId)), { [`userLocks.${r.studentId}`]: 'enrolled', updatedAt: serverTimestamp() });
+            setLocalOverride('module', modId, r.studentId, 'enrolled');
+            label = 'Module · ' + ((allModules.find(m => m.id === modId) || {}).name || modId);
+          } else throw new Error(r.offerType === 'package'
+            ? 'No bundle is named "' + (r.offerName || '') + '". Create or rename the bundle to match, or pick a module in the list, then try again.'
+            : 'Nothing to unlock for this payment.');
+          await updateDoc(doc(db, PAY_COLLECTION, r.id), { grantedTo: label, reviewedBy: currentUser ? currentUser.email : '' });
+          audit('payment.regrant', `${r.studentName || 'Student'} · ${label}`, { paymentId: r.id });
+          toast(label, 'success');
+          closeModal('payModal');
+          return;
+        }
         const res = await payGrant(r, tg);
         await updateDoc(doc(db, PAY_COLLECTION, r.id), { grantedTo: tg.label, reviewedBy: currentUser ? currentUser.email : '' });
         audit('payment.regrant', `${r.studentName || 'Student'} · ${tg.label}: ${res}`, { paymentId: r.id });
@@ -5500,6 +5520,15 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
               await updateDoc(doc(db, getResourcePath('module', modId)), { [`userLocks.${r.studentId}`]: 'enrolled', updatedAt: serverTimestamp() });
               setLocalOverride('module', modId, r.studentId, 'enrolled');
               upd.grantedTo = 'Module · ' + ((allModules.find(m => m.id === modId) || {}).name || modId);
+            }
+          }
+          // Never mark a payment approved while silently granting nothing: the student would leave "pending" and stay locked.
+          const chosenNone = ($('payManual') || {}).value === 'none';
+          if (!upd.grantedTo && !chosenNone) {
+            if (!window.confirm('Nothing will be unlocked for this student (no matching item, bundle or module was chosen).\n\nApprove anyway without giving access?')) {
+              btns.forEach(x => x.disabled = false);
+              toast('Not approved — choose what to unlock first.', 'error');
+              return;
             }
           }
           upd.rejectReason = deleteField();

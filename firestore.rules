@@ -221,6 +221,20 @@ service cloud.firestore {
       allow write: if (adminCan('payments') || adminCan('settings'));
     }
 
+    // Personal / segment / automatic notifications. Written only by the push server (Admin SDK).
+    // A student reads only documents that list their own uid.
+    match /userNotifications/{id} {
+      allow read: if signedIn() && (request.auth.uid in resource.data.uids || isAdmin());
+      allow create, update: if false;      // written only by the push server (Admin SDK)
+      allow delete: if isAdmin();          // Admin → Notifications → Sent notifications
+    }
+
+    // Announcements sent from Admin → Notifications (shown on the student's bell page).
+    match /notifications/{id} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
     // =====================================================================
     // Settings — only non-sensitive settings are public.
     // Telegram credentials must never be readable from a student browser.
