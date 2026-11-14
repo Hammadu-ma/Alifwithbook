@@ -4,7 +4,7 @@
    avatar on Home / Exams via openProfilePage({ doLogout }).
    ======================================================================== */
 import { getStoredStudent, getAuthUser, changeStudentPassword } from './auth.js';
-import { dedupeDeviceDocs, getDeviceInfo } from './device-session.js';
+import { dedupeDeviceDocs, getDeviceInfo, removeMyDevice } from './device-session.js';
 import { db } from './cloud-sync.js';
 import { collection, getDocs, query } from './runtime-ext.js';
 import { escapeHtml as esc, forceContentRefresh } from './loaders.js';
@@ -519,8 +519,16 @@ async function loadDevices(student, device, el) {
             <div class="pf-device-name">${esc(d.model || 'Unknown device')}${mine ? '<span class="pf-this">This device</span>' : ''}</div>
             <div class="pf-device-st">${status}</div>
           </div>
+          ${!mine && !blocked ? `<button type="button" class="pf-dev-out" data-dev="${esc(d.id)}"><i class="fa-solid fa-right-from-bracket"></i> Log out</button>` : ''}
         </div>`;
     }).join('') : '<div class="pf-empty">No devices found</div>';
+    box.querySelectorAll('.pf-dev-out').forEach(btn => btn.addEventListener('click', async () => {
+      const dev = devices.find(x => x.id === btn.dataset.dev); if (!dev) return;
+      if (!confirm('Log out "' + (dev.model || 'this device') + '"? It will be signed out and its slot freed.')) return;
+      btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Logging out…';
+      try { await removeMyDevice(student, dev); delete DEVICE_CACHE[key]; await loadDevices(student, device, el); }
+      catch (_) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Log out'; }
+    }));
   } catch (_) {
     count.textContent = '–';
     box.innerHTML = '<div class="pf-empty">Couldn’t load devices</div>';
