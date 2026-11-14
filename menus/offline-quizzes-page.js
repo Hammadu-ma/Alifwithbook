@@ -73,7 +73,7 @@ body.dark #offQz .oq-tag.part{color:#fbbf24}body.dark #offQz .oq-tag.ok{color:#4
 #offQz .oq-empty{text-align:center;opacity:.65;padding:40px 10px;font-size:14px}
 `;
 /* The "Online only" switch is built but hidden for now — set to true to show it again. */
-const SHOW_ONLINE_ONLY = false;
+const SHOW_ONLINE_ONLY = true;
 let el = null, busy = false, tab = '';
 const TABS = [['todo', 'To download', '#d97706'], ['ok', 'Downloaded', '#16a34a'], ['upd', 'Updates', '#2563eb']];
 const stOf = f => !f.saved ? 'todo' : f.saved < f.total ? 'todo' : f.stale ? 'upd' : 'ok';
