@@ -102,7 +102,9 @@ async function applyFlag(c) {
 /* tells every open student app (through the appVersion listener they already have — no extra reads) that flags changed */
 const bumpCF = () => {
   setDoc(doc(db, 'settings', 'appVersion'), { cf: Date.now() }, { merge: true }).catch(() => {});
-  setDoc(doc(db, 'settings', 'contentVersion'), { q: Date.now() }, { merge: true }).catch(() => {});   // makes phones re-download the questions
+  // Phones re-download their saved questions when settings/appVersion.cq changes (this is the stamp the app listens to).
+  setDoc(doc(db, 'settings', 'appVersion'), { cq: String(Date.now()) }, { merge: true }).catch(() => {});
+  setDoc(doc(db, 'settings', 'contentVersion'), { q: Date.now() }, { merge: true }).catch(() => {});
 };
 
 /* take a question out of "under review": drop its flag (and the older fields on the question itself, if any) */
