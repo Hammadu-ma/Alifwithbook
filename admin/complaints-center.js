@@ -52,7 +52,8 @@ function build() {
       <button class="cp-tab on" data-f="pending" style="--tc:#d97706">Pending <b data-n="pending"></b></button>
       <button class="cp-tab" data-f="approved" style="--tc:#16a34a">Approved</button>
       <button class="cp-tab" data-f="rejected" style="--tc:#dc2626">Rejected</button></div>
-      <button class="cp-btn gr" data-refresh type="button"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
+      <button class="cp-btn gr" data-refresh type="button"><i class="fa-solid fa-rotate"></i> Refresh</button>
+      <button class="cp-btn gr" data-reapply-all type="button" title="Put the yellow notice back on every approved question"><i class="fa-solid fa-flag"></i> Re-apply all approved</button></div>
     <div id="cpList"></div>`;
   $('tab-complaints').addEventListener('click', onClick);
 }
@@ -90,7 +91,6 @@ async function applyFlag(c) {
   const qs = await getDoc(qPath(c));
   if (!qs.exists()) return false;
   const q = qs.data();
-  if (String(q.explanation || '').trim() !== String(c.explanationAtComplaint || '').trim() || Number(q.answerIndex) !== Number(c.currentAnswer)) return false;
   await setDoc(doc(db, 'questionFlags', c.quizId), { subjectId: c.subjectId, updatedAt: Date.now(), flags: { [c.questionId]: { ans: Number(q.answerIndex), h: hashOf(q.explanation), p: Number(c.proposedAnswer), d: String(c.explanation || '').slice(0, 600), at: Date.now() } } }, { merge: true });
   return true;
 }
@@ -107,6 +107,16 @@ async function clearFlag(c) {
 async function onClick(e) {
   const t = e.target.closest('.cp-tab'); if (t) { filter = t.dataset.f; load(); return; }
   if (e.target.closest('[data-refresh]')) { load(); return; }
+  if (e.target.closest('[data-reapply-all]')) {
+    const btn = e.target.closest('[data-reapply-all]'); btn.disabled = true;
+    try {
+      const snap = await getDocs(query(collection(db, 'questionComplaints'), where('status', '==', 'approved')));
+      let n = 0;
+      for (const d of snap.docs) { const c = { id: d.id, ...d.data() }; try { if (await applyFlag(c)) { n++; await updateDoc(d.ref, { flagged: true }); } } catch (err) { toast('Could not save a notice: ' + (err.message || err) + ' — publish the latest Firestore rules.', 'error'); break; } }
+      bumpCF(); toast(n + ' approved question' + (n === 1 ? '' : 's') + ' now show the yellow notice', 'success'); load();
+    } finally { btn.disabled = false; }
+    return;
+  }
   const b = e.target.closest('[data-a]'); if (!b) return;
   const card = b.closest('.cp-card'), c = rows.find(x => x.id === card.dataset.id); if (!c) return;
   const note = (card.querySelector('[data-note]')?.value || '').trim();

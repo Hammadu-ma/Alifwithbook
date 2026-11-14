@@ -19,11 +19,10 @@ const letter = i => String.fromCharCode(65 + i);
    editing either makes the hash differ and the notice goes away by itself. Students read the doc at most once per 30 min per quiz. */
 const hashOf = t => { t = String(t ?? '').trim(); let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return 'h' + (h >>> 0).toString(36) + t.length; };
 export function isFlagged(q) {
-  if (!q || !q.complaintApprovedAt) return false;
-  const same = String(q.complaintExpl || '') === hashOf(q.explanation) || String(q.complaintExpl || '').trim() === String(q.explanation || '').trim();
-  return same && Number(q.complaintAns) === Number(q.answerIndex);
+  // Simple rule: an approved complaint is shown (yellow) until the admin removes the question from review.
+  return !!(q && q.complaintApprovedAt);
 }
-const FLAG_TTL = 6 * 3600 * 1000;   // the admin's stamp (settings/appVersion.cf, delivered by the already-open listener) invalidates sooner at zero cost
+const FLAG_TTL = 10 * 60 * 1000;   // the admin's stamp (settings/appVersion.cf, delivered by the already-open listener) invalidates sooner at zero cost
 export async function applyFlags(subjectId, quizId, questions) {
   if (!Array.isArray(questions) || !questions.length) return;
   const key = `alif_qflags_${quizId}`;
