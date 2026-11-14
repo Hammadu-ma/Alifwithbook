@@ -147,6 +147,7 @@ async function finishAuthenticated(student) {
       // Every device slot is taken: let the student log another device out (real logout) and continue here.
       await releaseGateHistory();
       prevScreens = null;
+      clearStudent();   // no saved profile while the slot is unresolved: a reload can't slip into the app
       const { showDeviceLimitGate } = await import('./device-limit.js');
       const ok = await showDeviceLimitGate(student, e);
       if (!ok) { await openAuthGate('login'); return; }
