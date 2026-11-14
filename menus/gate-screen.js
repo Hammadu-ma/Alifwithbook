@@ -142,8 +142,17 @@ async function finishAuthenticated(student) {
       holdBlockedDevice(student, e, () => { import('./class-chat.js').then(c => c.startUnreadTracking?.()).catch(() => {}); });
       return;
     }
-    await signOutStudent();
-    throw e;
+    if (e?.limit) {
+      // Every device slot is taken: let the student log another device out (real logout) and continue here.
+      await releaseGateHistory();
+      prevScreens = null;
+      const { showDeviceLimitGate } = await import('./device-limit.js');
+      const ok = await showDeviceLimitGate(student, e);
+      if (!ok) { await openAuthGate('login'); return; }
+    } else {
+      await signOutStudent();
+      throw e;
+    }
   }
   storeStudent(student);
   await enterHome();

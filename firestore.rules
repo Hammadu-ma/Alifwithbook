@@ -374,7 +374,7 @@ service cloud.firestore {
              .hasOnly(['lastSeen', 'lastLogin'])
           && request.resource.data.blocked == resource.data.blocked
         );
-        allow delete: if adminCan('devices');
+        allow delete: if adminCan('devices') || (ownsStudent(studentId) && resource.data.blocked == false);
       }
     }
 

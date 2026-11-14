@@ -35,7 +35,7 @@ import { progressScreen } from './progress-page.js';
 import { replaceAppState } from './progress-rings.js';
 import {
   collection, doc, getDoc, getDocs, onSnapshot,
-  serverTimestamp, setDoc, updateDoc,
+  serverTimestamp, setDoc, updateDoc, deleteDoc,
 } from './runtime-ext.js';
 
 /* ----------------------------------------------------------------------
@@ -398,6 +398,11 @@ export class DeviceLockError extends Error {
     this.name = 'DeviceLockError';
     this.blocked = extra.blocked === true;
     this.blockMessage = extra.blockMessage || '';
+    /* `limit` = the account's device slots are all taken. The session is kept so the student can free a slot
+       themselves (see device-limit.js); `devices` lists the other devices that occupy the slots. */
+    this.limit = extra.limit === true;
+    this.devices = extra.devices || [];
+    this.maxDevices = extra.maxDevices || 1;
   }
 }
 
@@ -409,6 +414,9 @@ export async function assertDeviceAllowed(student) {
     throw new DeviceLockError((result && result.reason) || 'This device is not allowed for this account.', {
       blocked: !!(result && result.blocked),
       blockMessage: result && result.blockMessage,
+      limit: !!(result && result.limit),
+      devices: result && result.devices,
+      maxDevices: result && result.maxDevices,
     });
   }
   return result;
@@ -471,14 +479,17 @@ export async function enforceDeviceLock(student) {
   // against the account's limit before registering it.
   const maxDevices = student.maxDevices || 1;
   let activeCount = 0;
+  let activeDevices = [];
   try {
     const listSnap = await getDocs(collection(db, 'secretkeys', studentId, 'devices'));
-    activeCount = countActiveDevices(listSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+    const all = listSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    activeCount = countActiveDevices(all);
+    activeDevices = dedupeDeviceDocs(all).filter(d => !d.blocked);
   } catch (e) {}
 
   if (activeCount >= maxDevices) {
     return {
-      ok: false,
+      ok: false, limit: true, devices: activeDevices, maxDevices,
       reason: `Your account is limited to ${maxDevices} device${maxDevices === 1 ? '' : 's'} `
         + `and is already in use on another device. Ask your instructor to free up a device slot.`,
     };
@@ -486,6 +497,41 @@ export async function enforceDeviceLock(student) {
 
   await registerAndBind(student, studentId, deviceInfo);
   return { ok: true, device: deviceInfo };
+}
+
+/* Devices that currently occupy this account's slots (blocked ones never count). */
+export async function listMyDevices(student) {
+  const studentId = student && (student.id || student.docId);
+  if (!db || !studentId) return [];
+  const snap = await getDocs(collection(db, 'secretkeys', studentId, 'devices'));
+  return dedupeDeviceDocs(snap.docs.map(d => ({ id: d.id, ...d.data() }))).filter(d => !d.blocked);
+}
+
+/* Really log a device out: delete its doc (and any twin doc of the same browser). That frees the slot immediately,
+   and the logged-out device notices through its live watcher (startHeartbeat) and signs itself out. */
+export async function removeMyDevice(student, dev) {
+  const studentId = student && (student.id || student.docId);
+  if (!db || !studentId || !dev || !dev.id) throw new Error('Device not found.');
+  const ids = new Set([dev.id]);
+  try {
+    if (dev.fingerprint) {
+      const snap = await getDocs(collection(db, 'secretkeys', studentId, 'devices'));
+      snap.docs.forEach(d => { const v = d.data(); if (!v.blocked && v.fingerprint === dev.fingerprint) ids.add(d.id); });
+    }
+  } catch (e) {}
+  for (const id of ids) await deleteDoc(deviceDocRef(studentId, id));
+}
+
+/* This device's registration was deleted from another device: end the session here. */
+let removedHandled = false;
+async function handleRemovedElsewhere() {
+  if (removedHandled) return;
+  removedHandled = true;
+  try { localStorage.removeItem(LS_REG_KEY); } catch (e) {}
+  stopHeartbeat();
+  try { await doLogout(); } catch (e) {}
+  try { await openAuthGate('login', 'You were signed out because your account was opened on a new device. Sign in again to take this device back.'); } catch (e) {}
+  setTimeout(() => { removedHandled = false; }, 3000);
 }
 
 /* ----------------------------------------------------------------------
@@ -518,6 +564,8 @@ export function startHeartbeat() {
     // physical device (hardware doc, or the old per-browser doc) blocks every browser on it.
     const refs = ownDeviceRefs(studentId, deviceInfo);
     const watched = refs.map(() => ({ blocked: false, reason: '' }));
+    const seen = refs.map(() => false);
+    const present = refs.map(() => false);
     const evaluateBlock = () => {
       const hit = watched.find(w => w.blocked);
       if (hit && !IS_DEVICE_BLOCKED) {
@@ -533,7 +581,11 @@ export function startHeartbeat() {
     const unsubs = refs.map((ref, i) => onSnapshot(ref, snap => {
       const data = snap.exists() ? snap.data() : null;
       watched[i] = { blocked: !!data && data.blocked === true, reason: (data && data.blockMessage) || '' };
+      present[i] = !!data;
+      if (data) seen[i] = true;
       evaluateBlock();
+      // Doc existed and is now gone on the server (not just a cache miss) => logged out from another device.
+      if (!data && seen[i] && !snap.metadata.fromCache && !present.some(Boolean)) handleRemovedElsewhere();
     }, () => {}));
     unsubscribeBlockWatch = () => unsubs.forEach(u => { try { u(); } catch (e) {} });
 
