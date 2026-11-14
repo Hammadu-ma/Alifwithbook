@@ -445,12 +445,13 @@ async function enforceDeviceLockOnce(student) {
   if (typeof student.deviceLockEnabled !== 'boolean') {
     let cached = null;
     try { cached = JSON.parse(localStorage.getItem(LS_LOCKCFG_KEY) || 'null'); } catch (e) {}
-    if (cached && Date.now() - cached.t < 30 * 60 * 1000) {
+    if (cached && Date.now() - cached.t < 2 * 60 * 1000) {
       globalLockOn = cached.v === true;
     } else {
       try {
-        const settingsSnap = await getDoc(doc(db, 'settings', 'forceDeviceLock'));
-        if (settingsSnap.exists()) globalLockOn = settingsSnap.data().enabled === true;
+        // The admin page saves the global switch as settings/system.forceDeviceLock (this used to read a different, never-written doc).
+        const settingsSnap = await getDoc(doc(db, 'settings', 'system'));
+        if (settingsSnap.exists()) globalLockOn = settingsSnap.data().forceDeviceLock === true;
         lsSet(LS_LOCKCFG_KEY, JSON.stringify({ t: Date.now(), v: globalLockOn }));
       } catch (e) {}
     }
