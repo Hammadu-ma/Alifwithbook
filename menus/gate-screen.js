@@ -47,6 +47,7 @@ function errorMessage(err) {
   if (c === 'account-not-ready') return 'This account is missing its ALIF student profile. Please contact an administrator.';
   if (c === 'account-disabled' || c === 'auth/user-disabled') return 'This account is currently disabled. Please contact an administrator.';
   if (c === 'legacy-auth-disabled') return 'The old secret-key login has been retired. Use your Firebase account.';
+  if (/^timeout$/i.test(err?.message || '')) return 'Your connection is too slow right now. Please try again in a moment.';
   return err?.message || 'Something went wrong. Please try again.';
 }
 function showError(message) {
