@@ -150,6 +150,7 @@ export function openComplaint({ q, subjectId, quizId, subjectName, quizName }) {
   setTimeout(() => { try { ta.focus({ preventScroll: true }); } catch (_) {} }, 150);
 }
 
+try { ensureCss(); } catch (_) {}   // the highlight styles must exist as soon as this module loads, not only when the complaint sheet opens
 window.__alifQC = { expl: complaintExplHtml, apply: applyFlags, notice: complaintNoticeHtml, pill: complaintPillHtml, flagged: isFlagged, open: openComplaint };
 
 /* practice cards: the Complain button inside .qcard */
