@@ -10,7 +10,7 @@ import { signOutStudent } from './auth.js';
 const ID = 'deviceLimitGate';
 
 const CSS = `
-#${ID}{position:fixed;inset:0;z-index:950;background:var(--paper);display:flex;align-items:flex-start;justify-content:center;
+#${ID}{position:fixed;inset:0;z-index:10050;background:var(--paper);display:flex;align-items:flex-start;justify-content:center;
   padding:24px;padding-top:max(24px,env(safe-area-inset-top));padding-bottom:max(24px,env(safe-area-inset-bottom));overflow-y:auto;-webkit-overflow-scrolling:touch}
 #${ID}.hidden{display:none!important}
 #${ID} .dl-inner{max-width:460px;width:100%;margin:auto;text-align:center;animation:bfRise .55s var(--ease) both}
