@@ -2,7 +2,7 @@
    Modules the student can open → subjects (dropdown) → save that subject's quizzes on this device.
    One subject at a time, never "download everything": each save reads only that subject's quizzes. */
 import { getStoredStudent } from './auth.js';
-import { ALL_MODULES, ALL_QUIZZES, SUBJECTS_CACHE } from './picker-screen.js';
+import { ALL_MODULES, ALL_QUIZZES, SUBJECTS_CACHE, setALL_QUIZZES } from './picker-screen.js';
 import { isItemLockedForUser, isResourceLocked } from './lock.js';
 import { escapeHtml as esc, isQuizOnlineOnly, setQuizOnlineOnly } from './loaders.js';
 import { showToast, showConfirm } from './ui-feedback.js';
@@ -83,6 +83,13 @@ function groups() {
   const quizzes = (ALL_QUIZZES || []).filter(q => q && q.subjectId && !isItemLockedForUser(q) && !isResourceLocked(q, st, 'quiz'));
   const bySub = new Map();
   quizzes.forEach(q => { (bySub.get(q.subjectId) || bySub.set(q.subjectId, []).get(q.subjectId)).push(q); });
+  // Every subject the student can open is listed, even if its quizzes have not been loaded on this phone yet
+  // (they are fetched, one subject only, when the student taps Download).
+  (SUBJECTS_CACHE || []).forEach(sub => {
+    if (!sub || !sub.id || bySub.has(sub.id)) return;
+    if (isItemLockedForUser(sub) || isResourceLocked(sub, st, 'subject')) return;
+    bySub.set(sub.id, []);
+  });
   const mods = new Map();
   bySub.forEach((qs, sid) => {
     const sub = (SUBJECTS_CACHE || []).find(s => s.id === sid);
@@ -119,7 +126,7 @@ function render() {
           const t = raw === 'part' ? `<i class="fa-solid fa-circle-half-stroke"></i> Partly saved · ${f.saved} of ${f.total}` : tag[raw];
           const when = f.at ? ' · saved ' + new Date(f.at).toLocaleDateString() : '';
           return `<div class="oq-sub" data-s="${esc(sub.id)}" data-st="${raw}">
-            <div class="oq-st"><span class="oq-tag ${raw}">${t}</span><b>${esc(sub.name)}</b><span>${qs.length} ${qs.length === 1 ? 'quiz' : 'quizzes'}${when}</span><div class="oq-bar"><i></i></div></div>
+            <div class="oq-st"><span class="oq-tag ${raw}">${t}</span><b>${esc(sub.name)}</b><span>${qs.length ? qs.length + (qs.length === 1 ? ' quiz' : ' quizzes') : 'Tap Download to get its quizzes'}${when}</span><div class="oq-bar"><i></i></div></div>
             <div class="oq-btns">${f.saved ? '<button class="oq-btn" data-a="rm" type="button">Remove</button>' : ''}<button class="oq-btn ${raw === 'upd' ? 'upd' : 'pri'}" data-a="dl" data-l="${lbls[raw]}" type="button">${lbls[raw]}</button></div></div>`;
         }).join('')}</div></div>`).join('') : '<div class="oq-empty">Nothing here.</div>');
 }
@@ -180,6 +187,15 @@ export function openOfflineQuizzesPage() {
     el.querySelectorAll('.oq-btn').forEach(x => x.disabled = true);
     const bar = row.querySelector('.oq-bar'), fill = bar.firstElementChild; bar.style.display = 'block';
     try {
+      if (!g.qs.length) {   // quizzes of this subject were never loaded on this phone: fetch just this subject's list
+        const { loadQuizzesOf } = await import('./resources-quiz.js');
+        const list = (await loadQuizzesOf(sid)).filter(q => q && q.id && !(q.linkUrl || q.type === 'link')).map(q => ({ ...q, subjectId: sid, subjectName: g.sub.name }));
+        const add = list.filter(q => !ALL_QUIZZES.some(x => x.id === q.id && x.subjectId === sid));
+        if (add.length) setALL_QUIZZES(ALL_QUIZZES.concat(add));
+        const st0 = getStoredStudent();
+        g.qs = list.filter(q => !isItemLockedForUser(q) && !isResourceLocked(q, st0, 'quiz'));
+        if (!g.qs.length) { showToast('This subject has no quizzes to save yet', { icon: 'fa-solid fa-circle-info' }); busy = false; if (el) render(); return; }
+      }
       const r = await cacheQuizzesOffline(g.qs, (i, t) => { fill.style.width = Math.round(i / t * 100) + '%'; }, { fresh: b.dataset.l === 'Update' });
       showToast(r.fail ? `Saved ${r.ok}, ${r.fail} failed` : `${g.sub.name} saved for offline`, { icon: r.fail ? 'fa-solid fa-triangle-exclamation' : 'fa-solid fa-circle-check' });
     } catch (e) { showToast(e.message || 'Could not save', { icon: 'fa-solid fa-circle-exclamation' }); }
