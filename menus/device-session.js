@@ -422,7 +422,18 @@ export async function assertDeviceAllowed(student) {
   return result;
 }
 
-export async function enforceDeviceLock(student) {
+/* One check at a time per student: two overlapping checks (sign-in + background verify) must never both read the
+   device list and both register, so a second caller simply waits for and shares the first caller's answer. */
+const inflightChecks = new Map();
+export function enforceDeviceLock(student) {
+  const key = String((student && (student.id || student.docId)) || '');
+  if (inflightChecks.has(key)) return inflightChecks.get(key);
+  const p = enforceDeviceLockOnce(student).finally(() => inflightChecks.delete(key));
+  inflightChecks.set(key, p);
+  return p;
+}
+
+async function enforceDeviceLockOnce(student) {
   const deviceInfo = await getDeviceInfo();
   const studentId = student.id || student.docId;
   // Offline: nothing can be verified. The live block-watch (cached + realtime) enforces as soon as data is available.
