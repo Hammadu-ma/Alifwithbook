@@ -448,6 +448,7 @@ export async function enforceDeviceLock(student) {
   const lockActive = student.deviceLockEnabled === true
     || (student.deviceLockEnabled !== false && globalLockOn);
 
+  try { console.info('[device-check]', { lockActive, studentLock: student.deviceLockEnabled, globalLockOn, maxDevices: student.maxDevices || 1, deviceId: deviceInfo.deviceId }); } catch (e) {}
   if (!lockActive) {
     // No device limit applies: registering this device is bookkeeping, so it must not delay opening the app.
     registerAndBind(student, studentId, deviceInfo).catch(() => {});
@@ -485,7 +486,8 @@ export async function enforceDeviceLock(student) {
     const all = listSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     activeCount = countActiveDevices(all);
     activeDevices = dedupeDeviceDocs(all).filter(d => !d.blocked);
-  } catch (e) {}
+    try { console.info('[device-check] devices on account:', all.length, 'active:', activeCount, 'max:', maxDevices); } catch (e) {}
+  } catch (e) { console.warn('[device-check] could not read device list:', e && (e.code || e.message)); }
 
   if (activeCount >= maxDevices) {
     return {
