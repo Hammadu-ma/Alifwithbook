@@ -92,16 +92,21 @@ async function applyFlag(c) {
   if (!qs.exists()) return false;
   const q = qs.data();
   await setDoc(doc(db, 'questionFlags', c.quizId), { subjectId: c.subjectId, updatedAt: Date.now(), flags: { [c.questionId]: { ans: Number(q.answerIndex), h: hashOf(q.explanation), p: Number(c.proposedAnswer), d: String(c.explanation || '').slice(0, 600), at: Date.now() } } }, { merge: true });
+  // Also mark the question itself: the student app already reads question documents, so this shows even if the notice list can't be read.
+  try { await updateDoc(qPath(c), { complaintApprovedAt: Date.now(), complaintExpl: hashOf(q.explanation), complaintAns: Number(q.answerIndex), complaintProp: Number(c.proposedAnswer), complaintDesc: String(c.explanation || '').slice(0, 600) }); } catch (e) { console.warn('[complaints] question mark', e.message); }
   return true;
 }
 
 /* tells every open student app (through the appVersion listener they already have — no extra reads) that flags changed */
-const bumpCF = () => setDoc(doc(db, 'settings', 'appVersion'), { cf: Date.now() }, { merge: true }).catch(() => {});
+const bumpCF = () => {
+  setDoc(doc(db, 'settings', 'appVersion'), { cf: Date.now() }, { merge: true }).catch(() => {});
+  setDoc(doc(db, 'settings', 'contentVersion'), { q: Date.now() }, { merge: true }).catch(() => {});   // makes phones re-download the questions
+};
 
 /* take a question out of "under review": drop its flag (and the older fields on the question itself, if any) */
 async function clearFlag(c) {
   try { await updateDoc(doc(db, 'questionFlags', c.quizId), { [`flags.${c.questionId}`]: deleteField(), updatedAt: Date.now() }); } catch (_) {}
-  try { await updateDoc(qPath(c), { complaintApprovedAt: 0, complaintExpl: '', complaintAns: -1 }); } catch (_) {}
+  try { await updateDoc(qPath(c), { complaintApprovedAt: 0, complaintExpl: '', complaintAns: -1, complaintProp: -1, complaintDesc: '' }); } catch (_) {}
 }
 
 async function onClick(e) {
