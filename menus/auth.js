@@ -148,7 +148,6 @@ export async function loadStudentForUser(user) {
   }
   let profileSnap;
   // Start the student-record lookup at the same time as the profile read (it used to wait for it): one round trip saved.
-  const legacyP = getDocs(query(collection(db, 'secretkeys'), where('authUid', '==', uid), limit(1))).catch(() => null);
   try {
     profileSnap = await withTimeout(getDoc(doc(db, 'users', uid)), 20000);
   } catch (e) {
@@ -169,9 +168,7 @@ export async function loadStudentForUser(user) {
     profile = await backfillUserProfile(uid, user, legacy);
   }
 
-  let studentSnap = null;
-  try { const q = await legacyP; const d = q && q.docs && q.docs[0]; if (d && d.id === profile.studentId) studentSnap = d; } catch (_) {}
-  if (!studentSnap) studentSnap = await withTimeout(getDoc(doc(db, 'secretkeys', profile.studentId)), 20000);
+  const studentSnap = await withTimeout(getDoc(doc(db, 'secretkeys', profile.studentId)), 20000);
   if (!studentSnap.exists()) return null;
   const legacy = { id: studentSnap.id, docId: studentSnap.id, ...studentSnap.data() };
   if (legacy.authUid !== uid) return null;

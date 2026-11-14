@@ -463,7 +463,7 @@ async function enforceDeviceLockOnce(student) {
   try { console.info('[device-check]', { lockActive, studentLock: student.deviceLockEnabled, globalLockOn, maxDevices: student.maxDevices || 1, deviceId: deviceInfo.deviceId }); } catch (e) {}
   if (!lockActive) {
     // No device limit applies: registering this device is bookkeeping, so it must not delay opening the app.
-    registerAndBind(student, studentId, deviceInfo).catch(() => {});
+    await registerAndBind(student, studentId, deviceInfo);
     return { ok: true, device: deviceInfo };
   }
 
@@ -484,7 +484,7 @@ async function enforceDeviceLockOnce(student) {
     // Known device. Browsers that were registered before the switch get their hardware doc created here
     // (createOrTouchOwnDevice), so every OTHER browser on this device will recognise it from now on.
     // The decision is already made, so the bookkeeping continues in the background.
-    registerAndBind(student, studentId, deviceInfo).catch(() => {});
+    await registerAndBind(student, studentId, deviceInfo);
     return { ok: true, device: deviceInfo };
   }
 
