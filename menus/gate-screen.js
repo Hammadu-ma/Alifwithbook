@@ -160,6 +160,7 @@ async function finishAuthenticated(student) {
   try { startHeartbeat(); } catch (_) {}
   try { const chat = await import('./class-chat.js'); chat.startUnreadTracking?.(); } catch (_) {}
   try { showToast('Signed in successfully', { icon: 'fa-solid fa-circle-check' }); } catch (_) {}
+  try { const c = window.__alifDeviceCheck; if (c) showToast(`Device check — lock: ${c.lockActive ? 'ON' : 'OFF'} (student: ${c.studentLock}, global: ${c.globalLockOn}), max: ${c.max}, devices found: ${c.devices}`, { icon: 'fa-solid fa-mobile-screen' }); } catch (_) {}
 }
 
 export async function openAuthGate(view = 'login', reason = '') {
