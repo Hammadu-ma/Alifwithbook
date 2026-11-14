@@ -41,6 +41,7 @@ export async function applyFlags(subjectId, quizId, questions) {
     const x = f[q.id];
     if (x) { q.complaintApprovedAt = x.at || 1; q.complaintExpl = x.h; q.complaintAns = x.ans; q.complaintProp = x.p == null ? -1 : Number(x.p); q.complaintDesc = x.d || ''; }
   });
+  try { const n = questions.filter(q => q.complaintApprovedAt).length; console.info('[complaints] quiz ' + quizId + ': ' + n + ' of ' + questions.length + ' question(s) under review'); } catch (_) {}
 }
 export function complaintNoticeHtml(q) {
   return isFlagged(q)
