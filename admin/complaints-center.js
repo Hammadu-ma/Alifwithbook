@@ -91,9 +91,11 @@ async function applyFlag(c) {
   const qs = await getDoc(qPath(c));
   if (!qs.exists()) return false;
   const q = qs.data();
-  await setDoc(doc(db, 'questionFlags', c.quizId), { subjectId: c.subjectId, updatedAt: Date.now(), flags: { [c.questionId]: { ans: Number(q.answerIndex), h: hashOf(q.explanation), p: Number(c.proposedAnswer), d: String(c.explanation || '').slice(0, 600), at: Date.now() } } }, { merge: true });
-  // Also mark the question itself: the student app already reads question documents, so this shows even if the notice list can't be read.
-  try { await updateDoc(qPath(c), { complaintApprovedAt: Date.now(), complaintExpl: hashOf(q.explanation), complaintAns: Number(q.answerIndex), complaintProp: Number(c.proposedAnswer), complaintDesc: String(c.explanation || '').slice(0, 600) }); } catch (e) { console.warn('[complaints] question mark', e.message); }
+  // 1) Mark the question document itself. The student app already reads question documents, so this alone makes the highlight work.
+  await updateDoc(qPath(c), { complaintApprovedAt: Date.now(), complaintExpl: hashOf(q.explanation), complaintAns: Number(q.answerIndex), complaintProp: Number(c.proposedAnswer), complaintDesc: String(c.explanation || '').slice(0, 600) });
+  // 2) Optional extra notice list (needs the questionFlags rule). A failure here must never block approving.
+  try { await setDoc(doc(db, 'questionFlags', c.quizId), { subjectId: c.subjectId, updatedAt: Date.now(), flags: { [c.questionId]: { ans: Number(q.answerIndex), h: hashOf(q.explanation), p: Number(c.proposedAnswer), d: String(c.explanation || '').slice(0, 600), at: Date.now() } } }, { merge: true }); }
+  catch (e) { console.warn('[complaints] questionFlags not saved (publish the latest Firestore rules to enable):', e.code || e.message); }
   return true;
 }
 
