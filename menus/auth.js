@@ -287,6 +287,8 @@ export async function sendStudentVerification() {
 
 export async function signOutStudent() {
   try { await Promise.race([window.__alifPushBeforeSignOut?.(), new Promise(r => setTimeout(r, 3000))]); } catch (_) {}
+  // Signing out frees this device's slot (a blocked device's record can't be deleted by the student, so blocks stay).
+  try { await Promise.race([window.__alifReleaseDevice?.(), new Promise(r => setTimeout(r, 3000))]); } catch (_) {}
   clearStudent();
   try { await signOut(auth); } catch (_) {}
 }

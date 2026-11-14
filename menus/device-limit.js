@@ -91,7 +91,7 @@ export function showDeviceLimitGate(student, err) {
       list.innerHTML = devices.length ? devices.map((d, i) => `
         <div class="dl-card" data-i="${i}">
           <div class="dl-dev"><i class="fa-solid ${icon(d)}"></i></div>
-          <div class="dl-meta"><div class="dl-name">${esc(d.model || 'Unknown device')}</div><div class="dl-time">${esc(ago(d.lastSeen || d.lastLogin))}</div></div>
+          <div class="dl-meta"><div class="dl-name">${esc(d.model || 'Unknown device')}${d.isThis ? ' <span style="font-weight:500;color:var(--artery);font-size:12px">· this device</span>' : ''}</div><div class="dl-time">${esc(ago(d.lastSeen || d.lastLogin))}</div></div>
           <button class="dl-out" type="button" data-i="${i}"><i class="fa-solid fa-right-from-bracket"></i> Log out</button>
         </div>`).join('') : '<div class="dl-sub">Checking your devices…</div>';
     };
@@ -111,7 +111,7 @@ export function showDeviceLimitGate(student, err) {
         btn.closest('.dl-card')?.classList.add('gone');
         devices = devices.filter(d => d !== dev);
         let allowed = false;
-        try { await assertDeviceAllowed(student); allowed = true; } catch (er) {
+        try { await assertDeviceAllowed(student, { fresh: true }); allowed = true; } catch (er) {
           if (er?.limit) { devices = er.devices && er.devices.length ? er.devices : devices; }
           else if (er?.blocked) { setMsg('This device has been blocked.'); }
         }

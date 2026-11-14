@@ -134,7 +134,7 @@ async function enterHome() {
 async function finishAuthenticated(student) {
   if (!student || student.guest) throw new Error('Authenticated student profile is unavailable.');
   try {
-    await assertDeviceAllowed(student);
+    await assertDeviceAllowed(student, { fresh: true });
   } catch (e) {
     if (e?.blocked) {
       // Blocked device: keep them signed in and show the blocked screen (their choice: sign out / free items).

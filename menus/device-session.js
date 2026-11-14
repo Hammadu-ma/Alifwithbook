@@ -408,8 +408,8 @@ export class DeviceLockError extends Error {
 
 /* enforceDeviceLock() RETURNS { ok:false, reason } for a blocked device / exceeded device limit — it never throws.
    Callers must act on that result, so use this wrapper: it throws DeviceLockError when the device is refused. */
-export async function assertDeviceAllowed(student) {
-  const result = await enforceDeviceLock(student);
+export async function assertDeviceAllowed(student, opts = {}) {
+  const result = await enforceDeviceLock(student, opts);
   if (!result || result.ok === false) {
     throw new DeviceLockError((result && result.reason) || 'This device is not allowed for this account.', {
       blocked: !!(result && result.blocked),
@@ -425,15 +425,15 @@ export async function assertDeviceAllowed(student) {
 /* One check at a time per student: two overlapping checks (sign-in + background verify) must never both read the
    device list and both register, so a second caller simply waits for and shares the first caller's answer. */
 const inflightChecks = new Map();
-export function enforceDeviceLock(student) {
-  const key = String((student && (student.id || student.docId)) || '');
+export function enforceDeviceLock(student, opts = {}) {
+  const key = String((student && (student.id || student.docId)) || '') + (opts.fresh ? ':fresh' : '');
   if (inflightChecks.has(key)) return inflightChecks.get(key);
-  const p = enforceDeviceLockOnce(student).finally(() => inflightChecks.delete(key));
+  const p = enforceDeviceLockOnce(student, opts).finally(() => inflightChecks.delete(key));
   inflightChecks.set(key, p);
   return p;
 }
 
-async function enforceDeviceLockOnce(student) {
+async function enforceDeviceLockOnce(student, opts = {}) {
   const deviceInfo = await getDeviceInfo();
   const studentId = student.id || student.docId;
   // Offline: nothing can be verified. The live block-watch (cached + realtime) enforces as soon as data is available.
@@ -481,7 +481,8 @@ async function enforceDeviceLockOnce(student) {
       blockMessage: blockedSnap.data().blockMessage || '',
     };
   }
-  if (ownSnaps.length) {
+  // A fresh sign-in never trusts "this device is already registered": the slots are counted every time.
+  if (ownSnaps.length && !opts.fresh) {
     // Known device. Browsers that were registered before the switch get their hardware doc created here
     // (createOrTouchOwnDevice), so every OTHER browser on this device will recognise it from now on.
     // The decision is already made, so the bookkeeping continues in the background.
@@ -505,7 +506,8 @@ async function enforceDeviceLockOnce(student) {
 
   if (activeCount >= maxDevices) {
     return {
-      ok: false, limit: true, devices: activeDevices, maxDevices,
+      ok: false, limit: true, maxDevices,
+      devices: activeDevices.map(d => ({ ...d, isThis: d.id === deviceInfo.deviceId || d.id === deviceInfo.legacyId })),
       reason: `Your account is limited to ${maxDevices} device${maxDevices === 1 ? '' : 's'} `
         + `and is already in use on another device. Ask your instructor to free up a device slot.`,
     };
@@ -515,12 +517,24 @@ async function enforceDeviceLockOnce(student) {
   return { ok: true, device: deviceInfo };
 }
 
+/* Free this device's slot on sign-out: delete its own record (blocked records are protected by the rules). */
+window.__alifReleaseDevice = async function () {
+  const st = getStoredStudent();
+  const studentId = st && !st.guest && (st.id || st.docId);
+  if (!db || !studentId) return;
+  const info = await getDeviceInfo();
+  try { localStorage.removeItem(LS_REG_KEY); } catch (e) {}
+  for (const ref of ownDeviceRefs(studentId, info)) { try { await deleteDoc(ref); } catch (e) {} }
+};
+
 /* Devices that currently occupy this account's slots (blocked ones never count). */
 export async function listMyDevices(student) {
   const studentId = student && (student.id || student.docId);
   if (!db || !studentId) return [];
   const snap = await getDocs(collection(db, 'secretkeys', studentId, 'devices'));
-  return dedupeDeviceDocs(snap.docs.map(d => ({ id: d.id, ...d.data() }))).filter(d => !d.blocked);
+  const info = await getDeviceInfo();
+  return dedupeDeviceDocs(snap.docs.map(d => ({ id: d.id, ...d.data() }))).filter(d => !d.blocked)
+    .map(d => ({ ...d, isThis: d.id === info.deviceId || d.id === info.legacyId }));
 }
 
 /* Really log a device out: delete its doc (and any twin doc of the same browser). That frees the slot immediately,
