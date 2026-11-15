@@ -379,7 +379,7 @@ function startWatchers(user) {
       snap.docChanges().forEach(ch => {
         if (ch.type === 'removed') return;
         const d = ch.doc.data();
-        if (!['approved', 'rejected'].includes(d.status) || d.reviewedBy !== user.email) return;
+        if (!['approved', 'rejected'].includes(d.status) || String(d.reviewedBy || '').toLowerCase() !== String(user.email || '').toLowerCase()) return;
         const k = 'p' + ch.doc.id + d.status + (d.reviewedAt?.toMillis?.() || 0);
         if (seenEvents.has(k) || !d.reviewedAt) return; seenEvents.add(k);
         const sid = d.studentRecordId || d.studentId || ch.doc.id;

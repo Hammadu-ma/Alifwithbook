@@ -70,7 +70,11 @@ module.exports = handler(async (req, res) => {
 
   const supabase = init();
   const message = { kind: 'auto', title, body, url: '/?notifications=1', tag: `alif-${type}-${Date.now()}` };
-  const r = await deliver(supabase, q => q.in('uid', target), message, { ttl: 60 * 60 * 24 * 7, urgency: 'high' });
-  try { await recordInApp({ uids: target, title, body, url: '/?notifications=1', kind }); } catch (e) { console.warn('[push] in-app copy', e.message); }
-  res.status(200).json({ ok: true, ...r });
+  // The in-app copy (Notifications page) is written FIRST so it is never lost if the web-push step fails.
+  let inApp = 0;
+  try { inApp = await recordInApp({ uids: target, title, body, url: '/?notifications=1', kind }); } catch (e) { console.warn('[push] in-app copy', e.message); }
+  let r = { sent: 0, failed: 0, removed: 0, total: 0 };
+  try { r = await deliver(supabase, q => q.in('uid', target), message, { ttl: 60 * 60 * 24 * 7, urgency: 'high' }); }
+  catch (e) { console.warn('[push] deliver', e.message); r.error = e.message; }
+  res.status(200).json({ ok: true, inApp, ...r });
 });

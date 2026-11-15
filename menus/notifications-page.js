@@ -4,11 +4,11 @@
      with unread highlighting. One small query, cached for 5 minutes and kept for offline. */
 import { db } from './cloud-sync.js';
 import { collection, getDocs, query, orderBy, limit, where } from './runtime-ext.js';
-import { getAuthUser } from './auth.js';
+import { getAuthUser, waitForAuthReady } from './auth.js';
 import { pushModalState, popModalState } from './modal-backbutton.js';
 import { lockBodyScroll, unlockBodyScroll } from './cache.js';
 
-const CACHE_KEY = 'alif_notifs_v1', SEEN_KEY = 'alif_notif_seen_v1', TTL = 5 * 60 * 1000;
+const CACHE_KEY = 'alif_notifs_v1', SEEN_KEY = 'alif_notif_seen_v1', TTL = 60 * 1000;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const getJ = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (_) { return d; } };
 const setJ = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} };
@@ -39,7 +39,8 @@ export async function loadNotifications(force) {
   const c = getJ(CACHE_KEY, null);
   if (c && !force && Date.now() - (c.t || 0) < TTL) return c.items;
   try {
-    const u = getAuthUser();
+    let u = getAuthUser();
+    if (!u) { try { u = await Promise.race([waitForAuthReady(), new Promise(r => setTimeout(() => r(null), 4000))]); } catch (_) {} }
     const [snap, mine] = await Promise.all([
       getDocs(query(collection(db, 'notifications'), orderBy('createdAt', 'desc'), limit(30))),
       u && !u.isAnonymous ? personal(u.uid) : Promise.resolve([])
@@ -49,7 +50,8 @@ export async function loadNotifications(force) {
       const ms = x.createdAt && x.createdAt.toMillis ? x.createdAt.toMillis() : 0;
       return { id: d.id, title: x.title || '', body: x.body || '', url: x.url || '', ms };
     }).concat(mine).sort((a, b) => b.ms - a.ms).slice(0, 40);
-    setJ(CACHE_KEY, { t: Date.now(), items });
+    // Don't keep a list that was built before the account was known (it would hide personal notifications).
+    setJ(CACHE_KEY, { t: (u && !u.isAnonymous) ? Date.now() : 0, items });
     return items;
   } catch (e) {
     if (c && c.items) return c.items;
