@@ -305,7 +305,7 @@ self.addEventListener('push', event => {
       const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
       if (wins.some(w => w.visibilityState === 'visible' && w.focused)) return;
       await self.registration.showNotification(title, {
-        body: data.body || '', icon: data.icon || '/logo.png', badge: data.badge || '/logo.png',
+        body: data.body || '', icon: data.icon || '/logo.png', badge: '/badge.png',
         tag: data.tag || 'alif-chat', data: { url: data.url || '/' }, renotify: true, vibrate: [90, 40, 90]
       });
     })());
@@ -314,7 +314,7 @@ self.addEventListener('push', event => {
   const options = {
     body: data.body || '',
     icon: data.icon || '/logo.png',
-    badge: data.badge || '/logo.png',
+    badge: '/badge.png',
     tag: data.tag || `alif-${Date.now()}`,
     data: { url: data.url || '/' },
     renotify: true
