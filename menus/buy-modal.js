@@ -1320,7 +1320,8 @@ function openModal(offer) {
   overlay.querySelector('#bmOfferName').textContent = offer.name || 'This item';
   setAmount(offer.price);
 
-  overlay.querySelector('#bmSenderName').value = '';
+  // Pre-fill with the signed-in student's name (they can still change it to the actual sender's name).
+  overlay.querySelector('#bmSenderName').value = (getCurrentStudent().name || '').trim();
   overlay.querySelector('#bmFileInputGallery').value = '';
   overlay.querySelector('#bmFileInputCamera').value = '';
   overlay.querySelector('#bmUploadChoices').style.display = '';
