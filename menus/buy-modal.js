@@ -1254,7 +1254,64 @@ function setAmount(price) {
   }
 }
 
+
+/* ============================================================================
+   SIGN-IN PROMPT — shown instead of the buy form when nobody is signed in
+   ============================================================================ */
+function isSignedIn() {
+  const s = getCurrentStudent();
+  return !!(s && s.id && !s.guest);
+}
+function promptSignIn(offer) {
+  if (document.getElementById('bmSignInPrompt')) return;
+  if (!document.getElementById('bmSignInCss')) {
+    const st = document.createElement('style'); st.id = 'bmSignInCss';
+    st.textContent = `
+#bmSignInPrompt{position:fixed;inset:0;z-index:10040;display:flex;align-items:flex-end;justify-content:center;padding:14px;background:rgba(10,12,20,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:bmsiFade .2s ease both}
+#bmSignInPrompt .bmsi-card{position:relative;width:100%;max-width:440px;background:var(--card,#fff);color:var(--ink,#111);border:1px solid var(--card-border,rgba(128,128,128,.2));border-radius:26px;padding:30px 24px calc(22px + env(safe-area-inset-bottom,0px));text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.35);animation:bmsiRise .38s cubic-bezier(.2,.9,.3,1.1) both}
+#bmSignInPrompt .bmsi-ic{width:76px;height:76px;margin:-68px auto 16px;border-radius:50%;display:grid;place-items:center;font-size:30px;color:#fff;background:linear-gradient(135deg,var(--artery,#dc2626),#f97316);box-shadow:0 10px 28px rgba(220,38,38,.38);border:4px solid var(--card,#fff)}
+#bmSignInPrompt h2{font-family:'Fraunces',Georgia,serif;font-size:24px;line-height:1.2;margin:0 0 8px}
+#bmSignInPrompt p{margin:0 auto 6px;font-size:14px;line-height:1.55;color:var(--ink-soft,#555);max-width:330px}
+#bmSignInPrompt .bmsi-item{display:inline-flex;align-items:center;gap:7px;margin:6px 0 18px;padding:7px 13px;border-radius:999px;font-size:13px;font-weight:600;background:color-mix(in srgb,var(--artery,#dc2626) 10%,transparent);color:var(--artery,#dc2626);max-width:100%}
+#bmSignInPrompt .bmsi-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#bmSignInPrompt .bmsi-btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;padding:15px;border-radius:16px;border:0;font:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:transform .15s,opacity .2s}
+#bmSignInPrompt .bmsi-btn:active{transform:scale(.98)}
+#bmSignInPrompt .bmsi-primary{background:var(--artery,#dc2626);color:#fff;box-shadow:0 8px 22px rgba(220,38,38,.3);margin-bottom:10px}
+#bmSignInPrompt .bmsi-second{background:transparent;color:inherit;border:1.5px solid var(--card-border,rgba(128,128,128,.3));margin-bottom:6px}
+#bmSignInPrompt .bmsi-close{background:none;border:0;color:var(--ink-faint,#888);font:inherit;font-size:13px;padding:8px;cursor:pointer}
+@keyframes bmsiFade{from{opacity:0}to{opacity:1}}
+@keyframes bmsiRise{from{opacity:0;transform:translateY(40px) scale(.97)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){#bmSignInPrompt,#bmSignInPrompt .bmsi-card{animation:none}}`;
+    document.head.appendChild(st);
+  }
+  const name = offer && (offer.name || offer.title) ? String(offer.name || offer.title) : '';
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const el = document.createElement('div');
+  el.id = 'bmSignInPrompt'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
+  el.innerHTML = `
+    <div class="bmsi-card">
+      <div class="bmsi-ic"><i class="fa-solid fa-lock"></i></div>
+      <h2>Sign in to continue</h2>
+      <p>You need a student account to buy and unlock content, so your purchase is saved to your account on every device.</p>
+      ${name ? `<div class="bmsi-item"><i class="fa-solid fa-cart-shopping"></i><span>${esc(name)}</span></div>` : '<div style="height:12px"></div>'}
+      <button type="button" class="bmsi-btn bmsi-primary" data-act="login"><i class="fa-solid fa-right-to-bracket"></i> Sign in</button>
+      <button type="button" class="bmsi-btn bmsi-second" data-act="signup"><i class="fa-solid fa-user-plus"></i> Create an account</button>
+      <button type="button" class="bmsi-close" data-act="close">Not now</button>
+    </div>`;
+  document.body.appendChild(el);
+  const close = () => el.remove();
+  el.addEventListener('click', async e => {
+    if (e.target === el) return close();
+    const b = e.target.closest('[data-act]'); if (!b) return;
+    const act = b.dataset.act;
+    close();
+    if (act === 'close') return;
+    try { const { openAuthGate } = await import('./gate-screen.js'); await openAuthGate(act, 'Sign in to buy' + (name ? ' ' + name : '') + '.'); } catch (_) {}
+  });
+}
+
 function openModal(offer) {
+  if (!isSignedIn()) { try { closePkgLockOverlay(); } catch (_) {} promptSignIn(offer); return; }
   activeOffer = offer;
   selectedFile = null;
   selectedBankAccountId = null;
@@ -1462,7 +1519,7 @@ overlay.querySelector('#bmSubmitBtn').addEventListener('click', async () => {
   if (!selectedFile) return flagInvalid('file');
 
   let student = getCurrentStudent();
-  if (!student.id || student.guest) return flagInvalid('card');
+  if (!student.id || student.guest) { closeModal(); promptSignIn(activeOffer); return; }
   student = await enrichStudentIdentity(student);
 
   const submitBtn = overlay.querySelector('#bmSubmitBtn');
