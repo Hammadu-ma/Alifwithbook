@@ -84,7 +84,7 @@ function ensureCss() {
 .qc-flag i{color:#ca8a04;margin-top:2px}.qc-flag b{display:block}.qc-flag span{opacity:.8}
 .qc-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;background:rgba(250,204,21,.3);color:#a16207}
 body.dark .qc-pill{color:#fde047}
-.qcard.qc-flagged .card-inner{background-image:linear-gradient(rgba(250,204,21,.16),rgba(250,204,21,.16));border-left-color:#eab308!important;box-shadow:0 0 0 1.5px rgba(234,179,8,.55)}
+.qcard.qc-flagged .card-inner{border-left-color:#eab308!important;box-shadow:0 0 0 1.5px rgba(234,179,8,.55)}
 .qc-flag{margin:10px 0 12px}
 .qc-flag .qc-d{margin-top:6px;white-space:pre-wrap;font-style:italic;opacity:1}
 .opt.reveal-claim{background:rgba(250,204,21,.22)!important;border-color:#eab308!important}
