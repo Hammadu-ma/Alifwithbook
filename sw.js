@@ -300,10 +300,8 @@ self.addEventListener('push', event => {
   }
   const title = data.title || 'ALIF';
   if (data.kind === 'chat') {
-    // The student is looking at the app right now -> the in-app chat already shows the message.
+    // Always show the notification, even while the app is open on screen.
     event.waitUntil((async () => {
-      const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-      if (wins.some(w => w.visibilityState === 'visible' && w.focused)) return;
       await self.registration.showNotification(title, {
         body: data.body || '', icon: data.icon || '/logo.png', badge: '/badge.png',
         tag: data.tag || 'alif-chat', data: { url: data.url || '/' }, renotify: true, vibrate: [90, 40, 90]
