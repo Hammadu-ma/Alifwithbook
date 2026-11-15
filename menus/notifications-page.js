@@ -24,7 +24,7 @@ export const unreadCount = () => { const s = seenMs(); return cachedItems().filt
 async function personal(uid) {
   const out = [];
   const months = []; const d = new Date();
-  for (let i = 0; i < 2; i++) { months.push(new Date(d.getFullYear(), d.getMonth() - i, 1).toISOString().slice(0, 7)); }
+  for (let i = 0; i < 2; i++) { months.push(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - i, 1)).toISOString().slice(0, 7)); }
   const map = x => { const v = x.data() || {}; return { id: 'u' + x.id, title: v.title || '', body: v.body || '', url: v.url || '', kind: v.kind || '', ms: v.createdAt && v.createdAt.toMillis ? v.createdAt.toMillis() : 0 }; };
   try {
     const snaps = await Promise.all(months.map(ym => getDocs(query(collection(db, 'userNotifications'), where('uids', 'array-contains', uid), where('ym', '==', ym)))));
