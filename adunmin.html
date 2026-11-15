@@ -6899,7 +6899,18 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
     // ------------------------------------------------------------------
     function studentTsToMillis(ts) { return ts?.toMillis?.() ?? (ts ? new Date(ts).getTime() : 0); }
 
+    /* Student e-mails live in users/{uid} (not in the secretkeys doc). Loaded once (cached 12h in this browser) and shown under each name. */
+    let studentEmailByUid = {}, studentEmailsStarted = false;
+    function loadStudentEmails() {
+      try { const c = JSON.parse(localStorage.getItem('adm_student_emails_v1') || 'null'); if (c && Date.now() - c.t < 12 * 3600 * 1000) { studentEmailByUid = c.m || {}; return Promise.resolve(); } } catch (_) {}
+      return getDocs(collection(db, 'users')).then(snap => {
+        const m = {}; snap.forEach(d => { const v = d.data(); if (v && v.email) m[d.id] = v.email; });
+        studentEmailByUid = m;
+        try { localStorage.setItem('adm_student_emails_v1', JSON.stringify({ t: Date.now(), m })); } catch (_) {}
+      });
+    }
     function renderStudents() {
+      if (!studentEmailsStarted) { studentEmailsStarted = true; loadStudentEmails().then(() => renderStudents()).catch(e => console.warn('student emails:', e && e.message)); }
       const tbody = $('studentTableBody');
       const search = ($('studentSearch').value || '').toLowerCase();
       const batch = $('studentBatchFilter').value;
@@ -6912,7 +6923,7 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
           (s.name || '').toLowerCase().includes(search) ||
           (s.batch || '').toLowerCase().includes(search) ||
           (s.ID || '').toLowerCase().includes(search) ||
-          (s.email || '').toLowerCase().includes(search) || (s.authUid || '').includes(search)
+          (s.email || studentEmailByUid[s.authUid] || '').toLowerCase().includes(search) || (s.authUid || '').includes(search)
         );
       }
       if (batch) filtered = filtered.filter(s => s.batch === batch);
@@ -6942,7 +6953,7 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
         const syncClass = syncVal === true ? 'right' : syncVal === false ? 'wrong' : 'ink-faint';
         return `<tr>
           <td class="td-select"><input type="checkbox" class="student-select" data-id="${s.id}" ${checked} /></td>
-          <td class="td-title"><strong>${escapeHtml(s.name)}</strong></td>
+          <td class="td-title"><strong>${escapeHtml(s.name)}</strong>${(s.email || studentEmailByUid[s.authUid]) ? `<div class="en-sub" style="word-break:break-all;">${escapeHtml(s.email || studentEmailByUid[s.authUid])}</div>` : ''}</td>
           <td data-label="Batch">${escapeHtml(s.batch || '—')}</td>
           <td data-label="ID">${escapeHtml(s.ID || '—')}</td>
           <td data-label="Auth status">${keyStatus}</td>
