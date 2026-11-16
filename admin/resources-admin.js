@@ -65,6 +65,26 @@ function ensureUi() {
   #resAdmModal .rs-chip button{border:0;background:var(--card);width:20px;height:20px;border-radius:50%;line-height:1;cursor:pointer;color:var(--ink-soft)}
   #resAdmModal .rs-qb{border:1px dashed var(--card-border);border-radius:12px;padding:12px;margin-top:6px;display:grid;gap:10px}
   #resAdmModal .rs-qb .rs-grid2{gap:10px}
+  #resAdmModal .rs-steps{display:flex;align-items:flex-start;margin:2px 0 18px;padding:0 2px}
+  #resAdmModal .rs-stp{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:none;cursor:pointer;position:relative;padding:0;font:inherit;color:var(--ink-faint)}
+  #resAdmModal .rs-stp:before{content:'';position:absolute;top:13px;right:50%;width:100%;height:2px;background:var(--card-border);z-index:0}
+  #resAdmModal .rs-stp:first-child:before{display:none}
+  #resAdmModal .rs-stp.done:before,#resAdmModal .rs-stp.on:before{background:var(--artery)}
+  #resAdmModal .rs-dot{position:relative;z-index:1;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;background:var(--card);border:2px solid var(--card-border);transition:all .25s}
+  #resAdmModal .rs-stp.on .rs-dot{border-color:var(--artery);background:var(--artery);color:#fff;box-shadow:0 0 0 4px color-mix(in srgb,var(--artery) 18%,transparent)}
+  #resAdmModal .rs-stp.done .rs-dot{border-color:var(--artery);color:var(--artery)}
+  #resAdmModal .rs-stp small{font-size:10.5px;font-weight:700;letter-spacing:.02em}
+  #resAdmModal .rs-stp.on small{color:var(--ink)}
+  @media(max-width:520px){#resAdmModal .rs-stp:not(.on) small{display:none}}
+  #resAdmModal .rs-step{display:none;animation:rsIn .28s ease both}
+  #resAdmModal .rs-step.on{display:block}
+  @keyframes rsIn{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:none}}
+  #resAdmModal .rs-sh{margin:0 0 14px}
+  #resAdmModal .rs-sh b{display:block;font-size:16px}
+  #resAdmModal .rs-sh span{display:block;font-size:12.5px;color:var(--ink-faint);margin-top:2px}
+  #resAdmModal .rs-step>.rs-sec:first-of-type{border-top:0;padding-top:0;margin-top:4px}
+  #resAdmModal .rs-foot{display:flex;align-items:center;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--card-border)}
+  #resAdmModal .rs-foot .sp{flex:1}
   #resAdmModal .rs-err{color:var(--wrong);font-size:12.5px;font-weight:600;margin-top:10px;min-height:16px}
   `;
   document.head.appendChild(css);
@@ -200,7 +220,11 @@ function openForm(item) {
   const defOrder = it.order ?? (Math.max(0, ...S[S.kind].map(x => Number(x.order) || 0)) + 1);
   const lecturers = [...new Set(S.videos.map(v => v.lecturer).filter(Boolean))];
 
+  const sh = (t, d) => `<div class="rs-sh"><b>${t}</b><span>${d}</span></div>`;
+  const STEPS = books ? ['Basics', 'Location', 'File', 'Cover', 'Extras'] : ['Basics', 'Location', 'Video', 'Images', 'Extras'];
   $('rsForm').innerHTML = `
+    <div class="rs-steps" id="rsSteps">${STEPS.map((n, i) => `<button type="button" class="rs-stp" data-go="${i}"><span class="rs-dot">${i + 1}</span><small>${n}</small></button>`).join('')}</div>
+    <div class="rs-step" data-step="0">${sh('The basics', books ? 'What is this book called?' : 'Who is teaching, and what is it about?')}
     <div class="form-group"><label>Title *</label><input class="form-control" id="rsTitleIn" maxlength="200" value="${esc(it.title || '')}" /></div>
     ${books
       ? `<div class="form-group"><label>Author</label><input class="form-control" id="rsAuthor" maxlength="160" value="${esc(it.author || '')}" /></div>`
@@ -210,19 +234,25 @@ function openForm(item) {
           <div class="form-group"><label>Lecturer title</label><input class="form-control" id="rsLectTitle" maxlength="120" placeholder="e.g. Associate Professor of Physiology" value="${esc(it.lecturerTitle || '')}" /></div>
         </div>`}
     <div class="form-group"><label>Description</label><textarea class="form-control" id="rsDesc" rows="3" maxlength="1500">${esc(it.description || '')}</textarea></div>
+    </div>
+    <div class="rs-step" data-step="1">${sh('Where does it belong?', 'Students find it under this module and subject.')}
     <div class="rs-grid2">
       <div class="form-group"><label>Module *</label><select class="form-control" id="rsMod"><option value="">Select module…</option>${S.mods.map(m => `<option value="${esc(m.id)}" ${m.id === it.moduleId ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select></div>
       <div class="form-group"><label>Subject <span style="font-weight:400">(optional)</span></label><select class="form-control" id="rsSub"></select></div>
     </div>
-    <div class="rs-sec">${books ? 'Book file' : 'Video'}</div>
+    </div>
+    <div class="rs-step" data-step="2">${sh(books ? 'Add the book file' : 'Add the video', 'Paste a link or upload the file from your device.')}
     ${books ? `<div class="form-group"><label>Save uploads in</label><select class="form-control" id="rsFolder">${FOLDERS.map(f => `<option value="${f[0]}" ${f[0] === F.folder ? 'selected' : ''}>${f[1]}</option>`).join('')}</select><div class="help">Which R2 folder an uploaded file goes to. Links are not affected.</div></div>` : ''}
     ${srcField('file', books ? 'Book (PDF, DOC, PPT, EPUB…)' : 'Video', {
       required: true, accept: books ? '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.epub,application/pdf' : 'video/mp4,video/webm,video/ogg,video/quicktime',
       help: books ? 'Everything opens inside the app. Best reading experience: upload the PDF (max 200 MB) or use a direct PDF link. Google Drive links and Word/PowerPoint/Excel files open in a simpler viewer.'
                   : 'Plays inside the app: YouTube, Vimeo, Google Drive, direct .mp4/.webm links, or an upload (max 500 MB). Other sites may refuse to play in-app.' })}
-    <div class="rs-sec">Thumbnail</div>
+    </div>
+    <div class="rs-step" data-step="3">${sh(books ? 'Cover' : 'Thumbnail & lecturer photo', 'Optional — makes the card easier to recognise.')}
     ${srcField('thumb', 'Cover / thumbnail', { noneOk: true, accept: 'image/*', help: books ? 'Without a thumbnail the app draws a coloured cover with the title.' : 'Optional — YouTube videos get their thumbnail automatically. Images up to 8 MB.' })}
-    ${books ? '' : `<div class="rs-sec">Lecturer photo</div>${srcField('photo', 'Photo', { noneOk: true, accept: 'image/*', help: 'Optional. Shown on the Lecturers tab. Without it, initials are shown.' })}`}
+    ${books ? '' : `${srcField('photo', 'Photo', { noneOk: true, accept: 'image/*', help: 'Optional. Shown on the Lecturers tab. Without it, initials are shown.' })}`}
+    </div>
+    <div class="rs-step" data-step="4">${sh('Final touches', 'Link related content, set the order, then publish.')}
     ${books ? relBooksSection() : relVideosSection()}
     <div class="rs-sec">Display</div>
     <div class="rs-grid2">
@@ -230,20 +260,30 @@ function openForm(item) {
       <div class="form-group"><label>${books ? '' : 'Duration'}</label>${books ? '' : `<input class="form-control" id="rsDur" maxlength="12" placeholder="e.g. 42:10" value="${esc(it.duration || '')}" />`}</div>
     </div>
     <label class="adm-perm" style="margin:6px 0"><input type="checkbox" id="rsActive" ${it.active === false ? '' : 'checked'} /> <i class="fa-solid fa-eye"></i> Visible to students</label>
+    </div>
     <div class="rs-err" id="rsErr"></div>
-    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
-      <button class="btn" type="button" id="rsCancel">Cancel</button>
+    <div class="rs-foot">
+      <button class="btn" type="button" id="rsCancel">Cancel</button><span class="sp"></span>
+      <button class="btn" type="button" id="rsBack"><i class="fa-solid fa-arrow-left"></i> Back</button>
+      <button class="btn btn-primary" type="button" id="rsNext">Next <i class="fa-solid fa-arrow-right"></i></button>
       <button class="btn btn-primary" type="submit" id="rsSave"><i class="fa-solid fa-floppy-disk"></i> Save</button>
     </div>`;
+  F.step = 0; F.max = STEPS.length - 1;
+  F.maxSeen = item ? F.max : 0;   // editing: every step is reachable straight away
+  goStep(0);
 
   fillSubjects(it.subjectId || '');
   initRelated();
   $('rsMod').addEventListener('change', () => fillSubjects(''));
   ['file', 'thumb', 'photo'].forEach(k => { if ($('rsForm').querySelector(`[data-field="${k}"]`)) syncField(k); });
   $('rsCancel').addEventListener('click', closeForm);
-  $('rsForm').onsubmit = e => { e.preventDefault(); save(); };
+  $('rsForm').onsubmit = e => { e.preventDefault(); if (F.step < F.max) next(); else save(); };
+  $('rsBack').addEventListener('click', () => goStep(F.step - 1));
+  $('rsNext').addEventListener('click', next);
   $('rsForm').onclick = e => {
     if (relClick(e)) return;
+    const g = e.target.closest('[data-go]');
+    if (g) { const n = +g.dataset.go; if (n <= F.step || n <= F.maxSeen) goStep(n); else if (stepError(F.step) === '') next(); else showErr(stepError(F.step)); return; }
     const b = e.target.closest('[data-seg] button'); if (!b || F.busy) return;
     const k = b.closest('[data-seg]').dataset.seg; F.m[k] = b.dataset.m; syncField(k);
   };
@@ -263,6 +303,32 @@ function openForm(item) {
     if (t.matches('input[type=url]')) { const k = t.dataset.in.replace('Url', ''); F.url[k] = t.value; syncField(k, true); }
   };
   $('resAdmModal').classList.add('show');
+}
+
+function stepError(i) {
+  const books = S.kind === 'books';
+  if (i === 0) { if (!$('rsTitleIn').value.trim()) return 'Title is required.'; if (!books && !$('rsLect').value.trim()) return 'Lecturer is required.'; }
+  if (i === 1 && !$('rsMod').value) return 'Choose a module.';
+  if (i === 2) {
+    const m = F.m.file;
+    if (m === 'link' && !safeUrl(F.url.file)) return 'Paste a valid link (https://…) or switch to Upload.';
+    if (m === 'upload' && !F.files.file && !F.keep.file) return 'Choose a file to upload, or switch to Link.';
+  }
+  return '';
+}
+function showErr(m) { const e = $('rsErr'); if (e) e.textContent = m || ''; }
+function next() { const m = stepError(F.step); if (m) return showErr(m); goStep(F.step + 1); }
+function goStep(n) {
+  n = Math.max(0, Math.min(F.max, n)); F.step = n; F.maxSeen = Math.max(F.maxSeen || 0, n); showErr('');
+  const f = $('rsForm');
+  f.querySelectorAll('.rs-step').forEach(x => x.classList.toggle('on', +x.dataset.step === n));
+  f.querySelectorAll('.rs-stp').forEach(x => { const i = +x.dataset.go; x.classList.toggle('on', i === n); x.classList.toggle('done', i < n); x.firstChild.innerHTML = i < n ? '<i class="fa-solid fa-check"></i>' : String(i + 1); });
+  $('rsBack').style.display = n ? '' : 'none';
+  $('rsNext').style.display = n < F.max ? '' : 'none';
+  $('rsSave').style.display = n === F.max ? '' : 'none';
+  const first = f.querySelector(`.rs-step[data-step="${n}"] input:not([type=file]),.rs-step[data-step="${n}"] select`);
+  if (first && window.innerWidth > 700) try { first.focus({ preventScroll: true }); } catch (_) {}
+  const panel = f.closest('.modal-panel'); if (panel) panel.scrollTop = 0;
 }
 
 function fillSubjects(selected) {
