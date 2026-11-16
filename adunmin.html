@@ -5594,6 +5594,7 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
     }
 
     async function acOpen(studentId) {
+      if (!studentEmailsStarted) { studentEmailsStarted = true; loadStudentEmails().then(() => { try { acRender(); } catch (_) {} }).catch(() => {}); }
       const base = allStudents.find(x => x.id === studentId);
       $('acBody').innerHTML = '<div style="text-align:center;padding:40px;color:var(--ink-faint);">Loading…</div>';
       openModal('acModal');
@@ -5632,7 +5633,7 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
       const seg = (v, l) => `<button type="button" data-f="${v}" class="${filter === v ? 'on' : ''}">${l}</button>`;
       $('acBody').innerHTML = `
         <div class="ac-head"><div class="ac-av">${escapeHtml((stu.name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '?')}</div>
-          <div><h3>${escapeHtml(stu.name || 'Unnamed')}</h3><div class="sub">${escapeHtml(stu.batch || '—')}${stu.ID ? ' · ' + escapeHtml(stu.ID) : ''}</div></div></div>
+          <div><h3>${escapeHtml(stu.name || 'Unnamed')}</h3>${(stu.email || studentEmailByUid[stu.authUid]) ? `<div class="sub" style="word-break:break-all;">${escapeHtml(stu.email || studentEmailByUid[stu.authUid])}</div>` : ''}<div class="sub">${escapeHtml(stu.batch || '—')}${stu.ID ? ' · ' + escapeHtml(stu.ID) : ''}</div></div></div>
         <div class="ac-stats"><div class="ac-stat"><b>${cM[0]} / ${cM[1]}</b><span>Modules open</span></div><div class="ac-stat"><b>${cS[0]} / ${cS[1]}</b><span>Subjects open</span></div><div class="ac-stat"><b>${cQ[0]} / ${cQ[1]}</b><span>Quizzes open</span></div></div>
         <div class="ac-bar"><div class="ac-seg">${seg('all', 'All')}${seg('unlocked', 'Unlocked')}${seg('locked', 'Locked')}</div><input class="form-control" id="acSearch" type="text" placeholder="Search…" value="${escapeHtml(AC.q)}" /></div>
         <div class="ac-tree">${tree || '<div style="text-align:center;padding:30px;color:var(--ink-faint);">Nothing to show.</div>'}</div>
