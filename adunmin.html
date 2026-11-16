@@ -2595,6 +2595,7 @@ body.dark #tab-questions, body.dark #qmOverlayRoot {
       .am-grant{border-bottom:1px solid color-mix(in srgb,var(--card-border) 50%,transparent)}
       .am-grant:last-child{border-bottom:0}
       .am-revoke{background:transparent;border:0;color:var(--ink-faint)}
+      .am-revoke[data-unblock]{color:var(--artery);font-weight:700}
     }
     /* ===== Student profile block in the access sheet ===== */
     .am-profile .am-info{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin-bottom:12px}
@@ -12434,6 +12435,12 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
 
       // ---------- entry point, called when the Devices tab is first opened ----------
       window.__alifDevEmbed = {
+        // live read of one student's device docs (not the cached 10-minute collection-group copy)
+        async load(studentId) {
+          const snap = await getDocs(collection(db, 'secretkeys', studentId, 'devices')), raw = {};
+          snap.forEach(d => { raw[d.id] = d.data(); });
+          const folded = devFold(studentId, raw); DEVSUB.map.set(studentId, folded); return folded;
+        },
         html(student) {
           const entries = Object.entries(student.devices || {}).sort((a, b) => devToMillis(b[1].lastSeen) - devToMillis(a[1].lastSeen));
           const maxDevices = student.maxDevices || (window.__defMaxDev || 1), concurrentNow = devIsConcurrentNow(student), cur = devCurrentDeviceInfo(student);
@@ -14828,6 +14835,7 @@ async function saveProfile(s){
 async function refreshDevices(){
   const id=state.selected; if(!id) return;
   try{ const snap=await getDoc(doc(db,'secretkeys',id)); const i=state.students.findIndex(x=>x.id===id); if(snap.exists()&&i>-1) state.students[i]={...state.students[i],...snap.data(),id}; }catch(e){}
+  try{ const devs=await window.__alifDevEmbed.load(id); const st=state.students.find(x=>x.id===id); if(st) st.devices=devs; }catch(e){ console.warn('device load failed',e); }
   if(state.selected===id) renderDevices();
 }
 function renderDevices(){
@@ -14838,11 +14846,23 @@ function renderDevices(){
 }
 function renderGrantRows(){
   renderProfile();
+  const blockedRows=[...state.grants.entries()].filter(([,g])=>g.mode==='deny' && g.status==='active');
   const rows=[...state.grants.entries()].filter(([,g])=>g.mode==='allow' && g.status==='active').sort((a,b)=>String(a[1].resourceType).localeCompare(String(b[1].resourceType)));
   const box=$('amGrantList'); $('amGrantCount').textContent=String(rows.length);
-  if(!rows.length){ box.innerHTML='<div class="am-empty">No active access grants for this student.</div>'; return; }
-  box.innerHTML=rows.map(([k,g])=>`<div class="am-grant"><div><span class="am-type">${esc(g.resourceType)}</span><b>${esc(g.resourceLabel||resourceLabel(g.resourceType,g.resourceId))}</b><small>${esc(g.sourceLabel||g.sourceType||'Manual')} · ${expiryText(toMs(g.expiresAt))}</small></div><button class="am-revoke" data-revoke="${esc(k)}">Remove</button></div>`).join('');
+  const blk=blockedRows.map(([k,g])=>`<div class="am-grant"><div><span class="am-type" style="color:var(--wrong)">blocked</span><b>${esc(g.resourceLabel||resourceLabel(g.resourceType,g.resourceId))}</b><small>${esc(g.resourceType)} · access blocked</small></div><button class="am-revoke" data-unblock="${esc(k)}">Unblock</button></div>`).join('');
+  const bind=()=>box.querySelectorAll('[data-unblock]').forEach(b=>b.addEventListener('click',()=>unblockGrant(b.dataset.unblock)));
+  if(!rows.length){ box.innerHTML=(blk||'<div class="am-empty">No active access grants for this student.</div>'); bind(); return; }
+  box.innerHTML=blk+rows.map(([k,g])=>`<div class="am-grant"><div><span class="am-type">${esc(g.resourceType)}</span><b>${esc(g.resourceLabel||resourceLabel(g.resourceType,g.resourceId))}</b><small>${esc(g.sourceLabel||g.sourceType||'Manual')} · ${expiryText(toMs(g.expiresAt))}</small></div><button class="am-revoke" data-revoke="${esc(k)}">Remove</button></div>`).join('');
   box.querySelectorAll('[data-revoke]').forEach(b=>b.addEventListener('click',()=>removeGrant(b.dataset.revoke)));
+  bind();
+}
+async function unblockGrant(k){
+  if(!state.selected) return;
+  try{
+    await deleteDoc(doc(db,'access',selUid(),'resources',k));
+    await setDoc(doc(collection(db,'accessHistory')),{studentId:state.selected,resourceKey:k,action:'unblock',createdAt:serverTimestamp(),createdBy:auth.currentUser?.uid||null});
+    await loadSelectedGrants(); renderGrantRows(); toast('Access unblocked','success');
+  }catch(e){ toast(e.message||'Could not unblock','error'); }
 }
 
 function renderSummary(){
@@ -14898,7 +14918,7 @@ function setSeg(select){
   seg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===$(select).value));
 }
 async function selectStudent(id){
-  const stale=id; state.selected=id; state.grants.clear(); state.grantsLoading=true; state.editing=null; renderStudents(); renderSummary(); renderProfile(); renderDevices(); openSheet();
+  const stale=id; state.selected=id; state.grants.clear(); state.grantsLoading=true; state.editing=null; renderStudents(); renderSummary(); renderProfile(); renderDevices(); openSheet(); refreshDevices();
   try{ await loadSelectedGrants(); } finally { if(state.selected===stale) state.grantsLoading=false; }
   if(state.selected===stale) renderGrantRows();
 }
