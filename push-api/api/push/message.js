@@ -22,6 +22,21 @@ async function membersOf(kind, chatId) {
   return ids;
 }
 
+const avatarCache = new Map(); // studentId -> { t, url }
+async function avatarOf(studentId) {
+  const hit = avatarCache.get(studentId);
+  if (hit && Date.now() - hit.t < 10 * 60 * 1000) return hit.url;
+  let url = '';
+  try {
+    const snap = await admin.firestore().doc(`chatProfiles/${studentId}`).get();
+    const u = snap.exists ? snap.data().avatarUrl : '';
+    if (typeof u === 'string' && /^https:\/\//.test(u) && u.length < 500) url = u;
+  } catch (e) { console.warn('[push] avatar', e.message); }
+  avatarCache.set(studentId, { t: Date.now(), url });
+  if (avatarCache.size > 500) avatarCache.delete(avatarCache.keys().next().value);
+  return url;
+}
+
 const clean = (t, n) => String(t || '').replace(/[*_`#>~\[\]]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
 
 module.exports = handler(async (req, res) => {
@@ -44,13 +59,14 @@ module.exports = handler(async (req, res) => {
 
   webpush.setVapidDetails(process.env.VAPID_SUBJECT, process.env.VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
   const body = clean(text, 140) || 'Sent you a message';
+  const photo = await avatarOf(me.studentId);   // sender's profile picture shown beside the notification
   const payload = JSON.stringify({
     kind: 'chat',
     title: kind === 'group' ? `${clean(groupName, 40) || 'Group'} · ${clean(me.name, 30)}` : clean(me.name, 40),
     body,
     url: `/?chat=${kind}:${encodeURIComponent(chatId)}`,
-    icon: '/logo.png',
-    badge: '/logo.png',
+    icon: photo || '/logo.png',
+    badge: '/badge.png',
     tag: `alif-chat-${kind}-${chatId}`
   });
 
