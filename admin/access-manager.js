@@ -78,6 +78,24 @@ function renderGrantRows(){
 function renderSummary(){
   const n=[...state.grants.values()].filter(g=>g.mode==='allow'&&g.status==='active').length;
   $('amSelectedStudent').textContent=state.selected?studentLabel(state.selected):'Select a student';
+  (function(){
+    const host=$('amSelectedStudent'); if(!host||!host.parentNode) return;
+    let b=document.getElementById('amDeleteStudentBtn');
+    if(!b){
+      b=document.createElement('button'); b.id='amDeleteStudentBtn'; b.type='button'; b.className='btn btn-sm btn-danger';
+      b.style.cssText='margin-left:10px;vertical-align:middle;'; b.innerHTML='<i class="fa-solid fa-trash"></i> Delete student';
+      host.insertAdjacentElement('afterend',b);
+      b.addEventListener('click',async()=>{
+        const id=state.selected; if(!id||!window.__admDeleteStudent) return;
+        const st=state.students.find(x=>x.id===id);
+        if(await window.__admDeleteStudent(id, st&&st.name)){
+          state.students=state.students.filter(x=>x.id!==id); state.selected=null; state.grants.clear();
+          renderStudents(); renderSummary(); renderGrantRows();
+        }
+      });
+    }
+    b.style.display=state.selected?'':'none';
+  })();
   $('amGrantCount').textContent=String(n);
   $('amGrantList').innerHTML='<div class="am-empty">Loading access…</div>';
 }

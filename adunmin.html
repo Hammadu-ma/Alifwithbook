@@ -7138,6 +7138,19 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
       });
     }
 
+    // Used by the Access tab: same confirmation + delete as the Students page. Resolves true when the student was deleted.
+    window.__admDeleteStudent = async (studentId, name) => {
+      const ok = await showConfirm('Delete Student', `Are you sure you want to permanently delete <strong>${escapeHtml(name || 'this student')}</strong>? This cannot be undone.`, true);
+      if (!ok) return false;
+      try {
+        await deleteDoc(doc(db, 'secretkeys', studentId));
+        allStudents = allStudents.filter(s => s.id !== studentId);
+        try { renderStudents(); } catch (_) {}
+        toast(`Deleted "${escapeHtml(name || 'student')}"`, 'success');
+        return true;
+      } catch (err) { toast('Failed to delete: ' + err.message, 'error'); return false; }
+    };
+
     // ------------------------------------------------------------------
     // ACCESS TREE (per-student overrides)
     // ------------------------------------------------------------------
