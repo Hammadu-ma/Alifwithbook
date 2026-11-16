@@ -2569,6 +2569,32 @@ body.dark #tab-questions, body.dark #qmOverlayRoot {
       .am-type{font-size:8.5px}
       .am-revoke{min-height:30px;min-width:0;padding:0 10px;font-size:11px;border-radius:8px}
       .am-empty{padding:14px;font-size:11.5px}
+      /* minimal pass */
+      .am-sheet,.am-sheet.open{background:var(--card);box-shadow:0 -6px 30px rgba(0,0,0,.16)}
+      .am-sheet-head{border-bottom:0;padding:2px 16px 6px}
+      .am-sheet-head .am-avatar{display:none}
+      .am-sheet-head h3{font-size:16px}
+      .am-sheet-head span.am-sub{display:block;margin-top:1px;color:var(--ink-faint)}
+      .am-close{background:transparent;color:var(--ink-faint)}
+      .am-sheet-body{padding:4px 16px calc(14px + env(safe-area-inset-bottom,0px))}
+      .am-sheet .am-card+.am-card{margin-top:14px;padding-top:12px;border-top:1px solid color-mix(in srgb,var(--card-border) 60%,transparent)}
+      .am-sheet .am-card-head b,.am-profile .am-ph span,.am-lbl{text-transform:uppercase;letter-spacing:.06em;font-size:10px;font-weight:700;color:var(--ink-faint)}
+      .am-profile .am-info{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
+      .am-profile .am-info i{display:none}
+      .am-profile .am-info div{font-size:12.5px;color:var(--ink-soft)}
+      .am-profile .am-info small{display:inline;margin-right:6px;font-size:10px;text-transform:none;letter-spacing:0}
+      .am-profile .am-info span{white-space:normal;word-break:break-all}
+      .am-pchip{background:transparent!important;border:1px solid var(--card-border)!important;box-shadow:none!important}
+      .am-seg button{background:transparent;border:1px solid var(--card-border);color:var(--ink-soft)}
+      .am-seg button.on{background:var(--artery);border-color:var(--artery);color:#fff}
+      .am-field select,.am-field input[type=date],.am-more .am-source input{background:var(--paper-2);border-color:transparent}
+      .am-sheet .am-actions{position:static;background:transparent}
+      .am-sheet .am-actions .btn{box-shadow:none}
+      #amDenyBtn{flex:0 0 auto!important;background:transparent!important;border:1px solid var(--card-border)!important;color:var(--ink-soft)!important}
+      #amDenyBtn i{display:none}
+      .am-grant{border-bottom:1px solid color-mix(in srgb,var(--card-border) 50%,transparent)}
+      .am-grant:last-child{border-bottom:0}
+      .am-revoke{background:transparent;border:0;color:var(--ink-faint)}
     }
     /* ===== Student profile block in the access sheet ===== */
     .am-profile .am-info{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin-bottom:12px}
