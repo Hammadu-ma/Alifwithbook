@@ -28,7 +28,7 @@ function resourceLabel(t,id){
   const a = t==='module' ? state.modules : t==='subject' ? state.subjects : state.quizzes;
   const x = a.find(v=>v.id===id); return x?.name || `${t} ${id}`;
 }
-function studentLabel(id){ const s=state.students.find(x=>x.id===id); return s ? `${s.name||'Unnamed'}${s.batch?` · ${s.batch}`:''}` : id; }
+function studentLabel(id){ const s=state.students.find(x=>x.id===id); return s ? `${s.name||'Unnamed'}${s.email?` · ${s.email}`:''}${s.batch?` · ${s.batch}`:''}` : id; }
 function expiryText(ms){ if(!ms) return 'No expiry'; return new Date(ms).toLocaleDateString([], {year:'numeric',month:'short',day:'numeric'}); }
 
 async function loadCatalog(){
@@ -46,6 +46,12 @@ async function loadStudents(){
   const snap=await getDocs(collection(db,'secretkeys'));
   state.students=snap.docs.map(d=>({id:d.id,...d.data()})).filter(s=>s.authUid);
   state.students.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  // E-mails live in users/{uid}; same 12h browser cache the Students tab uses.
+  try {
+    let m=null; try { const c=JSON.parse(localStorage.getItem('adm_student_emails_v1')||'null'); if(c && Date.now()-c.t<12*3600*1000) m=c.m||{}; } catch(_){}
+    if(!m){ const us=await getDocs(collection(db,'users')); m={}; us.forEach(u=>{const v=u.data(); if(v&&v.email) m[u.id]=v.email;}); try{localStorage.setItem('adm_student_emails_v1',JSON.stringify({t:Date.now(),m}));}catch(_){} }
+    state.students.forEach(s=>{ if(!s.email && m[s.authUid]) s.email=m[s.authUid]; });
+  } catch(e){ console.warn('[access] emails:', e && e.message); }
 }
 
 async function loadSelectedGrants(){
@@ -57,7 +63,7 @@ async function loadSelectedGrants(){
 function renderStudents(){
   const q=($('amStudentSearch')?.value||'').trim().toLowerCase();
   const rows=state.students.filter(s=>!q || [s.name,s.batch,s.ID,s.email].some(v=>String(v||'').toLowerCase().includes(q))).slice(0,100);
-  $('amStudentList').innerHTML=rows.length?rows.map(s=>`<button class="am-student ${s.id===state.selected?'active':''}" data-student="${esc(s.id)}"><span class="am-avatar">${esc((s.name||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase())}</span><span class="am-student-text"><b>${esc(s.name||'Unnamed')}</b><small>${esc([s.batch,s.ID].filter(Boolean).join(' · '))}</small></span><span class="am-chevron">›</span></button>`).join(''):'<div class="am-empty">No students found.</div>';
+  $('amStudentList').innerHTML=rows.length?rows.map(s=>`<button class="am-student ${s.id===state.selected?'active':''}" data-student="${esc(s.id)}"><span class="am-avatar">${esc((s.name||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase())}</span><span class="am-student-text"><b>${esc(s.name||'Unnamed')}</b>${s.email?`<small style="word-break:break-all;">${esc(s.email)}</small>`:''}<small>${esc([s.batch,s.ID].filter(Boolean).join(' · '))}</small></span><span class="am-chevron">›</span></button>`).join(''):'<div class="am-empty">No students found.</div>';
   $('amStudentList').querySelectorAll('[data-student]').forEach(b=>b.addEventListener('click',()=>selectStudent(b.dataset.student)));
 }
 
