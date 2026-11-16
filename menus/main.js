@@ -41,7 +41,7 @@ import"./class-chat.js";
 import"./onboarding-tour.js";
 import"./lock.js";
 import"./scroll-guard.js";
-import"./boot.js";import"./avatar.js";import"./notifications-page.js";import"./floating-back.js";import"./notification-bell.js";
+import"./boot.js";import"./avatar.js";import"./notifications-page.js";import"./floating-back.js";import"./notification-bell.js";import"./push-banner.js";
 
 // Deferred: not needed for first paint. Loaded when the browser is idle (and instantly on first touch/keypress),
 // straight from the service-worker cache after the first visit.

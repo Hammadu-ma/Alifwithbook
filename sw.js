@@ -17,7 +17,7 @@
 
    Firestore / Auth / push-API traffic is never touched by this worker.
    ========================================================================= */
-const BUILD = '32f6403b4efb';
+const BUILD = '80f2664b1b97';
 /*SHELL_START*/
 const SHELL = [
   "/assets/amoled-dark.css",
@@ -38,6 +38,7 @@ const SHELL = [
   "/menus/chat-search.js",
   "/menus/class-chat.js",
   "/menus/cloud-sync.js",
+  "/menus/device-limit.js",
   "/menus/device-session.js",
   "/menus/exam-cards.js",
   "/menus/exam-mode.js",
@@ -67,6 +68,7 @@ const SHELL = [
   "/menus/progress-modules.js",
   "/menus/progress-page.js",
   "/menus/progress-rings.js",
+  "/menus/push-banner.js",
   "/menus/question-complaint.js",
   "/menus/quiz-engine.js",
   "/menus/quiz-live.js",
@@ -299,25 +301,27 @@ self.addEventListener('push', event => {
     try { data = { body: event.data ? event.data.text() : '' }; } catch (_) {}
   }
   const title = data.title || 'ALIF';
-  if (data.kind === 'chat') {
-    // Always show the notification, even while the app is open on screen.
-    event.waitUntil((async () => {
-      await self.registration.showNotification(title, {
-        body: data.body || '', icon: data.icon || '/logo.png', badge: '/badge.png',
-        tag: data.tag || 'alif-chat', data: { url: data.url || '/' }, renotify: true, vibrate: [90, 40, 90]
-      });
-    })());
-    return;
-  }
+  const isChat = data.kind === 'chat';
   const options = {
     body: data.body || '',
     icon: data.icon || '/logo.png',
     badge: '/badge.png',
-    tag: data.tag || `alif-${Date.now()}`,
+    tag: data.tag || (isChat ? 'alif-chat' : `alif-${Date.now()}`),
     data: { url: data.url || '/' },
-    renotify: true
+    renotify: true,
+    silent: false,
+    vibrate: [120, 60, 120],      // sound/vibration is what lets Android show it as a heads-up popup
+    timestamp: Date.now()
   };
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil((async () => {
+    // Always show the system notification (even while the app is open), and also hand it to any open
+    // page so it can slide in its own banner on top of the app.
+    await self.registration.showNotification(title, options);
+    try {
+      const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      wins.forEach(c => { if (c.visibilityState === 'visible') c.postMessage({ type: 'alif-push', title, body: options.body, icon: options.icon, url: options.data.url }); });
+    } catch (_) {}
+  })());
 });
 
 self.addEventListener('notificationclick', event => {
