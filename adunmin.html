@@ -7138,17 +7138,37 @@ details.xp-card .xp-body > .xp-sub { margin-top:-6px; }
       });
     }
 
-    // Used by the Access tab: same confirmation + delete as the Students page. Resolves true when the student was deleted.
-    window.__admDeleteStudent = async (studentId, name) => {
-      const ok = await showConfirm('Delete Student', `Are you sure you want to permanently delete <strong>${escapeHtml(name || 'this student')}</strong>? This cannot be undone.`, true);
-      if (!ok) return false;
+    // Used by the Access tab. Own confirm dialog (always above the mobile sheet, one at a time).
+    let admConfirmOpen = false;
+    window.__admConfirm = (title, html, label) => new Promise(resolve => {
+      if (admConfirmOpen) return resolve(false);
+      admConfirmOpen = true;
+      const ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;z-index:10060;background:rgba(10,12,20,.55);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:18px;';
+      ov.innerHTML = `<div role="alertdialog" style="width:100%;max-width:400px;background:var(--card);color:var(--ink);border:1px solid var(--card-border);border-radius:18px;padding:22px;box-shadow:0 24px 60px rgba(0,0,0,.35);">
+        <h3 style="margin:0 0 8px;font-size:18px;">${escapeHtml(title)}</h3>
+        <div style="font-size:14px;line-height:1.5;color:var(--ink-soft);margin-bottom:18px;">${html}</div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;"><button type="button" class="btn" data-r="0">Cancel</button><button type="button" class="btn btn-danger" data-r="1">${escapeHtml(label || 'Delete')}</button></div></div>`;
+      const done = v => { if (!admConfirmOpen) return; admConfirmOpen = false; ov.remove(); resolve(v); };
+      ov.addEventListener('click', e => { if (e.target === ov) return done(false); const b = e.target.closest('[data-r]'); if (b) done(b.dataset.r === '1'); });
+      document.body.appendChild(ov);
+    });
+    let admDeleting = false;
+    window.__admDeleteStudents = async (ids, names) => {
+      if (admDeleting || !ids || !ids.length) return [];
+      const one = ids.length === 1;
+      const ok = await window.__admConfirm(one ? 'Delete student' : `Delete ${ids.length} students`,
+        one ? `Permanently delete <strong>${escapeHtml((names && names[0]) || 'this student')}</strong>? This cannot be undone.` : `Permanently delete <strong>${ids.length} students</strong>? This cannot be undone.`);
+      if (!ok) return [];
+      admDeleting = true;
+      const deleted = [];
       try {
-        await deleteDoc(doc(db, 'secretkeys', studentId));
-        allStudents = allStudents.filter(s => s.id !== studentId);
+        for (const id of ids) { try { await deleteDoc(doc(db, 'secretkeys', id)); deleted.push(id); } catch (err) { toast('Failed to delete: ' + err.message, 'error'); } }
+        allStudents = allStudents.filter(s => !deleted.includes(s.id));
         try { renderStudents(); } catch (_) {}
-        toast(`Deleted "${escapeHtml(name || 'student')}"`, 'success');
-        return true;
-      } catch (err) { toast('Failed to delete: ' + err.message, 'error'); return false; }
+        if (deleted.length) toast(deleted.length === 1 ? 'Student deleted' : `${deleted.length} students deleted`, 'success');
+      } finally { admDeleting = false; }
+      return deleted;
     };
 
     // ------------------------------------------------------------------
@@ -14720,8 +14740,30 @@ async function loadSelectedGrants(){
 function renderStudents(){
   const q=($('amStudentSearch')?.value||'').trim().toLowerCase();
   const rows=state.students.filter(s=>!q || [s.name,s.batch,s.ID,s.email].some(v=>String(v||'').toLowerCase().includes(q))).slice(0,100);
-  $('amStudentList').innerHTML=rows.length?rows.map(s=>`<button class="am-student ${s.id===state.selected?'active':''}" data-student="${esc(s.id)}"><span class="am-avatar">${esc((s.name||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase())}</span><span class="am-student-text"><b>${esc(s.name||'Unnamed')}</b>${s.email?`<small style="word-break:break-all;">${esc(s.email)}</small>`:''}<small>${esc([s.batch,s.ID].filter(Boolean).join(' · '))}</small></span><span class="am-chevron">›</span></button>`).join(''):'<div class="am-empty">No students found.</div>';
-  $('amStudentList').querySelectorAll('[data-student]').forEach(b=>b.addEventListener('click',()=>selectStudent(b.dataset.student)));
+  $('amStudentList').innerHTML=rows.length?rows.map(s=>`<button class="am-student ${s.id===state.selected?'active':''}" data-student="${esc(s.id)}"><span class="am-avatar">${esc((s.name||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase())}</span><span class="am-student-text"><b>${esc(s.name||'Unnamed')}</b>${s.email?`<small style="word-break:break-all;">${esc(s.email)}</small>`:''}<small>${esc([s.batch,s.ID].filter(Boolean).join(' · '))}</small></span><span class="am-chevron">${state.selecting?`<span style="display:inline-grid;place-items:center;width:20px;height:20px;border-radius:6px;border:2px solid var(--artery);background:${(state.sel&&state.sel.has(s.id))?'var(--artery)':'transparent'};color:#fff;font-size:12px;">${(state.sel&&state.sel.has(s.id))?'✓':''}</span>`:'›'}</span></button>`).join(''):'<div class="am-empty">No students found.</div>';
+  $('amStudentList').querySelectorAll('[data-student]').forEach(b=>b.addEventListener('click',()=>{
+    if(state.selecting){ const id=b.dataset.student; if(state.sel.has(id)) state.sel.delete(id); else state.sel.add(id); renderStudents(); return; }
+    selectStudent(b.dataset.student);
+  }));
+  renderSelBar(rows);
+}
+function renderSelBar(rows){
+  const list=$('amStudentList'); if(!list) return;
+  let bar=document.getElementById('amSelBar');
+  if(!bar){ bar=document.createElement('div'); bar.id='amSelBar'; bar.style.cssText='display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0;'; list.insertAdjacentElement('beforebegin',bar); }
+  if(!state.sel) state.sel=new Set();
+  if(!state.selecting){ bar.innerHTML='<button type="button" class="btn btn-sm" id="amSelStart"><i class="fa-solid fa-square-check"></i> Select</button>'; bar.querySelector('#amSelStart').onclick=()=>{ state.selecting=true; state.sel=new Set(); renderStudents(); }; return; }
+  const n=state.sel.size;
+  bar.innerHTML=`<button type="button" class="btn btn-sm" id="amSelAll">Select all</button><button type="button" class="btn btn-sm btn-danger" id="amSelDel" ${n?'':'disabled'}><i class="fa-solid fa-trash"></i> Delete (${n})</button><button type="button" class="btn btn-sm" id="amSelCancel">Cancel</button>`;
+  bar.querySelector('#amSelAll').onclick=()=>{ rows.forEach(r=>state.sel.add(r.id)); renderStudents(); };
+  bar.querySelector('#amSelCancel').onclick=()=>{ state.selecting=false; state.sel=new Set(); renderStudents(); };
+  bar.querySelector('#amSelDel').onclick=async(ev)=>{
+    const btn=ev.currentTarget; if(btn.dataset.busy==='1'||!state.sel.size||!window.__admDeleteStudents) return;
+    btn.dataset.busy='1';
+    const ids=[...state.sel], names=ids.map(id=>(state.students.find(x=>x.id===id)||{}).name);
+    const del=await window.__admDeleteStudents(ids,names); btn.dataset.busy='';
+    if(del.length){ state.students=state.students.filter(x=>!del.includes(x.id)); if(del.includes(state.selected)){ state.selected=null; state.grants.clear(); } state.selecting=false; state.sel=new Set(); renderStudents(); renderSummary(); }
+  };
 }
 
 function renderProfile(){
@@ -14792,9 +14834,12 @@ function renderSummary(){
       b.style.cssText='margin-top:8px;'; b.innerHTML='<i class="fa-solid fa-trash"></i> Delete student';
       e.insertAdjacentElement('afterend',b);
       b.addEventListener('click',async()=>{
-        const id=state.selected; if(!id||!window.__admDeleteStudent) return;
+        const id=state.selected; if(!id||!window.__admDeleteStudents) return;
+        if(b.dataset.busy==='1') return;
         const cur=state.students.find(x=>x.id===id);
-        if(await window.__admDeleteStudent(id, cur&&cur.name)){
+        b.dataset.busy='1';
+        const del=await window.__admDeleteStudents([id],[cur&&cur.name]); b.dataset.busy='';
+        if(del.length){
           state.students=state.students.filter(x=>x.id!==id); state.selected=null; state.grants.clear();
           try{ document.getElementById('amClose')?.click(); }catch(_){}
           renderStudents(); renderSummary();
