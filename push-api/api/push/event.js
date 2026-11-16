@@ -20,7 +20,8 @@ module.exports = handler(async (req, res) => {
   const { type, paymentId, uids, items, unlocked } = req.body || {};
   const key = EVENTS[type];
   if (!key) throw new Error('Unknown event');
-  const st = await notifSettings();
+  let st = await notifSettings();
+  if (!autoEnabled(st, key)) st = await notifSettings(true);   // re-check live before skipping (cached copy may be stale)
   if (!autoEnabled(st, key)) return res.status(200).json({ ok: true, skipped: 'disabled' });
 
   const admin_ = isAdminToken(decoded);

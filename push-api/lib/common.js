@@ -82,7 +82,11 @@ async function notifSettings(force) {
   try {
     const snap = await admin.firestore().doc('settings/notifications').get();
     if (snap.exists) { const d = snap.data() || {}; v = { autoAll: d.autoAll === true, events: d.events || {} }; }
-  } catch (e) { console.warn('[push] settings read', e.message); }
+  } catch (e) {
+    // a failed read must NOT look like "switched off" (and must not be cached)
+    console.error('[push] settings read failed', e.message);
+    throw new Error('Could not read notification settings: ' + e.message);
+  }
   settingsCache = { t: Date.now(), v };
   return v;
 }
