@@ -14693,12 +14693,22 @@ async function loadCatalog(){
     q.forEach(d => state.quizzes.push({id:d.id,...d.data(),subjectId:s.id}));
   }
 }
+async function attachEmails(){
+  try {
+    let m=null; try { const c=JSON.parse(localStorage.getItem('adm_student_emails_v1')||'null'); if(c && Date.now()-c.t<12*3600*1000) m=c.m||{}; } catch(_){}
+    if(!m){ const us=await getDocs(collection(db,'users')); m={}; us.forEach(u=>{const v=u.data(); if(v&&v.email) m[u.id]=v.email;}); try{localStorage.setItem('adm_student_emails_v1',JSON.stringify({t:Date.now(),m}));}catch(_){} }
+    state.students.forEach(s=>{ if(!s.email && m[s.authUid]) s.email=m[s.authUid]; });
+  } catch(e){ console.warn('[access] emails:', e && e.message); }
+}
 async function loadStudents(){
   const sh = window.__shared && window.__shared();
-  if (sh && sh.students.length) { state.students = sh.students.filter(s=>s.authUid).sort((a,b)=>(a.name||'').localeCompare(b.name||'')); return; }
-  const snap=await getDocs(collection(db,'secretkeys'));
-  state.students=snap.docs.map(d=>({id:d.id,...d.data()})).filter(s=>s.authUid);
-  state.students.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  if (sh && sh.students.length) { state.students = sh.students.filter(s=>s.authUid).map(s=>({...s})).sort((a,b)=>(a.name||'').localeCompare(b.name||'')); }
+  else {
+    const snap=await getDocs(collection(db,'secretkeys'));
+    state.students=snap.docs.map(d=>({id:d.id,...d.data()})).filter(s=>s.authUid);
+    state.students.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  }
+  await attachEmails();
 }
 
 async function loadSelectedGrants(){
@@ -14710,7 +14720,7 @@ async function loadSelectedGrants(){
 function renderStudents(){
   const q=($('amStudentSearch')?.value||'').trim().toLowerCase();
   const rows=state.students.filter(s=>!q || [s.name,s.batch,s.ID,s.email].some(v=>String(v||'').toLowerCase().includes(q))).slice(0,100);
-  $('amStudentList').innerHTML=rows.length?rows.map(s=>`<button class="am-student ${s.id===state.selected?'active':''}" data-student="${esc(s.id)}"><span class="am-avatar">${esc((s.name||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase())}</span><span class="am-student-text"><b>${esc(s.name||'Unnamed')}</b><small>${esc([s.batch,s.ID].filter(Boolean).join(' · '))}</small></span><span class="am-chevron">›</span></button>`).join(''):'<div class="am-empty">No students found.</div>';
+  $('amStudentList').innerHTML=rows.length?rows.map(s=>`<button class="am-student ${s.id===state.selected?'active':''}" data-student="${esc(s.id)}"><span class="am-avatar">${esc((s.name||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase())}</span><span class="am-student-text"><b>${esc(s.name||'Unnamed')}</b>${s.email?`<small style="word-break:break-all;">${esc(s.email)}</small>`:''}<small>${esc([s.batch,s.ID].filter(Boolean).join(' · '))}</small></span><span class="am-chevron">›</span></button>`).join(''):'<div class="am-empty">No students found.</div>';
   $('amStudentList').querySelectorAll('[data-student]').forEach(b=>b.addEventListener('click',()=>selectStudent(b.dataset.student)));
 }
 
@@ -14771,6 +14781,28 @@ function renderSummary(){
   const n=[...state.grants.values()].filter(g=>g.mode==='allow'&&g.status==='active').length;
   const st=state.students.find(x=>x.id===state.selected);
   $('amSelectedStudent').textContent=st?(st.name||'Unnamed'):'Select a student';
+  (function(){
+    const h=$('amSelectedStudent'); if(!h||!h.parentNode) return;
+    let e=document.getElementById('amSelEmail');
+    if(!e){ e=document.createElement('div'); e.id='amSelEmail'; e.style.cssText='font-size:12.5px;color:var(--ink-soft);word-break:break-all;margin:2px 0 4px;'; h.insertAdjacentElement('afterend',e); }
+    e.textContent=(st&&st.email)||''; e.style.display=(st&&st.email)?'':'none';
+    let b=document.getElementById('amDeleteStudentBtn');
+    if(!b){
+      b=document.createElement('button'); b.id='amDeleteStudentBtn'; b.type='button'; b.className='btn btn-sm btn-danger';
+      b.style.cssText='margin-top:8px;'; b.innerHTML='<i class="fa-solid fa-trash"></i> Delete student';
+      e.insertAdjacentElement('afterend',b);
+      b.addEventListener('click',async()=>{
+        const id=state.selected; if(!id||!window.__admDeleteStudent) return;
+        const cur=state.students.find(x=>x.id===id);
+        if(await window.__admDeleteStudent(id, cur&&cur.name)){
+          state.students=state.students.filter(x=>x.id!==id); state.selected=null; state.grants.clear();
+          try{ document.getElementById('amClose')?.click(); }catch(_){}
+          renderStudents(); renderSummary();
+        }
+      });
+    }
+    b.style.display=st?'':'none';
+  })();
   $('amSheetAvatar').textContent=st?(st.name||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase():'?';
   $('amGrantCount').textContent=String(n);
   $('amGrantList').innerHTML='<div class="am-empty">Loading access…</div>';
